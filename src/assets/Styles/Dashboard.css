@@ -1,0 +1,101 @@
+.dashboard-container {
+  min-height: 100vh;
+  height: 100vh;
+  width: 100vw;
+  position: fixed;
+  top: 0;
+  left: 0;
+  background-color: #F7F8F9;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.dashboard-header {
+  background: #FFFFFF;
+  padding: 16px 32px;
+  border-bottom: 1px solid #E5E7EB;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-shrink: 0;
+  z-index: 100;
+}
+
+.header-left h1 {
+  font-size: 20px;
+  color: #172B4D;
+  margin-bottom: 4px;
+  font-weight: 600;
+}
+
+.user-info {
+  color: #5E6C84;
+  font-size: 13px;
+}
+
+.header-right {
+  display: flex;
+  gap: 12px;
+}
+
+.create-ticket-btn {
+  padding: 8px 16px;
+  background: #0052CC;
+  color: white;
+  border: none;
+  border-radius: 3px;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.create-ticket-btn:hover {
+  background: #0065FF;
+}
+
+.logout-btn {
+  padding: 8px 16px;
+  background: #FAFBFC;
+  color: #42526E;
+  border: 1px solid #DFE1E6;
+  border-radius: 3px;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.logout-btn:hover {
+  background: #EBECF0;
+}
+
+.dashboard-content {
+  padding: 30px;
+  flex: 1;
+  overflow-y: auto;
+  overflow-x: hidden;
+}
+
+@media (max-width: 768px) {
+  .dashboard-header {
+    padding: 15px 20px;
+    flex-direction: column;
+    gap: 15px;
+    align-items: flex-start;
+  }
+
+  .header-left h1 {
+    font-size: 20px;
+  }
+
+  .header-right {
+    width: 100%;
+    justify-content: space-between;
+  }
+
+  .dashboard-content {
+    padding: 20px 15px;
+  }
+}
