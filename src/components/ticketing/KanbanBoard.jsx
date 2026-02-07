@@ -1,4 +1,4 @@
-import '../assets/Styles/Kanban.css';
+import '../../assets/Styles/Kanban.css';
 import TicketCard from './TicketCard';
 
 const KanbanBoard = ({ tickets, onTicketClick, onStatusChange, onDeleteTicket }) => {

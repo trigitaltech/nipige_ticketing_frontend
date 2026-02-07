@@ -1,16 +1,27 @@
-import { useState } from 'react';
-import '../assets/Styles/Modal.css';
+import { useState, useEffect } from 'react';
+import { useDispatch, useSelector } from 'react-redux';
+import { fetchCategories } from '../../redux/categorySlice';
+import '../../assets/Styles/Modal.css';
 
 const CreateTicketModal = ({ onClose, onCreate }) => {
+  const dispatch = useDispatch();
+  const { categories, loading: categoriesLoading } = useSelector((state) => state.categories);
+
   const [formData, setFormData] = useState({
     subject: '',
     description: '',
     priority: 5,
     severity: 'Medium',
     assignedTo: '',
+    category: '',
+    scope: '',
   });
 
   const [errors, setErrors] = useState({});
+
+  useEffect(() => {
+    dispatch(fetchCategories());
+  }, [dispatch]);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -23,8 +34,34 @@ const CreateTicketModal = ({ onClose, onCreate }) => {
     }
   };
 
+  const handleCategoryChange = (e) => {
+    const categoryId = e.target.value;
+    const selectedCategory = categories.find(cat => cat._id === categoryId);
+
+    if (selectedCategory) {
+      setFormData(prev => ({
+        ...prev,
+        category: categoryId,
+        severity: selectedCategory.severity || 'Medium',
+        scope: selectedCategory.scope || '',
+      }));
+    } else {
+      setFormData(prev => ({
+        ...prev,
+        category: categoryId,
+      }));
+    }
+
+    if (errors.category) {
+      setErrors(prev => ({ ...prev, category: '' }));
+    }
+  };
+
   const validate = () => {
     const newErrors = {};
+    if (!formData.category) {
+      newErrors.category = 'Category is required';
+    }
     if (!formData.subject.trim()) {
       newErrors.subject = 'Subject is required';
     }
@@ -53,6 +90,27 @@ const CreateTicketModal = ({ onClose, onCreate }) => {
         </div>
         <form onSubmit={handleSubmit}>
           <div className="form-group">
+            <label htmlFor="category">Category *</label>
+            <select
+              id="category"
+              name="category"
+              value={formData.category}
+              onChange={handleCategoryChange}
+              disabled={categoriesLoading}
+            >
+              <option value="">
+                {categoriesLoading ? 'Loading categories...' : 'Select a category'}
+              </option>
+              {Array.isArray(categories) && categories.map((category) => (
+                <option key={category._id} value={category._id}>
+                  {category.name}
+                </option>
+              ))}
+            </select>
+            {errors.category && <span className="error">{errors.category}</span>}
+          </div>
+
+          <div className="form-group">
             <label htmlFor="subject">Subject *</label>
             <input
               type="text"
@@ -79,6 +137,19 @@ const CreateTicketModal = ({ onClose, onCreate }) => {
           </div>
 
           <div className="form-row">
+            <div className="form-group">
+              <label htmlFor="scope">Scope</label>
+              <input
+                type="text"
+                id="scope"
+                name="scope"
+                value={formData.scope}
+                onChange={handleChange}
+                placeholder="Scope (auto-filled)"
+                readOnly
+              />
+            </div>
+
             <div className="form-group">
               <label htmlFor="severity">Severity</label>
               <select

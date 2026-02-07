@@ -1,7 +1,9 @@
 import axios from 'axios';
 
-const API_BASE_URL = 'https://dev.app.trigital.in/cap';
+const API_BASE_URL = 'https://dev.app.trigital.in';
+const NIPIGE_BASE_URL = 'https://dev.app.nipige.com';
 
+// Trigital API instance
 const api = axios.create({
   baseURL: API_BASE_URL,
   headers: {
@@ -35,14 +37,47 @@ api.interceptors.response.use(
   }
 );
 
+// Nipige API instance (for tickets and categories)
+const nipige = axios.create({
+  baseURL: NIPIGE_BASE_URL,
+  headers: {
+    'Accept': 'application/json, text/plain, */*',
+    'Content-Type': 'application/json',
+    'x-encrypted-key': '6986dd7c98cebc34cb85c197',
+  },
+});
+
+nipige.interceptors.request.use(
+  (config) => {
+    const token = localStorage.getItem('token');
+    if (token) {
+      config.headers.Authorization = `Bearer ${token}`;
+    }
+    return config;
+  },
+  (error) => {
+    return Promise.reject(error);
+  }
+);
+
+nipige.interceptors.response.use(
+  (response) => response,
+  (error) => {
+    if (error.response?.status === 401) {
+      localStorage.removeItem('token');
+      localStorage.removeItem('user');
+      window.location.href = '/';
+    }
+    return Promise.reject(error);
+  }
+);
+
 export const loginAPI = async (credentials) => {
-  const response = await api.post('/users/tenant/login', credentials);  
+  const response = await api.post('/cap/users/tenant/login', credentials);  
   return response.data;
 };
 
 export const createTicketAPI = async (ticketData) => {
-  const token = localStorage.getItem('token');
-
   // Get user info from localStorage
   const userString = localStorage.getItem('user');
   const user = userString ? JSON.parse(userString) : null;
@@ -78,39 +113,20 @@ export const createTicketAPI = async (ticketData) => {
     severity: ticketData.severity || "Medium"
   };
 
-  const response = await axios.post(
-    'https://dev.app.nipige.com/servicerequest/ticket/create',
-    createPayload,
-    {
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${token}`,
-      }
-    }
-  );
+  const response = await nipige.post('/servicerequest/ticket/create', createPayload);
 
   console.log('Create Ticket Response:', response.data);
   return response.data;
 };
 
 export const getTicketsAPI = async () => {
-  const token = localStorage.getItem('token');
-  const response = await axios.get('https://dev.app.nipige.com/servicerequest/ticket/list', {
-    headers: {
-      'accept': 'application/json, text/plain, */*',
-      'authorization': `Bearer ${token}`,
-      'x-encrypted-key': '6986dd7c98cebc34cb85c197',
-      'Content-Type': 'application/json',
-    },
-  });
+  const response = await nipige.get('/servicerequest/ticket/list');
 
   console.log('Ticket List Response:', response.data);
   return response.data;
 };
 
 export const updateTicketAPI = async (ticketId, ticketData) => {
-  const token = localStorage.getItem('token');
-
   // Get user info from localStorage
   const userString = localStorage.getItem('user');
   const user = userString ? JSON.parse(userString) : null;
@@ -151,16 +167,7 @@ export const updateTicketAPI = async (ticketId, ticketData) => {
     agentId: currentUser?._id
   };
 
-  const response = await axios.put(
-    `https://dev.app.nipige.com/servicerequest/ticket/update/${ticketId}`,
-    updatePayload,
-    {
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${token}`,
-      }
-    }
-  );
+  const response = await nipige.put(`/servicerequest/ticket/update/${ticketId}`, updatePayload);
 
   console.log('Update Ticket Response:', response.data);
   return response.data;
@@ -169,6 +176,29 @@ export const updateTicketAPI = async (ticketId, ticketData) => {
 export const deleteTicketAPI = async (ticketId) => {
   const response = await api.delete(`/tickets/${ticketId}`);
   return response.data;
+};
+
+export const getCategoriesAPI = async () => {
+  try {
+    const token = localStorage.getItem('token');
+
+    if (!token) {
+      throw new Error("No authentication token found");
+    }
+
+    const response = await nipige.get('/servicerequest/category/list');
+
+    console.log('Category API - Full Response:', response);
+    console.log('Category API - response.data:', response.data);
+    console.log('Category API - response.data.data:', response.data?.data);
+    console.log('Category API - Token:', token ? 'Token exists' : 'No token');
+
+    return response.data;
+
+  } catch (error) {
+    console.error('Category List Error:', error.response?.data || error.message);
+    throw error;
+  }
 };
 
 export default api;

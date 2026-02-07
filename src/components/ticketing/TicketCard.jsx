@@ -1,4 +1,4 @@
-import '../assets/Styles/TicketCard.css';
+import '../../assets/Styles/TicketCard.css';
 
 const TicketCard = ({ ticket, onDragStart, onClick, onDelete }) => {
   const getSeverityColor = (severity) => {

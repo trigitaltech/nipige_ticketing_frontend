@@ -1,7 +1,7 @@
 import { useSelector, useDispatch } from 'react-redux';
 import './App.css';
 import Login from './components/Login';
-import Dashboard from './components/Dashboard';
+import Dashboard from './pages/Dashboard';
 import { logout } from './redux/authSlice';
 
 function App() {

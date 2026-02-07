@@ -2,9 +2,9 @@ import { useState, useEffect } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { fetchTickets, createTicket, updateTicket, deleteTicket } from '../redux/ticketSlice';
 import '../assets/Styles/Dashboard.css';
-import KanbanBoard from './KanbanBoard';
-import CreateTicketModal from './CreateTicketModal';
-import UpdateTicketModal from './UpdateTicketModal';
+import KanbanBoard from '../components/ticketing/KanbanBoard';
+import CreateTicketModal from '../components/ticketing/CreateTicketModal';
+import UpdateTicketModal from '../components/ticketing/UpdateTicketModal';
 
 const Dashboard = ({ currentUser, onLogout }) => {
   const dispatch = useDispatch();
