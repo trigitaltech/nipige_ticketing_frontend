@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { fetchCategories } from '../../redux/categorySlice';
+import { postCommentAPI } from '../../services/api';
 import TicketInfoPanel from './TicketInfoPanel';
 import '../../assets/Styles/Modal.css';
 
@@ -10,6 +11,7 @@ const UpdateTicketModal = ({ ticket, onClose, onUpdate }) => {
 
   const [formData, setFormData] = useState({
     subject: ticket.subject || ticket.title || '',
+    description: ticket.description || '',
     priority: ticket.priority || 0,
     severity: ticket.severity || ticket.category?.severity || 'Low',
     assignedTo: ticket.assignTo?.name || ticket.assignedTo || '',
@@ -20,6 +22,7 @@ const UpdateTicketModal = ({ ticket, onClose, onUpdate }) => {
 
   const [comment, setComment] = useState('');
   const [errors, setErrors] = useState({});
+  const [isPostingComment, setIsPostingComment] = useState(false);
 
   useEffect(() => {
     dispatch(fetchCategories());
@@ -64,9 +67,6 @@ const UpdateTicketModal = ({ ticket, onClose, onUpdate }) => {
     if (!formData.subject.trim()) {
       newErrors.subject = 'Subject is required';
     }
-    if (!comment.trim()) {
-      newErrors.comment = 'Comment is required';
-    }
     return newErrors;
   };
 
@@ -80,8 +80,35 @@ const UpdateTicketModal = ({ ticket, onClose, onUpdate }) => {
     onUpdate({
       ...ticket,
       ...formData,
-      description: comment, // Pass comment as description to API
     });
+  };
+
+  const handlePostComment = async () => {
+    if (!comment.trim()) {
+      setErrors(prev => ({ ...prev, comment: 'Comment cannot be empty' }));
+      return;
+    }
+
+    setIsPostingComment(true);
+    try {
+      const ticketId = ticket._id || ticket.id;
+      await postCommentAPI(ticketId, comment);
+
+      // Clear comment after successful post
+      setComment('');
+      setErrors(prev => ({ ...prev, comment: '' }));
+
+      // Show success message
+      alert('Comment posted successfully!');
+
+      // You might want to refresh the ticket data here
+      // to show the new comment in the history
+    } catch (error) {
+      console.error('Error posting comment:', error);
+      alert('Failed to post comment. Please try again.');
+    } finally {
+      setIsPostingComment(false);
+    }
   };
 
   return (
@@ -130,13 +157,14 @@ const UpdateTicketModal = ({ ticket, onClose, onUpdate }) => {
               </div>
 
               <div className="form-group">
-                <label htmlFor="initialDescription">Initial Description</label>
+                <label htmlFor="initialDescription">Description</label>
                 <textarea
                   id="initialDescription"
-                  value={ticket.description || 'No description'}
-                  readOnly
+                  name="description"
+                  value={formData.description || ticket.description || ''}
+                  onChange={handleChange}
                   rows="2"
-                  className="readonly-textarea"
+                  placeholder="Enter initial description"
                 />
               </div>
 
@@ -215,7 +243,7 @@ const UpdateTicketModal = ({ ticket, onClose, onUpdate }) => {
               </div>
 
               <div className="form-group">
-                <label htmlFor="comment">Add Comment *</label>
+                <label htmlFor="comment">Add Comment</label>
                 <textarea
                   id="comment"
                   value={comment}
@@ -224,6 +252,31 @@ const UpdateTicketModal = ({ ticket, onClose, onUpdate }) => {
                   rows="3"
                 />
                 {errors.comment && <span className="error">{errors.comment}</span>}
+                <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: '8px' }}>
+                  <button
+                    type="button"
+                    onClick={handlePostComment}
+                    disabled={isPostingComment || !comment.trim()}
+                    style={{
+                      padding: '8px 16px',
+                      backgroundColor: '#0052CC',
+                      color: 'white',
+                      border: 'none',
+                      borderRadius: '4px',
+                      cursor: isPostingComment || !comment.trim() ? 'not-allowed' : 'pointer',
+                      fontSize: '14px',
+                      fontWeight: '500',
+                      opacity: isPostingComment || !comment.trim() ? 0.6 : 1,
+                      transition: 'all 0.2s',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      gap: '8px',
+                    }}
+                  >
+                    {isPostingComment ? 'Posting...' : 'Post Comment'}
+                  </button>
+                </div>
               </div>
 
               <div className="modal-footer-left">

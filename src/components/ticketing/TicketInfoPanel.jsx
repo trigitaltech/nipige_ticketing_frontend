@@ -63,6 +63,23 @@ const TicketInfoPanel = ({ ticket }) => {
           </div>
         </div>
       )}
+
+      {ticket.worknoteHistory && ticket.worknoteHistory.length > 0 && (
+        <div className="ticket-metadata change-history">
+          <h3>Comment History</h3>
+          <div className="history-list">
+            {ticket.worknoteHistory.map((worknote, index) => (
+              <div key={worknote._id || index} className="history-item">
+                <p className="history-action">
+                  <strong>Comment</strong> by {worknote.updatedBy?.name || 'Unknown'}
+                </p>
+                <p className="history-description">{worknote.description}</p>
+                <p className="history-date">{new Date(worknote.updatedAt).toLocaleString()}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
     </div>
   );
 };

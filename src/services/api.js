@@ -201,4 +201,29 @@ export const getCategoriesAPI = async () => {
   }
 };
 
+export const postCommentAPI = async (ticketId, commentText) => {
+  // Get user info from localStorage
+  const userString = localStorage.getItem('user');
+  const user = userString ? JSON.parse(userString) : null;
+  const currentUser = user?.response?.user;
+
+  const commentPayload = {
+    type: "WORKNOTE",
+    comment: {
+      updatedBy: {
+        name: currentUser?.authentication?.userName || currentUser?.name || "Unknown",
+        email: currentUser?.authentication?.email || currentUser?.email || "",
+        userType: currentUser?.category || "TENANT",
+        phone: currentUser?.phone || ""
+      },
+      description: commentText
+    }
+  };
+
+  const response = await nipige.post(`/servicerequest/ticket/postcomment/${ticketId}`, commentPayload);
+
+  console.log('Post Comment Response:', response.data);
+  return response.data;
+};
+
 export default api;
