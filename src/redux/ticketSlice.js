@@ -80,6 +80,16 @@ const ticketSlice = createSlice({
     clearTicketSuccess: (state) => {
       state.success = null;
     },
+    // Optimistic update for status change
+    updateTicketStatusOptimistic: (state, action) => {
+      const { ticketId, newStatus } = action.payload;
+      const index = state.tickets.findIndex(
+        (ticket) => (ticket._id || ticket.id) === ticketId
+      );
+      if (index !== -1) {
+        state.tickets[index] = { ...state.tickets[index], status: newStatus };
+      }
+    },
   },
   extraReducers: (builder) => {
     builder
@@ -156,5 +166,5 @@ const ticketSlice = createSlice({
   },
 });
 
-export const { clearTicketError, clearTicketSuccess } = ticketSlice.actions;
+export const { clearTicketError, clearTicketSuccess, updateTicketStatusOptimistic } = ticketSlice.actions;
 export default ticketSlice.reducer;

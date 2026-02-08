@@ -1,8 +1,9 @@
 import { useState, useEffect } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
-import { fetchTickets, createTicket, updateTicket, deleteTicket } from '../redux/ticketSlice';
+import { fetchTickets, createTicket, updateTicket, deleteTicket, updateTicketStatusOptimistic } from '../redux/ticketSlice';
 import '../assets/Styles/Dashboard.css';
 import KanbanBoard from '../components/ticketing/KanbanBoard';
+import ListView from '../components/ticketing/ListView';
 import CreateTicketModal from '../components/ticketing/CreateTicketModal';
 import UpdateTicketModal from '../components/ticketing/UpdateTicketModal';
 
@@ -15,6 +16,7 @@ const Dashboard = ({ currentUser, onLogout }) => {
   const [isUpdateModalOpen, setIsUpdateModalOpen] = useState(false);
   const [selectedTicket, setSelectedTicket] = useState(null);
   const [activeFilter, setActiveFilter] = useState('all'); // 'all' or 'my'
+  const [viewMode, setViewMode] = useState('kanban'); // 'kanban' or 'list'
 
   useEffect(() => {
     dispatch(fetchTickets());
@@ -81,12 +83,17 @@ const Dashboard = ({ currentUser, onLogout }) => {
     if (ticket) {
       console.log(`Updating ticket ${ticket.ticketNo} status from ${ticket.status} to ${newStatus}`);
 
-      await dispatch(updateTicket({
+      // Optimistically update the UI immediately
+      dispatch(updateTicketStatusOptimistic({
+        ticketId: ticket._id || ticket.id,
+        newStatus
+      }));
+
+      // Update in background (no await, no refetch)
+      dispatch(updateTicket({
         ticketId: ticket._id || ticket.id,
         ticketData: { ...ticket, status: newStatus }
       }));
-      // Refetch tickets to ensure UI is in sync with server
-      dispatch(fetchTickets());
     }
   };
 
@@ -107,69 +114,113 @@ const Dashboard = ({ currentUser, onLogout }) => {
         </div>
       </header>
 
-      {error && (
-        <div className="error-banner" style={{ padding: '10px', background: '#f44336', color: 'white', margin: '10px' }}>
-          Error: {error}
-        </div>
-      )}
-
-      {loading && (
-        <div className="loading-spinner" style={{ textAlign: 'center', padding: '20px' }}>
-          Loading tickets...
-        </div>
-      )}
+      
 
       <div style={{
-        padding: '15px 20px',
+        padding: '8px 20px',
         display: 'flex',
-        gap: '12px',
+        justifyContent: 'space-between',
         alignItems: 'center',
-        borderBottom: '2px solid #e3f2fd',
         backgroundColor: '#fafafa'
       }}>
-        <button
-          onClick={() => setActiveFilter('all')}
-          style={{
-            padding: '10px 24px',
-            border: activeFilter === 'all' ? '2px solid #2196f3' : '2px solid transparent',
-            borderRadius: '8px',
-            cursor: 'pointer',
-            fontWeight: '600',
-            fontSize: '14px',
-            transition: 'all 0.2s ease',
-            backgroundColor: activeFilter === 'all' ? '#2196f3' : 'white',
-            color: activeFilter === 'all' ? 'white' : '#555',
-            boxShadow: activeFilter === 'all' ? '0 2px 8px rgba(33, 150, 243, 0.3)' : '0 1px 3px rgba(0,0,0,0.1)',
-          }}
-        >
-          📋 All Tasks
-        </button>
-        <button
-          onClick={() => setActiveFilter('my')}
-          style={{
-            padding: '10px 24px',
-            border: activeFilter === 'my' ? '2px solid #2196f3' : '2px solid transparent',
-            borderRadius: '8px',
-            cursor: 'pointer',
-            fontWeight: '600',
-            fontSize: '14px',
-            transition: 'all 0.2s ease',
-            backgroundColor: activeFilter === 'my' ? '#2196f3' : 'white',
-            color: activeFilter === 'my' ? 'white' : '#555',
-            boxShadow: activeFilter === 'my' ? '0 2px 8px rgba(33, 150, 243, 0.3)' : '0 1px 3px rgba(0,0,0,0.1)',
-          }}
-        >
-          👤 My Tasks
-        </button>
+        <div style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
+          <button
+            onClick={() => setActiveFilter('all')}
+            style={{
+              padding: '10px 24px',
+              border: activeFilter === 'all' ? '2px solid #2196f3' : '2px solid transparent',
+              borderRadius: '8px',
+              cursor: 'pointer',
+              fontWeight: '600',
+              fontSize: '14px',
+              transition: 'all 0.2s ease',
+              backgroundColor: activeFilter === 'all' ? '#2196f3' : 'white',
+              color: activeFilter === 'all' ? 'white' : '#555',
+              boxShadow: activeFilter === 'all' ? '0 2px 8px rgba(33, 150, 243, 0.3)' : '0 1px 3px rgba(0,0,0,0.1)',
+            }}
+          >
+            All Tasks
+          </button>
+          <button
+            onClick={() => setActiveFilter('my')}
+            style={{
+              padding: '10px 24px',
+              border: activeFilter === 'my' ? '2px solid #2196f3' : '2px solid transparent',
+              borderRadius: '8px',
+              cursor: 'pointer',
+              fontWeight: '600',
+              fontSize: '14px',
+              transition: 'all 0.2s ease',
+              backgroundColor: activeFilter === 'my' ? '#2196f3' : 'white',
+              color: activeFilter === 'my' ? 'white' : '#555',
+              boxShadow: activeFilter === 'my' ? '0 2px 8px rgba(33, 150, 243, 0.3)' : '0 1px 3px rgba(0,0,0,0.1)',
+            }}
+          >
+            My Tasks
+          </button>
+        </div>
+
+        <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+          <button
+            onClick={() => setViewMode('kanban')}
+            title="Kanban View"
+            style={{
+              padding: '8px 12px',
+              border: viewMode === 'kanban' ? '2px solid #5E6C84' : '1px solid #DFE1E6',
+              borderRadius: '4px',
+              cursor: 'pointer',
+              fontSize: '18px',
+              transition: 'all 0.2s ease',
+              backgroundColor: viewMode === 'kanban' ? '#5E6C84' : 'white',
+              color: viewMode === 'kanban' ? 'white' : '#5E6C84',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              minWidth: '40px',
+              height: '40px',
+            }}
+          >
+            ▦
+          </button>
+          <button
+            onClick={() => setViewMode('list')}
+            title="List View"
+            style={{
+              padding: '8px 12px',
+              border: viewMode === 'list' ? '2px solid #5E6C84' : '1px solid #DFE1E6',
+              borderRadius: '4px',
+              cursor: 'pointer',
+              fontSize: '18px',
+              transition: 'all 0.2s ease',
+              backgroundColor: viewMode === 'list' ? '#5E6C84' : 'white',
+              color: viewMode === 'list' ? 'white' : '#5E6C84',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              minWidth: '40px',
+              height: '40px',
+            }}
+          >
+            ☰
+          </button>
+        </div>
       </div>
 
       <div className="dashboard-content">
-        <KanbanBoard
-          tickets={filteredTickets || []}
-          onTicketClick={handleTicketClick}
-          onStatusChange={handleStatusChange}
-          onDeleteTicket={handleDeleteTicket}
-        />
+        { viewMode === 'kanban' ? (
+          <KanbanBoard
+            tickets={filteredTickets || []}
+            onTicketClick={handleTicketClick}
+            onStatusChange={handleStatusChange}
+            onDeleteTicket={handleDeleteTicket}
+          />
+        ) : (
+          <ListView
+            tickets={filteredTickets || []}
+            onTicketClick={handleTicketClick}
+            onDeleteTicket={handleDeleteTicket}
+          />
+        )}
       </div>
 
       {isCreateModalOpen && (

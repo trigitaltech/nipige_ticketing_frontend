@@ -72,11 +72,13 @@
 }
 
 .dashboard-content {
-  padding: 30px;
+  padding: 20px;
   flex: 1;
   overflow-y: auto;
   overflow-x: hidden;
 }
+
+
 
 @media (max-width: 768px) {
   .dashboard-header {

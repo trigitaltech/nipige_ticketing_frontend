@@ -36,33 +36,38 @@ const KanbanBoard = ({ tickets, onTicketClick, onStatusChange, onDeleteTicket })
 
   return (
     <div className="kanban-board">
-      {columns.map(column => (
-        <div
-          key={column.id}
-          className="kanban-column"
-          onDragOver={handleDragOver}
-          onDrop={(e) => handleDrop(e, column.id)}
-        >
-          <div className="column-header" style={{ backgroundColor: column.color }}>
-            <h3>{column.title}</h3>
-            <span className="ticket-count">{getTicketsByStatus(column.id).length}</span>
+      {columns.map(column => {
+        const columnTickets = getTicketsByStatus(column.id);
+        const totalTickets = columnTickets.length;
+
+        return (
+          <div
+            key={column.id}
+            className="kanban-column"
+            onDragOver={handleDragOver}
+            onDrop={(e) => handleDrop(e, column.id)}
+          >
+            <div className="column-header" style={{ backgroundColor: column.color }}>
+              <h3>{column.title}</h3>
+              <span className="ticket-count">{totalTickets}</span>
+            </div>
+            <div className="column-content">
+              {columnTickets.map(ticket => (
+                <TicketCard
+                  key={ticket._id || ticket.id}
+                  ticket={ticket}
+                  onDragStart={handleDragStart}
+                  onClick={onTicketClick}
+                  onDelete={onDeleteTicket}
+                />
+              ))}
+              {totalTickets === 0 && (
+                <div className="empty-column">No tickets</div>
+              )}
+            </div>
           </div>
-          <div className="column-content">
-            {getTicketsByStatus(column.id).map(ticket => (
-              <TicketCard
-                key={ticket._id || ticket.id}
-                ticket={ticket}
-                onDragStart={handleDragStart}
-                onClick={onTicketClick}
-                onDelete={onDeleteTicket}
-              />
-            ))}
-            {getTicketsByStatus(column.id).length === 0 && (
-              <div className="empty-column">No tickets</div>
-            )}
-          </div>
-        </div>
-      ))}
+        );
+      })}
     </div>
   );
 };
