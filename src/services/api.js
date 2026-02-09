@@ -246,4 +246,27 @@ export const postCommentAPI = async (ticketId, commentText) => {
   return response.data;
 };
 
+export const filterTicketsAPI = async (filters) => {
+  // Get user info from localStorage for reportedBy filter
+  const userString = localStorage.getItem('user');
+  const user = userString ? JSON.parse(userString) : null;
+  const currentUser = user?.response?.user;
+
+  const filterPayload = {
+    status: filters.status || "",
+    priority: filters.priority || null,
+    category: filters.category || "",
+    fromDate: filters.fromDate || "",
+    toDate: filters.toDate || "",
+    reportedBy: filters.reportedBy || currentUser?._id || "",
+    assignTo: filters.assignTo || "",
+    orderId: filters.orderId || ""
+  };
+
+  const response = await nipige.post('/servicerequest/ticket/filter', filterPayload);
+
+  console.log('Filter Tickets Response:', response.data);
+  return response.data;
+};
+
 export default api;
