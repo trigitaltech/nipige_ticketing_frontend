@@ -11,8 +11,8 @@ function App() {
   const handleLogout = () => {
     dispatch(logout());
   };
-
-  const currentUser = user ? { username: user.email || user.username, id: user.id || user._id } : null;
+  console.log("=====>user", user);
+  const currentUser = user ;
 
   return (
     <div className="App">

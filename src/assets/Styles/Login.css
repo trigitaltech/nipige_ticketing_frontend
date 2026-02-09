@@ -175,7 +175,7 @@
 
 .user-type-select-compact {
   width: 100%;
-  padding: 11px 32px 11px 12px;
+  padding: 7px 32px 7px 12px;
   border: 2px solid #DFE1E6;
   border-radius: 4px;
   font-size: 13px;
@@ -203,8 +203,8 @@
   right: 10px;
   top: 50%;
   transform: translateY(-50%);
-  width: 18px;
-  height: 18px;
+  width: 14px;
+  height: 14px;
   pointer-events: none;
   opacity: 0.6;
   object-fit: contain;

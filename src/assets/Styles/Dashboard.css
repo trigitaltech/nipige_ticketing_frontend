@@ -37,6 +37,7 @@
 .header-right {
   display: flex;
   gap: 12px;
+  align-items: center;
 }
 
 .create-ticket-btn {
@@ -76,6 +77,21 @@
   flex: 1;
   overflow-y: auto;
   overflow-x: hidden;
+}
+
+.user-avatar {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background-color: #0052CC;
+  color: #FFFFFF;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 14px;
+  font-weight: 600;
+  text-transform: uppercase;
+  cursor: default;
 }
 
 

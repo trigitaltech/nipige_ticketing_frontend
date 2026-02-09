@@ -131,12 +131,29 @@ const Dashboard = ({ currentUser, onLogout }) => {
     }
   };
 
+  const userEmail =
+    currentUser?.response?.user?.authentication?.email || '';
+
+  const fullName = currentUser?.response?.user?.name
+    ? `${currentUser.response.user.name.first || ''} ${currentUser.response.user.name.last || ''}`.trim()
+    : '';
+
+  const avatarLabel =
+    (fullName &&
+      fullName
+        .split(' ')
+        .filter(Boolean)
+        .map((part) => part[0]?.toUpperCase())
+        .join('')
+        .slice(0, 2)) ||
+    (userEmail ? userEmail[0]?.toUpperCase() : 'U');
+  
   return (
     <div className="dashboard-container">
       <header className="dashboard-header">
         <div className="header-left">
           <h1>TRIGITAL Task Management Dashboard</h1>
-          <span className="user-info">Welcome, {currentUser.username}</span>
+          <span className="user-info">Welcome, {currentUser.response.user.name.first} {currentUser.response.user.name.last}</span>
         </div>
         <div className="header-right">
           <button className="create-ticket-btn" onClick={() => setIsCreateModalOpen(true)}>
@@ -145,6 +162,9 @@ const Dashboard = ({ currentUser, onLogout }) => {
           <button className="logout-btn" onClick={onLogout}>
             Logout
           </button>
+          <div className="user-avatar" title={userEmail || 'No email available'}>
+            {avatarLabel}
+          </div>
         </div>
       </header>
 
