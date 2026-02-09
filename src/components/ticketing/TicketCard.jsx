@@ -19,7 +19,12 @@ const TicketCard = ({ ticket, onDragStart, onClick, onDelete }) => {
   const formatDate = (dateString) => {
     if (!dateString) return '';
     const date = new Date(dateString);
-    return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+    // Convert to IST and format
+    return date.toLocaleDateString('en-IN', {
+      month: 'short',
+      day: 'numeric',
+      timeZone: 'Asia/Kolkata'
+    });
   };
 
   const ticketId = ticket._id || ticket.id;
@@ -38,6 +43,8 @@ const TicketCard = ({ ticket, onDragStart, onClick, onDelete }) => {
   const assignedEmail = ticket.assignTo?.email || '';
   const reportedBy = ticket.reportedBy?.name || 'Unknown';
   const createdAt = ticket.createdAt;
+  const startDate = ticket.startDate;
+  const endDate = ticket.endDate;
   const categoryName = ticket.category?.name || '';
   const escalated = ticket.escalated;
 
@@ -65,6 +72,20 @@ const TicketCard = ({ ticket, onDragStart, onClick, onDelete }) => {
       {categoryName && (
         <div style={{ fontSize: '11px', color: '#666', marginBottom: '8px' }}>
           📁 {categoryName}
+        </div>
+      )}
+      {(startDate || endDate) && (
+        <div style={{ fontSize: '10px', color: '#666', marginBottom: '8px', display: 'flex', gap: '12px' }}>
+          {startDate && (
+            <span>
+              📅 Start: {formatDate(startDate)}
+            </span>
+          )}
+          {endDate && (
+            <span>
+              🏁 End: {formatDate(endDate)}
+            </span>
+          )}
         </div>
       )}
       <div className="ticket-footer">

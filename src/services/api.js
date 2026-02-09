@@ -72,8 +72,12 @@ nipige.interceptors.response.use(
   }
 );
 
-export const loginAPI = async (credentials) => {
-  const response = await api.post('/cap/users/tenant/login', credentials);  
+export const loginAPI = async (credentials, userType = 'EMPLOYEE') => {
+  const endpoint = userType === 'ADMIN'
+    ? '/cap/users/admin/login'
+    : '/cap/users/tenant/login';
+
+  const response = await api.post(endpoint, credentials);
   return response.data;
 };
 
@@ -112,6 +116,14 @@ export const createTicketAPI = async (ticketData) => {
     priority: ticketData.priority || 5,
     severity: ticketData.severity || "Medium"
   };
+
+  // Add startDate and endDate if provided
+  if (ticketData.startDate) {
+    createPayload.startDate = ticketData.startDate;
+  }
+  if (ticketData.endDate) {
+    createPayload.endDate = ticketData.endDate;
+  }
 
   const response = await nipige.post('/servicerequest/ticket/create', createPayload);
 
@@ -166,6 +178,14 @@ export const updateTicketAPI = async (ticketId, ticketData) => {
     userCategory: currentUser?.category,
     agentId: currentUser?._id
   };
+
+  // Add startDate and endDate if provided
+  if (ticketData.startDate) {
+    updatePayload.startDate = ticketData.startDate;
+  }
+  if (ticketData.endDate) {
+    updatePayload.endDate = ticketData.endDate;
+  }
 
   const response = await nipige.put(`/servicerequest/ticket/update/${ticketId}`, updatePayload);
 

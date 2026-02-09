@@ -10,6 +10,7 @@ const Login = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
+  const [userType, setUserType] = useState('EMPLOYEE');
 
   useEffect(() => {
     return () => {
@@ -20,7 +21,7 @@ const Login = () => {
   const handleSubmit = (e) => {
     e.preventDefault();
     if (email.trim() && password.trim()) {
-      dispatch(login({ email, password }));
+      dispatch(login({ email, password, userType }));
     }
   };
 
@@ -78,6 +79,25 @@ const Login = () => {
                 onChange={(e) => setPassword(e.target.value)}
                 placeholder="Enter your password"
                 required
+              />
+            </div>
+          </div>
+          <div className="user-type-container">
+            <label htmlFor="userType">User Type</label>
+            <div className="user-type-wrapper">
+              <select
+                id="userType"
+                value={userType}
+                onChange={(e) => setUserType(e.target.value)}
+                className="user-type-select-compact"
+              >
+                <option value="EMPLOYEE">Employee</option>
+                <option value="ADMIN">Admin</option>
+              </select>
+              <img
+                src="https://cdn-icons-png.flaticon.com/512/681/681494.png"
+                alt="User Type"
+                className="user-type-icon"
               />
             </div>
           </div>

@@ -31,6 +31,21 @@ const Dashboard = ({ currentUser, onLogout }) => {
       })
     : tickets;
 
+  // Helper function to convert IST datetime-local input to UTC format for API
+  // Input: "YYYY-MM-DDTHH:mm" (treated as IST)
+  // Output: "YYYY-MM-DDTHH:mm:ss.000Z" (UTC)
+  const formatDateForAPI = (dateString) => {
+    if (!dateString) return null;
+
+    // Create a date object treating the input as IST
+    // We append IST timezone offset (+05:30) to make it explicit
+    const istDateString = dateString + ':00+05:30';
+    const date = new Date(istDateString);
+
+    // Convert to ISO string which gives UTC format: "YYYY-MM-DDTHH:mm:ss.000Z"
+    return date.toISOString();
+  };
+
   const handleCreateTicket = async (ticketData) => {
     const newTicket = {
       subject: ticketData.subject,
@@ -38,8 +53,18 @@ const Dashboard = ({ currentUser, onLogout }) => {
       priority: ticketData.priority || 5,
       severity: ticketData.severity || 'Medium',
       assignedTo: ticketData.assignedTo,
-      // The API will auto-populate: reportedBy, category, tenant, etc.
+      category: ticketData.category,
+      scope: ticketData.scope,
+      // The API will auto-populate: reportedBy, tenant, etc.
     };
+
+    // Add startDate and endDate if provided
+    if (ticketData.startDate) {
+      newTicket.startDate = formatDateForAPI(ticketData.startDate);
+    }
+    if (ticketData.endDate) {
+      newTicket.endDate = formatDateForAPI(ticketData.endDate);
+    }
 
     await dispatch(createTicket(newTicket));
     // Refetch tickets to ensure UI is in sync with server
@@ -56,6 +81,14 @@ const Dashboard = ({ currentUser, onLogout }) => {
       ...updatedTicket,
       _id: ticketId
     };
+
+    // Convert startDate and endDate to API format if they exist
+    if (ticketData.startDate) {
+      ticketData.startDate = formatDateForAPI(ticketData.startDate);
+    }
+    if (ticketData.endDate) {
+      ticketData.endDate = formatDateForAPI(ticketData.endDate);
+    }
 
     await dispatch(updateTicket({ ticketId, ticketData }));
     // Refetch tickets to ensure UI is in sync with server
@@ -101,7 +134,7 @@ const Dashboard = ({ currentUser, onLogout }) => {
     <div className="dashboard-container">
       <header className="dashboard-header">
         <div className="header-left">
-          <h1>Ticket Management Dashboard</h1>
+          <h1>TRIGITAL Task Management Dashboard</h1>
           <span className="user-info">Welcome, {currentUser.username}</span>
         </div>
         <div className="header-right">

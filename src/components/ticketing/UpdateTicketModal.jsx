@@ -9,6 +9,30 @@ const UpdateTicketModal = ({ ticket, onClose, onUpdate }) => {
   const dispatch = useDispatch();
   const { categories, loading: categoriesLoading } = useSelector((state) => state.categories);
 
+  // Helper function to convert UTC date to IST for datetime-local input
+  // Input: "2026-01-24T00:00:00.000Z" (UTC)
+  // Output: "2026-01-24T05:30" (IST in datetime-local format)
+  const formatDateTimeLocal = (dateString) => {
+    if (!dateString) return '';
+
+    // Parse the UTC date
+    const date = new Date(dateString);
+
+    // Convert to IST by getting the ISO string and adjusting for IST offset
+    // IST is UTC+5:30
+    const istOffset = 5.5 * 60 * 60 * 1000; // 5.5 hours in milliseconds
+    const istDate = new Date(date.getTime() + istOffset);
+
+    // Format as YYYY-MM-DDTHH:mm for datetime-local input
+    const year = istDate.getUTCFullYear();
+    const month = String(istDate.getUTCMonth() + 1).padStart(2, '0');
+    const day = String(istDate.getUTCDate()).padStart(2, '0');
+    const hours = String(istDate.getUTCHours()).padStart(2, '0');
+    const minutes = String(istDate.getUTCMinutes()).padStart(2, '0');
+
+    return `${year}-${month}-${day}T${hours}:${minutes}`;
+  };
+
   const [formData, setFormData] = useState({
     subject: ticket.subject || ticket.title || '',
     description: ticket.description || '',
@@ -18,6 +42,8 @@ const UpdateTicketModal = ({ ticket, onClose, onUpdate }) => {
     status: ticket.status || 'OPEN',
     category: ticket.category?._id || ticket.category || '',
     scope: ticket.scope || '',
+    startDate: formatDateTimeLocal(ticket.startDate),
+    endDate: formatDateTimeLocal(ticket.endDate),
   });
 
   const [comment, setComment] = useState('');
@@ -30,6 +56,15 @@ const UpdateTicketModal = ({ ticket, onClose, onUpdate }) => {
 
   const handleChange = (e) => {
     const { name, value } = e.target;
+
+    // Validate datetime-local inputs to ensure 4-digit year
+    if ((name === 'startDate' || name === 'endDate') && value) {
+      const year = value.split('-')[0];
+      if (year && year.length > 4) {
+        return; // Don't update if year exceeds 4 digits
+      }
+    }
+
     setFormData(prev => ({
       ...prev,
       [name]: value
@@ -163,8 +198,9 @@ const UpdateTicketModal = ({ ticket, onClose, onUpdate }) => {
                   name="description"
                   value={formData.description || ticket.description || ''}
                   onChange={handleChange}
-                  rows="2"
+                  rows="1"
                   placeholder="Enter initial description"
+                  style={{ minHeight: '32px' }}
                 />
               </div>
 
@@ -242,6 +278,34 @@ const UpdateTicketModal = ({ ticket, onClose, onUpdate }) => {
                 />
               </div>
 
+              <div className="form-row">
+                <div className="form-group">
+                  <label htmlFor="startDate">Start Date & Time</label>
+                  <input
+                    type="datetime-local"
+                    id="startDate"
+                    name="startDate"
+                    value={formData.startDate}
+                    onChange={handleChange}
+                    min="1900-01-01T00:00"
+                    max="9999-12-31T23:59"
+                  />
+                </div>
+
+                <div className="form-group">
+                  <label htmlFor="endDate">End Date & Time</label>
+                  <input
+                    type="datetime-local"
+                    id="endDate"
+                    name="endDate"
+                    value={formData.endDate}
+                    onChange={handleChange}
+                    min="1900-01-01T00:00"
+                    max="9999-12-31T23:59"
+                  />
+                </div>
+              </div>
+
               <div className="form-group">
                 <label htmlFor="comment">Add Comment</label>
                 <textarea
@@ -249,7 +313,8 @@ const UpdateTicketModal = ({ ticket, onClose, onUpdate }) => {
                   value={comment}
                   onChange={(e) => setComment(e.target.value)}
                   placeholder="Enter your comment/update here..."
-                  rows="3"
+                  rows="2"
+                  style={{ minHeight: '40px' }}
                 />
                 {errors.comment && <span className="error">{errors.comment}</span>}
                 <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: '8px' }}>

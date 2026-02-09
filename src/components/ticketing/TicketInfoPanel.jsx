@@ -1,6 +1,31 @@
 import React from 'react';
 
 const TicketInfoPanel = ({ ticket }) => {
+  // Helper function to convert UTC date to IST and format
+  // Input: "2026-01-24T00:00:00.000Z" (UTC)
+  // Output: "24/01/2026, 05:30:00 AM" (IST - 24-hour format)
+  const formatDate = (dateString) => {
+    if (!dateString) return 'N/A';
+
+    // Parse the UTC date string and convert to IST
+    const date = new Date(dateString);
+
+    // Format in IST timezone
+    const istDate = date.toLocaleString('en-IN', {
+      timeZone: 'Asia/Kolkata',
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit',
+      hour: '2-digit',
+      minute: '2-digit',
+      second: '2-digit',
+      hour12: false // Use 24-hour format
+    });
+
+    // The output format from toLocaleString is "DD/MM/YYYY, HH:mm:ss"
+    return istDate;
+  };
+
   return (
     <div className="ticket-info-panel">
       <div className="ticket-metadata">
@@ -31,12 +56,20 @@ const TicketInfoPanel = ({ ticket }) => {
             <span className="info-value">{ticket.scope || 'N/A'}</span>
           </div>
           <div className="info-item">
+            <span className="info-label">Start Date:</span>
+            <span className="info-value">{formatDate(ticket.startDate)}</span>
+          </div>
+          <div className="info-item">
+            <span className="info-label">End Date:</span>
+            <span className="info-value">{formatDate(ticket.endDate)}</span>
+          </div>
+          <div className="info-item">
             <span className="info-label">Created:</span>
-            <span className="info-value">{ticket.createdAt ? new Date(ticket.createdAt).toLocaleString() : 'N/A'}</span>
+            <span className="info-value">{formatDate(ticket.createdAt)}</span>
           </div>
           <div className="info-item">
             <span className="info-label">Updated:</span>
-            <span className="info-value">{ticket.updatedAt ? new Date(ticket.updatedAt).toLocaleString() : 'N/A'}</span>
+            <span className="info-value">{formatDate(ticket.updatedAt)}</span>
           </div>
           {ticket.assignTo?.email && (
             <div className="info-item info-item-full">
@@ -57,7 +90,7 @@ const TicketInfoPanel = ({ ticket }) => {
                   <strong>{change.action}</strong> by {change.updatedBy?.name || 'Unknown'}
                 </p>
                 <p className="history-description">{change.description}</p>
-                <p className="history-date">{new Date(change.updatedAt).toLocaleString()}</p>
+                <p className="history-date">{formatDate(change.updatedAt)}</p>
               </div>
             ))}
           </div>
@@ -74,7 +107,7 @@ const TicketInfoPanel = ({ ticket }) => {
                   <strong>Comment</strong> by {worknote.updatedBy?.name || 'Unknown'}
                 </p>
                 <p className="history-description">{worknote.description}</p>
-                <p className="history-date">{new Date(worknote.updatedAt).toLocaleString()}</p>
+                <p className="history-date">{formatDate(worknote.updatedAt)}</p>
               </div>
             ))}
           </div>

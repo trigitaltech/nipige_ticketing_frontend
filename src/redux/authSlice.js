@@ -3,10 +3,10 @@ import { loginAPI } from '../services/api';
 
 export const login = createAsyncThunk(
   'auth/login',
-  async (credentials, { rejectWithValue }) => {
+  async ({ email, password, userType }, { rejectWithValue }) => {
     try {
-      const response = await loginAPI(credentials);
-     
+      const response = await loginAPI({ email, password }, userType);
+
       const token = response.response.token ;
 
       localStorage.setItem('user', JSON.stringify(response));

@@ -15,6 +15,8 @@ const CreateTicketModal = ({ onClose, onCreate }) => {
     assignedTo: '',
     category: '',
     scope: '',
+    startDate: '',
+    endDate: '',
   });
 
   const [errors, setErrors] = useState({});
@@ -25,6 +27,15 @@ const CreateTicketModal = ({ onClose, onCreate }) => {
 
   const handleChange = (e) => {
     const { name, value } = e.target;
+
+    // Validate datetime-local inputs to ensure 4-digit year
+    if ((name === 'startDate' || name === 'endDate') && value) {
+      const year = value.split('-')[0];
+      if (year && year.length > 4) {
+        return; // Don't update if year exceeds 4 digits
+      }
+    }
+
     setFormData(prev => ({
       ...prev,
       [name]: value
@@ -190,6 +201,34 @@ const CreateTicketModal = ({ onClose, onCreate }) => {
               onChange={handleChange}
               placeholder="Enter assignee name (optional)"
             />
+          </div>
+
+          <div className="form-row">
+            <div className="form-group">
+              <label htmlFor="startDate">Start Date & Time</label>
+              <input
+                type="datetime-local"
+                id="startDate"
+                name="startDate"
+                value={formData.startDate}
+                onChange={handleChange}
+                min="1900-01-01T00:00"
+                max="9999-12-31T23:59"
+              />
+            </div>
+
+            <div className="form-group">
+              <label htmlFor="endDate">End Date & Time</label>
+              <input
+                type="datetime-local"
+                id="endDate"
+                name="endDate"
+                value={formData.endDate}
+                onChange={handleChange}
+                min="1900-01-01T00:00"
+                max="9999-12-31T23:59"
+              />
+            </div>
           </div>
 
           <div className="modal-footer">

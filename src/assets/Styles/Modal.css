@@ -86,7 +86,7 @@
 
 /* Compact form groups for UpdateTicketModal */
 .modal-content-wide .form-group {
-  margin-bottom: 10px;
+  margin-bottom: 8px;
 }
 
 .form-group label {
@@ -153,7 +153,8 @@
 
 /* Compact form row for UpdateTicketModal */
 .modal-content-wide .form-row {
-  gap: 10px;
+  gap: 8px;
+  margin-bottom: 8px;
 }
 
 .error {
@@ -258,8 +259,9 @@
 }
 
 .modal-left-section {
-  overflow-y: visible;
+  overflow-y: auto;
   padding-right: 8px;
+  max-height: calc(90vh - 80px);
 }
 
 .modal-right-section.scrollable {
