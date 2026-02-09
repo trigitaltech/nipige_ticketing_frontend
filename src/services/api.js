@@ -73,7 +73,7 @@ nipige.interceptors.response.use(
 );
 
 export const loginAPI = async (credentials, userType = 'EMPLOYEE') => {
-  const endpoint = userType === 'ADMIN'
+  const endpoint = userType === 'EMPLOYEE'
     ? '/cap/users/admin/login'
     : '/cap/users/tenant/login';
 
@@ -92,20 +92,6 @@ export const createTicketAPI = async (ticketData) => {
     category: ticketData.category?._id || ticketData.category || "62ecc5cb28d1be7e18db8315", // Default category if not provided
     description: ticketData.description,
     subject: ticketData.subject,
-    reportedTo: ticketData.reportedTo || {
-      id: ticketData.assignTo?.id || ticketData.assignTo?._id,
-      name: ticketData.assignTo?.name,
-      email: ticketData.assignTo?.email,
-      userType: ticketData.assignTo?.userType || "SELLER",
-      phone: ticketData.assignTo?.phone
-    },
-    assignTo: ticketData.assignTo || {
-      id: ticketData.assignTo?.id || ticketData.assignTo?._id,
-      name: ticketData.assignTo?.name,
-      email: ticketData.assignTo?.email,
-      userType: ticketData.assignTo?.userType || "SELLER",
-      phone: ticketData.assignTo?.phone
-    },
     reportedBy: {
       name: currentUser?.authentication?.userName || currentUser?.name,
       email: currentUser?.authentication?.email || currentUser?.email,
@@ -116,6 +102,18 @@ export const createTicketAPI = async (ticketData) => {
     priority: ticketData.priority || 5,
     severity: ticketData.severity || "Medium"
   };
+
+  // Add reportedTo if provided
+  if (ticketData.reportedTo) {
+    createPayload.reportedTo = ticketData.reportedTo;
+  }
+
+  // Add assignTo if provided
+  if (ticketData.assignTo) {
+    createPayload.assignTo = ticketData.assignTo;
+  }
+
+  console.log("Create Ticket Payload ====>", createPayload);
 
   // Add startDate and endDate if provided
   if (ticketData.startDate) {
@@ -146,23 +144,14 @@ export const updateTicketAPI = async (ticketId, ticketData) => {
 
   // Prepare the update payload matching the API structure
   const updatePayload = {
-    assignTo: ticketData.assignTo || {
-      id: ticketData.assignTo?.id || ticketData.assignTo?._id,
-      name: ticketData.assignTo?.name,
-      email: ticketData.assignTo?.email,
-      userType: ticketData.assignTo?.userType,
-      phone: ticketData.assignTo?.phone
-    },
-    reportedTo: ticketData.reportedTo,
-    reportedBy: ticketData.reportedBy,
-    status: ticketData.status,
-    priority: ticketData.priority,
     _id: ticketId,
     category: ticketData.category?._id || ticketData.category,
     description: ticketData.description,
     subject: ticketData.subject,
-    escalated: ticketData.escalated ? "true" : "false",
+    status: ticketData.status,
+    priority: ticketData.priority,
     severity: ticketData.severity,
+    escalated: ticketData.escalated ? "true" : "false",
     attachments: ticketData.attachments || [],
     ticketNo: ticketData.ticketNo,
     tenant: ticketData.tenant,
@@ -170,6 +159,7 @@ export const updateTicketAPI = async (ticketId, ticketData) => {
     worknoteHistory: ticketData.worknoteHistory || [],
     changeHistory: ticketData.changeHistory || [],
     internalComments: ticketData.internalComments || [],
+    reportedBy: ticketData.reportedBy,
     updatedBy: {
       name: currentUser?.authentication?.userName || currentUser?.name,
       email: currentUser?.authentication?.email || currentUser?.email,
@@ -178,6 +168,18 @@ export const updateTicketAPI = async (ticketId, ticketData) => {
     userCategory: currentUser?.category,
     agentId: currentUser?._id
   };
+
+  // Add assignTo if provided
+  if (ticketData.assignTo) {
+    updatePayload.assignTo = ticketData.assignTo;
+  }
+
+  // Add reportedTo if provided
+  if (ticketData.reportedTo) {
+    updatePayload.reportedTo = ticketData.reportedTo;
+  }
+
+  console.log("Update Ticket Payload ====:>", updatePayload);
 
   // Add startDate and endDate if provided
   if (ticketData.startDate) {
@@ -267,6 +269,28 @@ export const filterTicketsAPI = async (filters) => {
 
   console.log('Filter Tickets Response:', response.data);
   return response.data;
+};
+
+export const getUsersAPI = async () => {
+  try {
+    const token = localStorage.getItem('token');
+
+    if (!token) {
+      throw new Error("No authentication token found");
+    }
+
+    const response = await api.get('/cap/users/admin/list');
+
+    console.log('Users API - Full Response:', response);
+    console.log('Users API - response.data:', response.data);
+    console.log('Users API - response.data.response:', response.data?.response);
+
+    return response.data;
+
+  } catch (error) {
+    console.error('User List Error:', error.response?.data || error.message);
+    throw error;
+  }
 };
 
 export default api;

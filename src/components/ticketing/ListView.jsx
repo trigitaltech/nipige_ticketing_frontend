@@ -39,6 +39,14 @@ const ListView = ({ tickets, onTicketClick, onDeleteTicket }) => {
       });
     }
 
+    // Apply assignTo filter
+    if (newFilters.assignTo) {
+      filtered = filtered.filter(ticket => {
+        const ticketAssignToId = ticket.assignTo?.id || ticket.assignTo?._id;
+        return ticketAssignToId === newFilters.assignTo;
+      });
+    }
+
     // Apply date range filter
     if (newFilters.fromDate) {
       const fromDate = new Date(newFilters.fromDate);
