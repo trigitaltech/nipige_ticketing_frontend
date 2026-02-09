@@ -1,18 +1,21 @@
 import { useState, useEffect } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { fetchCategories } from '../../redux/categorySlice';
+import { fetchUsers } from '../../redux/userSlice';
 import '../../assets/Styles/Modal.css';
 
 const CreateTicketModal = ({ onClose, onCreate }) => {
   const dispatch = useDispatch();
   const { categories, loading: categoriesLoading } = useSelector((state) => state.categories);
+  const { users, loading: usersLoading } = useSelector((state) => state.users);
 
   const [formData, setFormData] = useState({
     subject: '',
     description: '',
     priority: 5,
     severity: 'Medium',
-    assignedTo: '',
+    assignTo: null,
+    reportedTo: null,
     category: '',
     scope: '',
     startDate: '',
@@ -23,6 +26,7 @@ const CreateTicketModal = ({ onClose, onCreate }) => {
 
   useEffect(() => {
     dispatch(fetchCategories());
+    dispatch(fetchUsers());
   }, [dispatch]);
 
   const handleChange = (e) => {
@@ -65,6 +69,35 @@ const CreateTicketModal = ({ onClose, onCreate }) => {
 
     if (errors.category) {
       setErrors(prev => ({ ...prev, category: '' }));
+    }
+  };
+
+  const handleUserChange = (e, field) => {
+    const userId = e.target.value;
+    const selectedUser = users.find(user => user._id === userId);
+
+    if (selectedUser) {
+      const userObject = {
+        id: selectedUser._id,
+        name: `${selectedUser.name?.first || ''} ${selectedUser.name?.last || ''}`.trim() || selectedUser.authentication?.userName,
+        email: selectedUser.authentication?.email,
+        userType: selectedUser.category,
+        phone: selectedUser.authentication?.phone
+      };
+
+      setFormData(prev => ({
+        ...prev,
+        [field]: userObject
+      }));
+    } else {
+      setFormData(prev => ({
+        ...prev,
+        [field]: null
+      }));
+    }
+
+    if (errors[field]) {
+      setErrors(prev => ({ ...prev, [field]: '' }));
     }
   };
 
@@ -191,16 +224,46 @@ const CreateTicketModal = ({ onClose, onCreate }) => {
             </div>
           </div>
 
-          <div className="form-group">
-            <label htmlFor="assignedTo">Assign To</label>
-            <input
-              type="text"
-              id="assignedTo"
-              name="assignedTo"
-              value={formData.assignedTo}
-              onChange={handleChange}
-              placeholder="Enter assignee name (optional)"
-            />
+          <div className="form-row">
+            <div className="form-group">
+              <label htmlFor="assignTo">Assign To</label>
+              <select
+                id="assignTo"
+                name="assignTo"
+                value={formData.assignTo?.id || ''}
+                onChange={(e) => handleUserChange(e, 'assignTo')}
+                disabled={usersLoading}
+              >
+                <option value="">
+                  {usersLoading ? 'Loading users...' : 'Select a user'}
+                </option>
+                {Array.isArray(users) && users.map((user) => (
+                  <option key={user._id} value={user._id}>
+                    {`${user.name?.first || ''} ${user.name?.last || ''}`.trim() || user.authentication?.userName}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            <div className="form-group">
+              <label htmlFor="reportedTo">Reported To</label>
+              <select
+                id="reportedTo"
+                name="reportedTo"
+                value={formData.reportedTo?.id || ''}
+                onChange={(e) => handleUserChange(e, 'reportedTo')}
+                disabled={usersLoading}
+              >
+                <option value="">
+                  {usersLoading ? 'Loading users...' : 'Select a user'}
+                </option>
+                {Array.isArray(users) && users.map((user) => (
+                  <option key={user._id} value={user._id}>
+                    {`${user.name?.first || ''} ${user.name?.last || ''}`.trim() || user.authentication?.userName}
+                  </option>
+                ))}
+              </select>
+            </div>
           </div>
 
           <div className="form-row">

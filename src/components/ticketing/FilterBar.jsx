@@ -1,7 +1,10 @@
 import { useState } from 'react';
+import { useSelector } from 'react-redux';
 import '../../assets/Styles/FilterBar.css';
 
 const FilterBar = ({ onFilterChange, onSortChange, categories }) => {
+  const { users, loading: usersLoading } = useSelector((state) => state.users);
+
   const [filters, setFilters] = useState({
     status: '',
     priority: null,
@@ -124,6 +127,22 @@ const FilterBar = ({ onFilterChange, onSortChange, categories }) => {
               </div>
 
               <div className="filter-item">
+                <label>Assigned To</label>
+                <select
+                  value={filters.assignTo}
+                  onChange={(e) => handleFilterChange('assignTo', e.target.value)}
+                  disabled={usersLoading}
+                >
+                  <option value="">All</option>
+                  {users && Array.isArray(users) && users.map((user) => (
+                    <option key={user._id} value={user._id}>
+                      {`${user.name?.first || ''} ${user.name?.last || ''}`.trim() || user.authentication?.userName}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div className="filter-item">
                 <label>From Date</label>
                 <input
                   type="date"
@@ -142,12 +161,12 @@ const FilterBar = ({ onFilterChange, onSortChange, categories }) => {
               </div>
 
               <div className="filter-item">
-                <label>Order ID</label>
+                <label>TICKET ID</label>
                 <input
                   type="text"
                   value={filters.orderId}
                   onChange={(e) => handleFilterChange('orderId', e.target.value)}
-                  placeholder="Enter order ID"
+                  placeholder="Enter Ticket ID"
                 />
               </div>
             </div>

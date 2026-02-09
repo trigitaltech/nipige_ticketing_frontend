@@ -52,7 +52,8 @@ const Dashboard = ({ currentUser, onLogout }) => {
       description: ticketData.description,
       priority: ticketData.priority || 5,
       severity: ticketData.severity || 'Medium',
-      assignedTo: ticketData.assignedTo,
+      assignTo: ticketData.assignTo,
+      reportedTo: ticketData.reportedTo,
       category: ticketData.category,
       scope: ticketData.scope,
       // The API will auto-populate: reportedBy, tenant, etc.
