@@ -132,11 +132,15 @@ const Dashboard = ({ currentUser, onLogout }) => {
   };
 
   const userEmail =
-    currentUser?.response?.user?.authentication?.email || '';
+    currentUser?.response?.user?.authentication?.email || currentUser.user.authentication.email || '';
 
-  const fullName = currentUser?.response?.user?.name
-    ? `${currentUser.response.user.name.first || ''} ${currentUser.response.user.name.last || ''}`.trim()
-    : '';
+  const fullName =
+  currentUser?.response?.user?.authentication?.userName ||
+  (currentUser?.response
+    ? `${currentUser.response?.user?.name?.first || ''} ${currentUser.response?.user?.name?.last || ''}`.trim()
+    : '') ||
+  '';
+
 
   const avatarLabel =
     (fullName &&
@@ -153,7 +157,7 @@ const Dashboard = ({ currentUser, onLogout }) => {
       <header className="dashboard-header">
         <div className="header-left">
           <h1>TRIGITAL Task Management Dashboard</h1>
-          <span className="user-info">Welcome, {currentUser.response.user.name.first} {currentUser.response.user.name.last}</span>
+          <span className="user-info">Welcome, {fullName}</span>
         </div>
         <div className="header-right">
           <button className="create-ticket-btn" onClick={() => setIsCreateModalOpen(true)}>
