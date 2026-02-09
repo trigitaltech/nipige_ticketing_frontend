@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { useSelector } from 'react-redux';
 import '../../assets/Styles/FilterBar.css';
 
-const FilterBar = ({ onFilterChange, onSortChange, categories }) => {
+const FilterBar = ({ onFilterChange, onSortChange, categories, activePanel }) => {
   const { users, loading: usersLoading } = useSelector((state) => state.users);
 
   const [filters, setFilters] = useState({
@@ -19,8 +19,6 @@ const FilterBar = ({ onFilterChange, onSortChange, categories }) => {
     field: '',
     direction: 'asc'
   });
-
-  const [showFilters, setShowFilters] = useState(false);
 
   const handleFilterChange = (field, value) => {
     const newFilters = { ...filters, [field]: value };
@@ -54,28 +52,25 @@ const FilterBar = ({ onFilterChange, onSortChange, categories }) => {
     return sortConfig.direction === 'asc' ? '↑' : '↓';
   };
 
+  if (!activePanel) return null;
+
   return (
     <div className="filter-bar">
       <div className="filter-header">
-        <button
-          className="toggle-filters-btn"
-          onClick={() => setShowFilters(!showFilters)}
-        >
-          <span style={{ fontSize: '10px', transition: 'transform 0.2s', display: 'inline-block', transform: showFilters ? 'rotate(90deg)' : 'rotate(0deg)' }}>▶</span>
-          <span>Filters & Sort</span>
-        </button>
+        <span style={{ fontSize: '14px', fontWeight: '600', color: '#172B4D' }}>
+          {activePanel === 'filter' ? 'Filters' : 'Sort By'}
+        </span>
         <button
           className="clear-filters-btn"
           onClick={handleClearFilters}
         >
-          ✕ Clear All
+          Clear All
         </button>
       </div>
 
-      {showFilters && (
-        <div className="filter-content">
+      <div className="filter-content">
+        {activePanel === 'filter' && (
           <div className="filter-section">
-            <h4>Filters</h4>
             <div className="filter-grid">
               <div className="filter-item">
                 <label>Status</label>
@@ -171,9 +166,10 @@ const FilterBar = ({ onFilterChange, onSortChange, categories }) => {
               </div>
             </div>
           </div>
+        )}
 
+        {activePanel === 'sort' && (
           <div className="sort-section">
-            <h4>Sort By</h4>
             <div className="sort-buttons">
               <button
                 className={`sort-btn ${sortConfig.field === 'ticketNo' ? 'active' : ''}`}
@@ -213,8 +209,8 @@ const FilterBar = ({ onFilterChange, onSortChange, categories }) => {
               </button>
             </div>
           </div>
-        </div>
-      )}
+        )}
+      </div>
     </div>
   );
 };
