@@ -95,8 +95,8 @@ const Login = () => {
                 <option value="ADMIN">Admin</option>
               </select>
               <img
-                src="https://cdn-icons-png.flaticon.com/512/681/681494.png"
-                alt="User Type"
+                src="https://cdn-icons-png.flaticon.com/512/32/32195.png"
+                alt="Open user type dropdown"
                 className="user-type-icon"
               />
             </div>

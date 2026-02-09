@@ -50,6 +50,7 @@ const UpdateTicketModal = ({ ticket, onClose, onUpdate }) => {
   });
 
   const [comment, setComment] = useState('');
+  const [worknoteHistory, setWorknoteHistory] = useState(ticket.worknoteHistory || []);
   const [errors, setErrors] = useState({});
   const [isPostingComment, setIsPostingComment] = useState(false);
 
@@ -161,6 +162,28 @@ const UpdateTicketModal = ({ ticket, onClose, onUpdate }) => {
     try {
       const ticketId = ticket._id || ticket.id;
       await postCommentAPI(ticketId, comment);
+
+      // Optimistically update local comment history so UI reflects immediately
+      try {
+        const userString = localStorage.getItem('user');
+        const storedUser = userString ? JSON.parse(userString) : null;
+        const currentUser = storedUser?.response?.user;
+
+        const newWorknote = {
+          updatedBy: {
+            name: currentUser?.authentication?.userName || currentUser?.name || 'Unknown',
+            email: currentUser?.authentication?.email || currentUser?.email || '',
+            userType: currentUser?.category || 'TENANT',
+            phone: currentUser?.phone || '',
+          },
+          description: comment,
+          updatedAt: new Date().toISOString(),
+        };
+
+        setWorknoteHistory((prev) => [...(prev || []), newWorknote]);
+      } catch (e) {
+        console.error('Error updating local worknote history:', e);
+      }
 
       // Clear comment after successful post
       setComment('');
@@ -418,7 +441,7 @@ const UpdateTicketModal = ({ ticket, onClose, onUpdate }) => {
 
             {/* Right Section - Ticket Info & Change History (Scrollable) */}
             <div className="modal-right-section scrollable">
-              <TicketInfoPanel ticket={ticket} />
+              <TicketInfoPanel ticket={{ ...ticket, worknoteHistory }} />
             </div>
           </div>
         </form>
