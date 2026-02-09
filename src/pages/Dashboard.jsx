@@ -6,6 +6,7 @@ import KanbanBoard from '../components/ticketing/KanbanBoard';
 import ListView from '../components/ticketing/ListView';
 import CreateTicketModal from '../components/ticketing/CreateTicketModal';
 import UpdateTicketModal from '../components/ticketing/UpdateTicketModal';
+import SearchBar from '../components/shared/SearchBar';
 
 const Dashboard = ({ currentUser, onLogout }) => {
   const dispatch = useDispatch();
@@ -17,19 +18,41 @@ const Dashboard = ({ currentUser, onLogout }) => {
   const [selectedTicket, setSelectedTicket] = useState(null);
   const [activeFilter, setActiveFilter] = useState('all'); // 'all' or 'my'
   const [viewMode, setViewMode] = useState('kanban'); // 'kanban' or 'list'
+  const [searchQuery, setSearchQuery] = useState('');
 
   useEffect(() => {
     dispatch(fetchTickets());
   }, [dispatch]);
 
-  // Filter tickets based on active filter
-  const filteredTickets = activeFilter === 'my'
-    ? tickets.filter(ticket => {
-        const assignedUserId = ticket.assignTo?.id || ticket.assignTo?._id;
-        const currentUserId = user?.response?.user?._id || user?._id;
-        return assignedUserId === currentUserId;
-      })
-    : tickets;
+  // Filter tickets based on active filter and search query
+  const filteredTickets = tickets.filter(ticket => {
+    // My tasks filter
+    if (activeFilter === 'my') {
+      const assignedUserId = ticket.assignTo?.id || ticket.assignTo?._id;
+      const currentUserId = user?.response?.user?._id || user?._id;
+      if (assignedUserId !== currentUserId) return false;
+    }
+
+    // Search by email or username
+    if (searchQuery.trim()) {
+      const query = searchQuery.toLowerCase();
+      const assignName = (ticket.assignTo?.name || ticket.assignTo?.username || '').toLowerCase();
+      const assignEmail = (ticket.assignTo?.email || ticket.assignTo?.authentication?.email || '').toLowerCase();
+      const reporterName = (ticket.reportedBy?.name || ticket.reportedBy?.username || '').toLowerCase();
+      const reporterEmail = (ticket.reportedBy?.email || ticket.reportedBy?.authentication?.email || '').toLowerCase();
+
+      if (
+        !assignName.includes(query) &&
+        !assignEmail.includes(query) &&
+        !reporterName.includes(query) &&
+        !reporterEmail.includes(query)
+      ) {
+        return false;
+      }
+    }
+
+    return true;
+  });
 
   // Helper function to convert IST datetime-local input to UTC format for API
   // Input: "YYYY-MM-DDTHH:mm" (treated as IST)
@@ -185,16 +208,15 @@ const Dashboard = ({ currentUser, onLogout }) => {
           <button
             onClick={() => setActiveFilter('all')}
             style={{
-              padding: '10px 24px',
-              border: activeFilter === 'all' ? '2px solid #2196f3' : '2px solid transparent',
-              borderRadius: '8px',
+              padding: '8px 16px',
+              border: activeFilter === 'all' ? '2px solid #5E6C84' : '1px solid #DFE1E6',
+              borderRadius: '3px',
               cursor: 'pointer',
-              fontWeight: '600',
+              fontWeight: '500',
               fontSize: '14px',
-              transition: 'all 0.2s ease',
-              backgroundColor: activeFilter === 'all' ? '#2196f3' : 'white',
-              color: activeFilter === 'all' ? 'white' : '#555',
-              boxShadow: activeFilter === 'all' ? '0 2px 8px rgba(33, 150, 243, 0.3)' : '0 1px 3px rgba(0,0,0,0.1)',
+              backgroundColor: activeFilter === 'all' ? '#5E6C84' : 'white',
+              color: activeFilter === 'all' ? 'white' : '#5E6C84',
+              outline: 'none',
             }}
           >
             All Tasks
@@ -202,21 +224,23 @@ const Dashboard = ({ currentUser, onLogout }) => {
           <button
             onClick={() => setActiveFilter('my')}
             style={{
-              padding: '10px 24px',
-              border: activeFilter === 'my' ? '2px solid #2196f3' : '2px solid transparent',
-              borderRadius: '8px',
+              padding: '8px 16px',
+              border: activeFilter === 'my' ? '2px solid #5E6C84' : '1px solid #DFE1E6',
+              borderRadius: '3px',
               cursor: 'pointer',
-              fontWeight: '600',
+              fontWeight: '500',
               fontSize: '14px',
-              transition: 'all 0.2s ease',
-              backgroundColor: activeFilter === 'my' ? '#2196f3' : 'white',
-              color: activeFilter === 'my' ? 'white' : '#555',
-              boxShadow: activeFilter === 'my' ? '0 2px 8px rgba(33, 150, 243, 0.3)' : '0 1px 3px rgba(0,0,0,0.1)',
+              backgroundColor: activeFilter === 'my' ? '#5E6C84' : 'white',
+              color: activeFilter === 'my' ? 'white' : '#5E6C84',
+              outline: 'none',
             }}
           >
             My Tasks
           </button>
         </div>
+
+        {/* Search bar - center */}
+        <SearchBar value={searchQuery} onChange={setSearchQuery} />
 
         <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
           <button
@@ -225,17 +249,15 @@ const Dashboard = ({ currentUser, onLogout }) => {
             style={{
               padding: '8px 12px',
               border: viewMode === 'kanban' ? '2px solid #5E6C84' : '1px solid #DFE1E6',
-              borderRadius: '4px',
+              borderRadius: '3px',
               cursor: 'pointer',
-              fontSize: '18px',
-              transition: 'all 0.2s ease',
+              fontSize: '16px',
               backgroundColor: viewMode === 'kanban' ? '#5E6C84' : 'white',
               color: viewMode === 'kanban' ? 'white' : '#5E6C84',
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
-              minWidth: '40px',
-              height: '40px',
+              outline: 'none',
             }}
           >
             ▦
@@ -246,17 +268,15 @@ const Dashboard = ({ currentUser, onLogout }) => {
             style={{
               padding: '8px 12px',
               border: viewMode === 'list' ? '2px solid #5E6C84' : '1px solid #DFE1E6',
-              borderRadius: '4px',
+              borderRadius: '3px',
               cursor: 'pointer',
-              fontSize: '18px',
-              transition: 'all 0.2s ease',
+              fontSize: '16px',
               backgroundColor: viewMode === 'list' ? '#5E6C84' : 'white',
               color: viewMode === 'list' ? 'white' : '#5E6C84',
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
-              minWidth: '40px',
-              height: '40px',
+              outline: 'none',
             }}
           >
             ☰
