@@ -28,7 +28,8 @@ api.interceptors.request.use(
 api.interceptors.response.use(
   (response) => response,
   (error) => {
-    if (error.response?.status === 401) {
+    const isLoginRequest = error.config?.url?.includes('/login');
+    if (error.response?.status === 401 && !isLoginRequest) {
       localStorage.removeItem('token');
       localStorage.removeItem('user');
       window.location.href = '/';
@@ -63,7 +64,8 @@ nipige.interceptors.request.use(
 nipige.interceptors.response.use(
   (response) => response,
   (error) => {
-    if (error.response?.status === 401) {
+    const isPasswordChange = error.config?.url?.includes('/update-password');
+    if (error.response?.status === 401 && !isPasswordChange) {
       localStorage.removeItem('token');
       localStorage.removeItem('user');
       window.location.href = '/';
@@ -268,6 +270,15 @@ export const filterTicketsAPI = async (filters) => {
   const response = await nipige.post('/servicerequest/ticket/filter', filterPayload);
 
   console.log('Filter Tickets Response:', response.data);
+  return response.data;
+};
+
+export const changePasswordAPI = async ({ currentPassword, newPassword }) => {
+  const response = await nipige.post('/cap/users/admin/update-password', {
+    currentPassword,
+    newPassword,
+  });
+  console.log('Change Password Response:', response.data);
   return response.data;
 };
 

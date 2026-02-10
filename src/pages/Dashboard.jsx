@@ -9,6 +9,7 @@ import UpdateTicketModal from '../components/ticketing/UpdateTicketModal';
 import SearchBar from '../components/shared/SearchBar';
 import FilterDropdown from '../components/shared/FilterDropdown';
 import SortDropdown from '../components/shared/SortDropdown';
+import ProfileDropdown from '../components/profile/ProfileDropdown';
 
 const Dashboard = ({ currentUser, onLogout }) => {
   const dispatch = useDispatch();
@@ -274,12 +275,7 @@ const Dashboard = ({ currentUser, onLogout }) => {
           <button className="create-ticket-btn" onClick={() => setIsCreateModalOpen(true)}>
             + Create Ticket
           </button>
-          <button className="logout-btn" onClick={onLogout}>
-            Logout
-          </button>
-          <div className="user-avatar" title={userEmail || 'No email available'}>
-            {avatarLabel}
-          </div>
+          <ProfileDropdown avatarLabel={avatarLabel} userEmail={userEmail} onLogout={onLogout} />
         </div>
       </header>
 
