@@ -133,6 +133,7 @@
   outline: none;
   border-color: #0052CC;
   background-color: #FFFFFF;
+  box-shadow: none;
 }
 
 .form-group input::placeholder,
@@ -183,6 +184,13 @@
   gap: 8px;
   padding-top: 16px;
   border-top: 1px solid #DFE1E6;
+}
+
+.modal-footer-small {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  padding-top: 16px;
 }
 
 .cancel-btn,

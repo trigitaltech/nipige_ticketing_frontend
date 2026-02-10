@@ -1,4 +1,6 @@
 import { useSelector, useDispatch } from 'react-redux';
+import { ToastContainer } from 'react-toastify';
+import 'react-toastify/dist/ReactToastify.css';
 import './App.css';
 import Login from './components/Login';
 import Dashboard from './pages/Dashboard';
@@ -16,6 +18,7 @@ function App() {
 
   return (
     <div className="App">
+      <ToastContainer position="top-right" autoClose={3000} />
       {!isAuthenticated ? (
         <Login />
       ) : (
