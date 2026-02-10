@@ -1,143 +1,15 @@
-import { useState, useEffect } from 'react';
-import { useSelector } from 'react-redux';
-import FilterBar from './FilterBar';
+import { useState } from 'react';
 import '../../assets/Styles/ListView.css';
 
 const ListView = ({ tickets, onTicketClick, onDeleteTicket }) => {
   const [currentPage, setCurrentPage] = useState(1);
-  const [filteredAndSortedTickets, setFilteredAndSortedTickets] = useState(tickets);
-  const [filters, setFilters] = useState({});
-  const [sortConfig, setSortConfig] = useState({ field: '', direction: 'asc' });
   const ticketsPerPage = 20;
-  const { categories } = useSelector((state) => state.categories);
-
-  // Update filtered tickets when tickets prop changes
-  useEffect(() => {
-    setFilteredAndSortedTickets(tickets);
-  }, [tickets]);
-
-  // Apply filters
-  const handleFilterChange = (newFilters) => {
-    setFilters(newFilters);
-    let filtered = [...tickets];
-
-    // Apply status filter
-    if (newFilters.status) {
-      filtered = filtered.filter(ticket => ticket.status === newFilters.status);
-    }
-
-    // Apply priority filter
-    if (newFilters.priority !== null && newFilters.priority !== '') {
-      filtered = filtered.filter(ticket => ticket.priority === newFilters.priority);
-    }
-
-    // Apply category filter
-    if (newFilters.category) {
-      filtered = filtered.filter(ticket => {
-        const ticketCategoryId = ticket.category?._id || ticket.category;
-        return ticketCategoryId === newFilters.category;
-      });
-    }
-
-    // Apply assignTo filter
-    if (newFilters.assignTo) {
-      filtered = filtered.filter(ticket => {
-        const ticketAssignToId = ticket.assignTo?.id || ticket.assignTo?._id;
-        return ticketAssignToId === newFilters.assignTo;
-      });
-    }
-
-    // Apply date range filter
-    if (newFilters.fromDate) {
-      const fromDate = new Date(newFilters.fromDate);
-      filtered = filtered.filter(ticket => {
-        const ticketDate = new Date(ticket.createdAt || ticket.startDate);
-        return ticketDate >= fromDate;
-      });
-    }
-
-    if (newFilters.toDate) {
-      const toDate = new Date(newFilters.toDate);
-      toDate.setHours(23, 59, 59, 999); // End of day
-      filtered = filtered.filter(ticket => {
-        const ticketDate = new Date(ticket.createdAt || ticket.startDate);
-        return ticketDate <= toDate;
-      });
-    }
-
-    // Apply orderId filter
-    if (newFilters.orderId) {
-      filtered = filtered.filter(ticket =>
-        ticket.orderId?.toLowerCase().includes(newFilters.orderId.toLowerCase()) ||
-        ticket.ticketNo?.toString().includes(newFilters.orderId)
-      );
-    }
-
-    // Apply current sort
-    const sorted = applySorting(filtered, sortConfig);
-    setFilteredAndSortedTickets(sorted);
-    setCurrentPage(1); // Reset to first page when filters change
-  };
-
-  // Apply sorting
-  const applySorting = (ticketsToSort, config) => {
-    if (!config.field) return ticketsToSort;
-
-    const sorted = [...ticketsToSort].sort((a, b) => {
-      let aValue = a[config.field];
-      let bValue = b[config.field];
-
-      // Handle nested category name
-      if (config.field === 'category') {
-        aValue = a.category?.name || '';
-        bValue = b.category?.name || '';
-      }
-
-      // Handle nested assignTo name
-      if (config.field === 'assignTo') {
-        aValue = a.assignTo?.name || '';
-        bValue = b.assignTo?.name || '';
-      }
-
-      // Handle date fields
-      if (config.field === 'createdAt' || config.field === 'startDate' || config.field === 'endDate') {
-        aValue = new Date(aValue || 0);
-        bValue = new Date(bValue || 0);
-      }
-
-      // Handle null/undefined values
-      if (aValue === null || aValue === undefined) return 1;
-      if (bValue === null || bValue === undefined) return -1;
-
-      // String comparison
-      if (typeof aValue === 'string' && typeof bValue === 'string') {
-        return config.direction === 'asc'
-          ? aValue.localeCompare(bValue)
-          : bValue.localeCompare(aValue);
-      }
-
-      // Numeric or date comparison
-      if (config.direction === 'asc') {
-        return aValue > bValue ? 1 : -1;
-      } else {
-        return aValue < bValue ? 1 : -1;
-      }
-    });
-
-    return sorted;
-  };
-
-  const handleSortChange = (newSortConfig) => {
-    setSortConfig(newSortConfig);
-    const sorted = applySorting(filteredAndSortedTickets, newSortConfig);
-    setFilteredAndSortedTickets(sorted);
-  };
 
   // Calculate pagination
   const indexOfLastTicket = currentPage * ticketsPerPage;
   const indexOfFirstTicket = indexOfLastTicket - ticketsPerPage;
-  const currentTickets = filteredAndSortedTickets.slice(indexOfFirstTicket, indexOfLastTicket);
-  const totalPages = Math.ceil(filteredAndSortedTickets.length / ticketsPerPage);
+  const currentTickets = tickets.slice(indexOfFirstTicket, indexOfLastTicket);
+  const totalPages = Math.ceil(tickets.length / ticketsPerPage);
 
   const handlePageChange = (pageNumber) => {
     setCurrentPage(pageNumber);
@@ -163,21 +35,8 @@ const ListView = ({ tickets, onTicketClick, onDeleteTicket }) => {
     return colors[status] || '#757575';
   };
 
-  const formatDate = (dateString) => {
-    if (!dateString) return 'N/A';
-    const date = new Date(dateString);
-    const month = date.toLocaleDateString('en-US', { month: 'short' });
-    const day = date.getDate();
-    return `${month} ${day}`;
-  };
-
   return (
     <div className="list-view-container">
-      <FilterBar
-        onFilterChange={handleFilterChange}
-        onSortChange={handleSortChange}
-        categories={categories}
-      />
       <table className="list-table">
         <thead>
           <tr>
@@ -309,7 +168,7 @@ const ListView = ({ tickets, onTicketClick, onDeleteTicket }) => {
       )}
 
       <div className="list-view-footer">
-        Showing {indexOfFirstTicket + 1}-{Math.min(indexOfLastTicket, filteredAndSortedTickets.length)} of {filteredAndSortedTickets.length} tickets
+        Showing {indexOfFirstTicket + 1}-{Math.min(indexOfLastTicket, tickets.length)} of {tickets.length} tickets
       </div>
     </div>
   );

@@ -12,12 +12,13 @@
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
   border-left: 1px solid #DFE1E6;
   border-right: 1px solid #DFE1E6;
+  border-top: 1px solid #DFE1E6;
 }
 
 /* Table Header */
 .list-table thead {
   background: #F4F5F7;
-  border-bottom: 2px solid #DFE1E6;
+  border-bottom: 1px solid #DFE1E6;
 }
 
 .list-table thead tr {

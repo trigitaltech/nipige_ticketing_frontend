@@ -16,30 +16,6 @@
   border-bottom: 1px solid #DFE1E6;
 }
 
-.toggle-filters-btn {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  padding: 6px 12px;
-  background: #FAFBFC;
-  color: #42526E;
-  border: 1px solid #DFE1E6;
-  border-radius: 3px;
-  font-size: 14px;
-  font-weight: 500;
-  cursor: pointer;
-  transition: all 0.15s ease;
-}
-
-.toggle-filters-btn:hover {
-  background: #EBECF0;
-  border-color: #B3BAC5;
-}
-
-.toggle-filters-btn:active {
-  background: #DFE1E6;
-}
-
 .clear-filters-btn {
   padding: 6px 12px;
   background: white;
@@ -49,16 +25,20 @@
   font-size: 13px;
   font-weight: 500;
   cursor: pointer;
-  transition: all 0.15s ease;
+  transition: none;
+  transform: none;
+  outline: none;
 }
 
 .clear-filters-btn:hover {
   background: #FAFBFC;
   border-color: #B3BAC5;
+  transform: none;
 }
 
 .clear-filters-btn:active {
   background: #EBECF0;
+  transform: none;
 }
 
 .filter-content {
@@ -123,14 +103,6 @@
   border-color: #B3BAC5;
 }
 
-.filter-item select:focus,
-.filter-item input:focus {
-  outline: none;
-  background: white;
-  border-color: #0052CC;
-  box-shadow: 0 0 0 1px #0052CC;
-}
-
 .sort-section h4 {
   margin: 0 0 12px 0;
   color: #172B4D;
@@ -155,32 +127,41 @@
   font-size: 13px;
   font-weight: 500;
   cursor: pointer;
-  transition: all 0.15s ease;
+  transition: none;
+  transform: none;
   display: flex;
   align-items: center;
   gap: 6px;
   white-space: nowrap;
+  outline: none;
 }
 
 .sort-btn:hover {
   background: #EBECF0;
   border-color: #B3BAC5;
   color: #172B4D;
+  transform: none;
 }
 
 .sort-btn:active {
   background: #DFE1E6;
+  transform: none;
+}
+
+.sort-btn:focus {
+  outline: none;
+  transform: none;
 }
 
 .sort-btn.active {
-  background: #0052CC;
+  background: #5E6C84;
   color: white;
-  border-color: #0052CC;
+  border-color: #5E6C84;
 }
 
 .sort-btn.active:hover {
-  background: #0065FF;
-  border-color: #0065FF;
+  background: #42526E;
+  border-color: #42526E;
 }
 
 @media (max-width: 768px) {
@@ -194,7 +175,6 @@
     align-items: stretch;
   }
 
-  .toggle-filters-btn,
   .clear-filters-btn {
     width: 100%;
     justify-content: center;

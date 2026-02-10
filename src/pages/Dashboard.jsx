@@ -6,30 +6,141 @@ import KanbanBoard from '../components/ticketing/KanbanBoard';
 import ListView from '../components/ticketing/ListView';
 import CreateTicketModal from '../components/ticketing/CreateTicketModal';
 import UpdateTicketModal from '../components/ticketing/UpdateTicketModal';
+import SearchBar from '../components/shared/SearchBar';
+import FilterDropdown from '../components/shared/FilterDropdown';
+import SortDropdown from '../components/shared/SortDropdown';
 
 const Dashboard = ({ currentUser, onLogout }) => {
   const dispatch = useDispatch();
   const { tickets, loading, error } = useSelector((state) => state.tickets);
   const { user } = useSelector((state) => state.auth);
+  const { categories } = useSelector((state) => state.categories);
 
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [isUpdateModalOpen, setIsUpdateModalOpen] = useState(false);
   const [selectedTicket, setSelectedTicket] = useState(null);
   const [activeFilter, setActiveFilter] = useState('all'); // 'all' or 'my'
   const [viewMode, setViewMode] = useState('kanban'); // 'kanban' or 'list'
+  const [searchQuery, setSearchQuery] = useState('');
+  const [filters, setFilters] = useState({
+    status: '',
+    priority: null,
+    category: '',
+    fromDate: '',
+    toDate: '',
+    assignTo: '',
+    orderId: ''
+  });
+  const [sortConfig, setSortConfig] = useState({ field: '', direction: 'asc' });
 
   useEffect(() => {
     dispatch(fetchTickets());
   }, [dispatch]);
 
-  // Filter tickets based on active filter
-  const filteredTickets = activeFilter === 'my'
-    ? tickets.filter(ticket => {
-        const assignedUserId = ticket.assignTo?.id || ticket.assignTo?._id;
-        const currentUserId = user?.response?.user?._id || user?._id;
-        return assignedUserId === currentUserId;
-      })
-    : tickets;
+  const handleClearFilters = () => {
+    setFilters({
+      status: '',
+      priority: null,
+      category: '',
+      fromDate: '',
+      toDate: '',
+      assignTo: '',
+      orderId: ''
+    });
+  };
+
+  // Filter tickets based on active filter, search query, and dropdown filters
+  const filteredTickets = tickets.filter(ticket => {
+    // My tasks filter
+    if (activeFilter === 'my') {
+      const assignedUserId = ticket.assignTo?.id || ticket.assignTo?._id;
+      const currentUserId = user?.response?.user?._id || user?._id;
+      if (assignedUserId !== currentUserId) return false;
+    }
+
+    // Search by email or username
+    if (searchQuery.trim()) {
+      const query = searchQuery.toLowerCase();
+      const assignName = (ticket.assignTo?.name || ticket.assignTo?.username || '').toLowerCase();
+      const assignEmail = (ticket.assignTo?.email || ticket.assignTo?.authentication?.email || '').toLowerCase();
+      const reporterName = (ticket.reportedBy?.name || ticket.reportedBy?.username || '').toLowerCase();
+      const reporterEmail = (ticket.reportedBy?.email || ticket.reportedBy?.authentication?.email || '').toLowerCase();
+
+      if (
+        !assignName.includes(query) &&
+        !assignEmail.includes(query) &&
+        !reporterName.includes(query) &&
+        !reporterEmail.includes(query)
+      ) {
+        return false;
+      }
+    }
+
+    // Apply dropdown filters
+    if (filters.status && ticket.status !== filters.status) return false;
+    if (filters.priority !== null && filters.priority !== '' && ticket.priority !== filters.priority) return false;
+    if (filters.category) {
+      const ticketCategoryId = ticket.category?._id || ticket.category;
+      if (ticketCategoryId !== filters.category) return false;
+    }
+    if (filters.assignTo) {
+      const ticketAssignToId = ticket.assignTo?.id || ticket.assignTo?._id;
+      if (ticketAssignToId !== filters.assignTo) return false;
+    }
+    if (filters.fromDate) {
+      const fromDate = new Date(filters.fromDate);
+      const ticketDate = new Date(ticket.createdAt || ticket.startDate);
+      if (ticketDate < fromDate) return false;
+    }
+    if (filters.toDate) {
+      const toDate = new Date(filters.toDate);
+      toDate.setHours(23, 59, 59, 999);
+      const ticketDate = new Date(ticket.createdAt || ticket.startDate);
+      if (ticketDate > toDate) return false;
+    }
+    if (filters.orderId) {
+      const matchesOrderId = ticket.orderId?.toLowerCase().includes(filters.orderId.toLowerCase());
+      const matchesTicketNo = ticket.ticketNo?.toString().includes(filters.orderId);
+      if (!matchesOrderId && !matchesTicketNo) return false;
+    }
+
+    return true;
+  });
+
+  // Apply sorting
+  const sortedTickets = (() => {
+    if (!sortConfig.field) return filteredTickets;
+    return [...filteredTickets].sort((a, b) => {
+      let aValue = a[sortConfig.field];
+      let bValue = b[sortConfig.field];
+
+      if (sortConfig.field === 'category') {
+        aValue = a.category?.name || '';
+        bValue = b.category?.name || '';
+      }
+      if (sortConfig.field === 'assignTo') {
+        aValue = a.assignTo?.name || '';
+        bValue = b.assignTo?.name || '';
+      }
+      if (sortConfig.field === 'createdAt' || sortConfig.field === 'startDate' || sortConfig.field === 'endDate') {
+        aValue = new Date(aValue || 0);
+        bValue = new Date(bValue || 0);
+      }
+
+      if (aValue === null || aValue === undefined) return 1;
+      if (bValue === null || bValue === undefined) return -1;
+
+      if (typeof aValue === 'string' && typeof bValue === 'string') {
+        return sortConfig.direction === 'asc'
+          ? aValue.localeCompare(bValue)
+          : bValue.localeCompare(aValue);
+      }
+
+      return sortConfig.direction === 'asc'
+        ? (aValue > bValue ? 1 : -1)
+        : (aValue < bValue ? 1 : -1);
+    });
+  })();
 
   // Helper function to convert IST datetime-local input to UTC format for API
   // Input: "YYYY-MM-DDTHH:mm" (treated as IST)
@@ -151,7 +262,7 @@ const Dashboard = ({ currentUser, onLogout }) => {
         .join('')
         .slice(0, 2)) ||
     (userEmail ? userEmail[0]?.toUpperCase() : 'U');
-  
+
   return (
     <div className="dashboard-container">
       <header className="dashboard-header">
@@ -172,7 +283,7 @@ const Dashboard = ({ currentUser, onLogout }) => {
         </div>
       </header>
 
-      
+
 
       <div style={{
         padding: '8px 20px',
@@ -185,16 +296,17 @@ const Dashboard = ({ currentUser, onLogout }) => {
           <button
             onClick={() => setActiveFilter('all')}
             style={{
-              padding: '10px 24px',
-              border: activeFilter === 'all' ? '2px solid #2196f3' : '2px solid transparent',
-              borderRadius: '8px',
+              padding: '8px 16px',
+              border: activeFilter === 'all' ? '1px solid #5E6C84' : '1px solid #DFE1E6',
+              borderRadius: '3px',
               cursor: 'pointer',
-              fontWeight: '600',
+              fontWeight: '500',
               fontSize: '14px',
-              transition: 'all 0.2s ease',
-              backgroundColor: activeFilter === 'all' ? '#2196f3' : 'white',
-              color: activeFilter === 'all' ? 'white' : '#555',
-              boxShadow: activeFilter === 'all' ? '0 2px 8px rgba(33, 150, 243, 0.3)' : '0 1px 3px rgba(0,0,0,0.1)',
+              backgroundColor: activeFilter === 'all' ? '#5E6C84' : 'white',
+              color: activeFilter === 'all' ? 'white' : '#5E6C84',
+              outline: 'none',
+              transform: 'none',
+              transition: 'none',
             }}
           >
             All Tasks
@@ -202,20 +314,37 @@ const Dashboard = ({ currentUser, onLogout }) => {
           <button
             onClick={() => setActiveFilter('my')}
             style={{
-              padding: '10px 24px',
-              border: activeFilter === 'my' ? '2px solid #2196f3' : '2px solid transparent',
-              borderRadius: '8px',
+              padding: '8px 16px',
+              border: activeFilter === 'my' ? '1px solid #5E6C84' : '1px solid #DFE1E6',
+              borderRadius: '3px',
               cursor: 'pointer',
-              fontWeight: '600',
+              fontWeight: '500',
               fontSize: '14px',
-              transition: 'all 0.2s ease',
-              backgroundColor: activeFilter === 'my' ? '#2196f3' : 'white',
-              color: activeFilter === 'my' ? 'white' : '#555',
-              boxShadow: activeFilter === 'my' ? '0 2px 8px rgba(33, 150, 243, 0.3)' : '0 1px 3px rgba(0,0,0,0.1)',
+              backgroundColor: activeFilter === 'my' ? '#5E6C84' : 'white',
+              color: activeFilter === 'my' ? 'white' : '#5E6C84',
+              outline: 'none',
+              transform: 'none',
+              transition: 'none',
             }}
           >
             My Tasks
           </button>
+        </div>
+
+        {/* Search bar, Filter & Sort dropdowns */}
+        <div style={{ display: 'flex', gap: '6px', alignItems: 'center', flex: 1, justifyContent: 'center' }}>
+          <SearchBar value={searchQuery} onChange={setSearchQuery} />
+          <FilterDropdown
+            filters={filters}
+            onFilterChange={setFilters}
+            onClearFilters={handleClearFilters}
+            categories={categories}
+          />
+          <SortDropdown
+            sortConfig={sortConfig}
+            onSortChange={setSortConfig}
+            onClearSort={() => setSortConfig({ field: '', direction: 'asc' })}
+          />
         </div>
 
         <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
@@ -224,18 +353,18 @@ const Dashboard = ({ currentUser, onLogout }) => {
             title="Kanban View"
             style={{
               padding: '8px 12px',
-              border: viewMode === 'kanban' ? '2px solid #5E6C84' : '1px solid #DFE1E6',
-              borderRadius: '4px',
+              border: viewMode === 'kanban' ? '1px solid #5E6C84' : '1px solid #DFE1E6',
+              borderRadius: '3px',
               cursor: 'pointer',
-              fontSize: '18px',
-              transition: 'all 0.2s ease',
+              fontSize: '16px',
               backgroundColor: viewMode === 'kanban' ? '#5E6C84' : 'white',
               color: viewMode === 'kanban' ? 'white' : '#5E6C84',
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
-              minWidth: '40px',
-              height: '40px',
+              outline: 'none',
+              transform: 'none',
+              transition: 'none',
             }}
           >
             ▦
@@ -245,18 +374,18 @@ const Dashboard = ({ currentUser, onLogout }) => {
             title="List View"
             style={{
               padding: '8px 12px',
-              border: viewMode === 'list' ? '2px solid #5E6C84' : '1px solid #DFE1E6',
-              borderRadius: '4px',
+              border: viewMode === 'list' ? '1px solid #5E6C84' : '1px solid #DFE1E6',
+              borderRadius: '3px',
               cursor: 'pointer',
-              fontSize: '18px',
-              transition: 'all 0.2s ease',
+              fontSize: '16px',
               backgroundColor: viewMode === 'list' ? '#5E6C84' : 'white',
               color: viewMode === 'list' ? 'white' : '#5E6C84',
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
-              minWidth: '40px',
-              height: '40px',
+              outline: 'none',
+              transform: 'none',
+              transition: 'none',
             }}
           >
             ☰
@@ -267,14 +396,14 @@ const Dashboard = ({ currentUser, onLogout }) => {
       <div className="dashboard-content">
         { viewMode === 'kanban' ? (
           <KanbanBoard
-            tickets={filteredTickets || []}
+            tickets={sortedTickets || []}
             onTicketClick={handleTicketClick}
             onStatusChange={handleStatusChange}
             onDeleteTicket={handleDeleteTicket}
           />
         ) : (
           <ListView
-            tickets={filteredTickets || []}
+            tickets={sortedTickets || []}
             onTicketClick={handleTicketClick}
             onDeleteTicket={handleDeleteTicket}
           />
