@@ -290,7 +290,7 @@ export const getUsersAPI = async () => {
       throw new Error("No authentication token found");
     }
 
-    const response = await api.get('/cap/users/admin/list');
+    const response = await api.get('/cap/users/admin/list?limit=50&page=1');
 
     console.log('Users API - Full Response:', response);
     console.log('Users API - response.data:', response.data);
