@@ -7,11 +7,22 @@ const FilterDropdown = ({ filters, onFilterChange, onClearFilters, categories })
   const wrapperRef = useRef(null);
   const { users, loading: usersLoading } = useSelector((state) => state.users);
 
+  const [clearClicked, setClearClicked] = useState(false);
+
   const hasActiveFilters = filters.status || filters.priority || filters.category ||
     filters.assignTo || filters.fromDate || filters.toDate || filters.orderId;
 
   const handleChange = (field, value) => {
     onFilterChange({ ...filters, [field]: value });
+  };
+
+  const handleClear = () => {
+    setClearClicked(false);
+    requestAnimationFrame(() => {
+      setClearClicked(true);
+      onClearFilters();
+      setTimeout(() => setClearClicked(false), 350);
+    });
   };
 
   return (
@@ -37,7 +48,7 @@ const FilterDropdown = ({ filters, onFilterChange, onClearFilters, categories })
           <div className="dropdown-panel">
             <div className="filter-dropdown-header">
               <span>Filters</span>
-              <button className="filter-dropdown-clear" onClick={onClearFilters}>
+              <button className={`filter-dropdown-clear ${clearClicked ? 'clicked' : ''}`} onClick={handleClear}>
                 Clear all
               </button>
             </div>

@@ -12,6 +12,16 @@ const SORT_OPTIONS = [
 
 const SortDropdown = ({ sortConfig, onSortChange, onClearSort }) => {
   const [isOpen, setIsOpen] = useState(false);
+  const [clearClicked, setClearClicked] = useState(false);
+
+  const handleClear = () => {
+    setClearClicked(false);
+    requestAnimationFrame(() => {
+      setClearClicked(true);
+      onClearSort();
+      setTimeout(() => setClearClicked(false), 350);
+    });
+  };
 
   const handleSortClick = (field) => {
     if (sortConfig.field === field) {
@@ -50,7 +60,7 @@ const SortDropdown = ({ sortConfig, onSortChange, onClearSort }) => {
           <div className="dropdown-panel">
             <div className="sort-dropdown-header">
               <span>Sort</span>
-              <button className="filter-dropdown-clear" onClick={() => { onClearSort(); }}>
+              <button className={`filter-dropdown-clear ${clearClicked ? 'clicked' : ''}`} onClick={handleClear}>
                 Clear all
               </button>
             </div>

@@ -254,7 +254,7 @@ const UpdateTicketModal = ({ ticket, onClose, onUpdate }) => {
                   name="description"
                   value={formData.description || ticket.description || ''}
                   onChange={handleChange}
-                  rows="1"
+                  rows="2"
                   placeholder="Enter initial description"
                   style={{ minHeight: '32px' }}
                 />
