@@ -1,19 +1,18 @@
 import '../../assets/Styles/TicketCard.css';
+import categoryIcon from '../../assets/icons/category.png';
+import startIcon from '../../assets/icons/start.png';
+import endIcon from '../../assets/icons/end.png';
+import deleteIcon from '../../assets/icons/delete.png';
 
 const TicketCard = ({ ticket, onDragStart, onClick, onDelete }) => {
-  const getSeverityColor = (severity) => {
-    switch (severity?.toLowerCase()) {
-      case 'critical':
-        return '#d32f2f';
-      case 'high':
-        return '#f44336';
-      case 'medium':
-        return '#ff9800';
-      case 'low':
-        return '#4caf50';
-      default:
-        return '#9e9e9e';
-    }
+  const getSeverityClass = (severity) => {
+    const map = {
+      Critical: 'tc-severity-critical',
+      High: 'tc-severity-high',
+      Medium: 'tc-severity-medium',
+      Low: 'tc-severity-low',
+    };
+    return map[severity] || 'tc-severity-default';
   };
 
   const formatDate = (dateString) => {
@@ -59,10 +58,8 @@ const TicketCard = ({ ticket, onDragStart, onClick, onDelete }) => {
         <span className="ticket-id">#{ticketNo}</span>
         <div style={{ display: 'flex', gap: '4px', alignItems: 'center' }}>
           {escalated && <span style={{ fontSize: '12px' }}>⚠️</span>}
-          <span
-            className="priority-badge"
-            style={{ backgroundColor: getSeverityColor(severity) }}
-          >
+          <span className={`tc-severity-badge ${getSeverityClass(severity)}`}>
+            <span className="tc-badge-dot" />
             {severity}
           </span>
         </div>
@@ -70,20 +67,23 @@ const TicketCard = ({ ticket, onDragStart, onClick, onDelete }) => {
       <h4 className="ticket-title">{subject}</h4>
       <p className="ticket-description">{description}</p>
       {categoryName && (
-        <div style={{ fontSize: '11px', color: '#666', marginBottom: '8px' }}>
-          📁 {categoryName}
+        <div style={{ fontSize: '11px', color: '#666', marginBottom: '8px', display: 'flex', alignItems: 'center', gap: '4px' }}>
+          <img src={categoryIcon} alt="category" style={{ width: '14px', height: '14px' }} />
+          {categoryName}
         </div>
       )}
       {(startDate || endDate) && (
         <div style={{ fontSize: '10px', color: '#666', marginBottom: '8px', display: 'flex', gap: '12px' }}>
           {startDate && (
-            <span>
-              📅 Start: {formatDate(startDate)}
+            <span style={{ display: 'flex', alignItems: 'center', gap: '3px' }}>
+              <img src={startIcon} alt="start" style={{ width: '12px', height: '12px' }} />
+              Start: {formatDate(startDate)}
             </span>
           )}
           {endDate && (
-            <span>
-              🏁 End: {formatDate(endDate)}
+            <span style={{ display: 'flex', alignItems: 'center', gap: '3px' }}>
+              <img src={endIcon} alt="end" style={{ width: '12px', height: '12px' }} />
+              End: {formatDate(endDate)}
             </span>
           )}
         </div>
@@ -107,7 +107,7 @@ const TicketCard = ({ ticket, onDragStart, onClick, onDelete }) => {
             </span>
           )}
           <button className="delete-btn" onClick={handleDelete} title="Delete ticket">
-            🗑️
+            <img src={deleteIcon} alt="delete" style={{ width: '16px', height: '16px' }} />
           </button>
         </div>
       </div>

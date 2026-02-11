@@ -98,12 +98,76 @@
   cursor: pointer;
   font-size: 16px;
   color: #6B778C;
-  opacity: 0.6;
+  opacity: 0.8;
   transition: opacity 0.2s, color 0.2s;
   padding: 4px;
 }
 
 .delete-btn:hover {
-  opacity: 1;
+  opacity: 2;
   color: #DE350B;
+}
+
+/* Severity Badge - Pill style matching ListView */
+.tc-severity-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 3px 10px;
+  border-radius: 20px;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.2px;
+}
+
+.tc-severity-badge .tc-badge-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.tc-severity-badge.tc-severity-critical {
+  background: #FEF2F2;
+  color: #DC2626;
+}
+
+.tc-severity-badge.tc-severity-critical .tc-badge-dot {
+  background: #DC2626;
+}
+
+.tc-severity-badge.tc-severity-high {
+  background: #FFF7ED;
+  color: #EA580C;
+}
+
+.tc-severity-badge.tc-severity-high .tc-badge-dot {
+  background: #EA580C;
+}
+
+.tc-severity-badge.tc-severity-medium {
+  background: #FFFBEB;
+  color: #CA8A04;
+}
+
+.tc-severity-badge.tc-severity-medium .tc-badge-dot {
+  background: #CA8A04;
+}
+
+.tc-severity-badge.tc-severity-low {
+  background: #ECFDF5;
+  color: #059669;
+}
+
+.tc-severity-badge.tc-severity-low .tc-badge-dot {
+  background: #059669;
+}
+
+.tc-severity-badge.tc-severity-default {
+  background: #F3F4F6;
+  color: #6B7280;
+}
+
+.tc-severity-badge.tc-severity-default .tc-badge-dot {
+  background: #6B7280;
 }

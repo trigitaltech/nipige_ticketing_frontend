@@ -198,7 +198,7 @@ export const updateTicketAPI = async (ticketId, ticketData) => {
 };
 
 export const deleteTicketAPI = async (ticketId) => {
-  const response = await api.delete(`/tickets/${ticketId}`);
+  const response = await nipige.delete(`servicerequest/ticket/delete/${ticketId}`);
   return response.data;
 };
 

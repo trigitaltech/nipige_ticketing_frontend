@@ -1,9 +1,11 @@
 import { useState } from 'react';
 import '../../assets/Styles/ListView.css';
+import deleteIcon from '../../assets/icons/delete.png';
 
 const ListView = ({ tickets, onTicketClick, onDeleteTicket }) => {
   const [currentPage, setCurrentPage] = useState(1);
-  const ticketsPerPage = 20;
+  const [deleteConfirm, setDeleteConfirm] = useState({ open: false, ticketId: null, ticketNo: '' });
+  const ticketsPerPage = 25;
 
   // Calculate pagination
   const indexOfLastTicket = currentPage * ticketsPerPage;
@@ -15,24 +17,39 @@ const ListView = ({ tickets, onTicketClick, onDeleteTicket }) => {
     setCurrentPage(pageNumber);
   };
 
-  const getSeverityColor = (severity) => {
-    const colors = {
-      Critical: '#D32F2F',
-      High: '#F57C00',
-      Medium: '#FBC02D',
-      Low: '#388E3C',
+  const getStatusClass = (status) => {
+    const map = {
+      OPEN: 'status-open',
+      IN_PROGRESS: 'status-in-progress',
+      RESOLVED: 'status-resolved',
+      CLOSED: 'status-closed',
     };
-    return colors[severity] || '#757575';
+    return map[status] || 'status-default';
   };
 
-  const getStatusColor = (status) => {
-    const colors = {
-      OPEN: '#1976D2',
-      IN_PROGRESS: '#F57C00',
-      RESOLVED: '#7B1FA2',
-      CLOSED: '#388E3C',
+  const getStatusDotClass = (status) => {
+    const map = {
+      OPEN: 'open',
+      IN_PROGRESS: 'in-progress',
+      RESOLVED: 'resolved',
+      CLOSED: 'closed',
     };
-    return colors[status] || '#757575';
+    return map[status] || 'open';
+  };
+
+  const getSeverityClass = (severity) => {
+    const map = {
+      Critical: 'severity-critical',
+      High: 'severity-high',
+      Medium: 'severity-medium',
+      Low: 'severity-low',
+    };
+    return map[severity] || 'severity-default';
+  };
+
+  const formatStatusLabel = (status) => {
+    if (!status) return 'N/A';
+    return status.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase()).replace(/\B\w+/g, c => c.toLowerCase());
   };
 
   return (
@@ -40,15 +57,15 @@ const ListView = ({ tickets, onTicketClick, onDeleteTicket }) => {
       <table className="list-table">
         <thead>
           <tr>
-            <th className="col-ticket-id">Ticket ID</th>
-            <th className="col-title">Title</th>
-            <th className="col-description">Description</th>
+            <th className="col-ticket-id">Ticket</th>
+            <th className="col-title">Subject</th>
+            <th className="col-assigned">Assigned To</th>
+            <th className="col-reported">Reported To</th>
             <th className="col-category">Category</th>
-            <th className="col-severity">Severity</th>
             <th className="col-status">Status</th>
-            <th className="col-assigned">Assigned</th>
-            <th className="col-reporter">Reporter</th>
+            <th className="col-severity">Severity</th>
             <th className="col-priority">Priority</th>
+            <th className="col-action">Action</th>
           </tr>
         </thead>
         <tbody>
@@ -58,60 +75,63 @@ const ListView = ({ tickets, onTicketClick, onDeleteTicket }) => {
             </tr>
           ) : (
             currentTickets.map((ticket) => {
+              const ticketId = ticket._id || ticket.id;
               return (
                 <tr
-                  key={ticket._id || ticket.id}
+                  key={ticketId}
                   className="list-row"
                   onClick={() => onTicketClick(ticket)}
                 >
-                  <td className="ticket-id">
-                    <span className="id-text">#{ticket.ticketNo || 'N/A'}</span>
-                  </td>
-                  <td className="ticket-title">
-                    <span className="title-text">{ticket.subject}</span>
-                  </td>
-                  <td className="ticket-description">
-                    <span className="description-text">
-                      {ticket.description ? ticket.description.substring(0, 30) + (ticket.description.length > 30 ? '...' : '') : '-'}
-                    </span>
-                  </td>
-                  <td className="ticket-category">
-                    <div className="category-wrapper">
-                      <span className="category-icon">📁</span>
-                      <span className="category-text">{ticket.category?.name || 'GRIEVANCES'}</span>
+                  <td>
+                    <div className="ticket-id-cell">
+                      <span className={`status-dot ${getStatusDotClass(ticket.status)}`} />
+                      <span className="id-text">#{ticket.ticketNo || 'N/A'}</span>
                     </div>
                   </td>
-                  <td className="ticket-severity">
-                    <span
-                      className="severity-badge"
-                      style={{ backgroundColor: getSeverityColor(ticket.severity) }}
-                    >
+                  <td>
+                    <span className="title-text">
+                      {ticket.subject?.split(' ').slice(0, 5).join(' ')}{ticket.subject?.split(' ').length > 6 ? '...' : ''}
+                    </span>
+                  </td>
+                  <td>
+                    <span className="assigned-name">
+                      {ticket.assignTo?.name || ticket.assignTo?.username || 'Unassigned'}
+                    </span>
+                  </td>
+                  <td>
+                    <span className="reported-name">
+                      {ticket.reportedBy?.name || 'Unknown'}
+                    </span>
+                  </td>
+                  <td>
+                    <span className="category-text">{ticket.category?.name || '-'}</span>
+                  </td>
+                  <td>
+                    <span className={`status-badge ${getStatusClass(ticket.status)}`}>
+                      <span className="badge-dot" />
+                      {formatStatusLabel(ticket.status)}
+                    </span>
+                  </td>
+                  <td>
+                    <span className={`severity-badge ${getSeverityClass(ticket.severity)}`}>
+                      <span className="badge-dot" />
                       {ticket.severity || 'N/A'}
                     </span>
                   </td>
-                  <td className="ticket-status">
-                    <span
-                      className="status-badge"
-                      style={{ backgroundColor: getStatusColor(ticket.status) }}
+                  <td>
+                    <span className="priority-text">{ticket.priority || '-'}/10</span>
+                  </td>
+                  <td>
+                    <button
+                      className="list-delete-btn"
+                      title="Delete ticket"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setDeleteConfirm({ open: true, ticketId, ticketNo: ticket.ticketNo || 'N/A' });
+                      }}
                     >
-                      {ticket.status ? ticket.status.replace('_', ' ') : 'N/A'}
-                    </span>
-                  </td>
-                  <td className="ticket-assigned">
-                    <div className="user-info">
-                      <div className="user-avatar">{(ticket.assignTo?.name || 'U')[0].toUpperCase()}</div>
-                      <span className="user-name">
-                        {ticket.assignTo?.name || ticket.assignTo?.username || 'Unassigned'}
-                      </span>
-                    </div>
-                  </td>
-                  <td className="ticket-reporter">
-                    <span className="reporter-text">
-                      {ticket.reportedBy?.name || ticket.reportedBy?.username || 'N/A'}
-                    </span>
-                  </td>
-                  <td className="ticket-priority">
-                    <span className="priority-text">{ticket.priority || 'N/A'}/10</span>
+                      <img src={deleteIcon} alt="delete" style={{ width: '16px', height: '16px' }} />
+                    </button>
                   </td>
                 </tr>
               );
@@ -170,6 +190,37 @@ const ListView = ({ tickets, onTicketClick, onDeleteTicket }) => {
       <div className="list-view-footer">
         Showing {indexOfFirstTicket + 1}-{Math.min(indexOfLastTicket, tickets.length)} of {tickets.length} tickets
       </div>
+
+      {deleteConfirm.open && (
+        <div className="delete-confirm-overlay" onClick={() => setDeleteConfirm({ open: false, ticketId: null, ticketNo: '' })}>
+          <div className="delete-confirm-popup" onClick={(e) => e.stopPropagation()}>
+            <div className="delete-confirm-icon">
+              <img src={deleteIcon} alt="delete" style={{ width: '28px', height: '28px' }} />
+            </div>
+            <h3 className="delete-confirm-title">Delete Ticket</h3>
+            <p className="delete-confirm-msg">
+              Are you sure you want to delete ticket <strong>#{deleteConfirm.ticketNo}</strong>? This action cannot be undone.
+            </p>
+            <div className="delete-confirm-actions">
+              <button
+                className="delete-confirm-cancel"
+                onClick={() => setDeleteConfirm({ open: false, ticketId: null, ticketNo: '' })}
+              >
+                Cancel
+              </button>
+              <button
+                className="delete-confirm-delete"
+                onClick={() => {
+                  onDeleteTicket(deleteConfirm.ticketId);
+                  setDeleteConfirm({ open: false, ticketId: null, ticketNo: '' });
+                }}
+              >
+                Delete
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
