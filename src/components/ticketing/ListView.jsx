@@ -1,8 +1,10 @@
 import { useState } from 'react';
 import '../../assets/Styles/ListView.css';
+import deleteIcon from '../../assets/icons/delete.png';
 
 const ListView = ({ tickets, onTicketClick, onDeleteTicket }) => {
   const [currentPage, setCurrentPage] = useState(1);
+  const [deleteConfirm, setDeleteConfirm] = useState({ open: false, ticketId: null, ticketNo: '' });
   const ticketsPerPage = 25;
 
   // Calculate pagination
@@ -63,12 +65,13 @@ const ListView = ({ tickets, onTicketClick, onDeleteTicket }) => {
             <th className="col-status">Status</th>
             <th className="col-severity">Severity</th>
             <th className="col-priority">Priority</th>
+            <th className="col-action">Action</th>
           </tr>
         </thead>
         <tbody>
           {currentTickets.length === 0 ? (
             <tr>
-              <td colSpan="8" className="empty-list">No tickets</td>
+              <td colSpan="9" className="empty-list">No tickets</td>
             </tr>
           ) : (
             currentTickets.map((ticket) => {
@@ -86,7 +89,9 @@ const ListView = ({ tickets, onTicketClick, onDeleteTicket }) => {
                     </div>
                   </td>
                   <td>
-                    <span className="title-text">{ticket.subject}</span>
+                    <span className="title-text">
+                      {ticket.subject?.split(' ').slice(0, 5).join(' ')}{ticket.subject?.split(' ').length > 6 ? '...' : ''}
+                    </span>
                   </td>
                   <td>
                     <span className="assigned-name">
@@ -115,6 +120,18 @@ const ListView = ({ tickets, onTicketClick, onDeleteTicket }) => {
                   </td>
                   <td>
                     <span className="priority-text">{ticket.priority || '-'}/10</span>
+                  </td>
+                  <td>
+                    <button
+                      className="list-delete-btn"
+                      title="Delete ticket"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setDeleteConfirm({ open: true, ticketId, ticketNo: ticket.ticketNo || 'N/A' });
+                      }}
+                    >
+                      <img src={deleteIcon} alt="delete" style={{ width: '16px', height: '16px' }} />
+                    </button>
                   </td>
                 </tr>
               );
@@ -173,6 +190,37 @@ const ListView = ({ tickets, onTicketClick, onDeleteTicket }) => {
       <div className="list-view-footer">
         Showing {indexOfFirstTicket + 1}-{Math.min(indexOfLastTicket, tickets.length)} of {tickets.length} tickets
       </div>
+
+      {deleteConfirm.open && (
+        <div className="delete-confirm-overlay" onClick={() => setDeleteConfirm({ open: false, ticketId: null, ticketNo: '' })}>
+          <div className="delete-confirm-popup" onClick={(e) => e.stopPropagation()}>
+            <div className="delete-confirm-icon">
+              <img src={deleteIcon} alt="delete" style={{ width: '28px', height: '28px' }} />
+            </div>
+            <h3 className="delete-confirm-title">Delete Ticket</h3>
+            <p className="delete-confirm-msg">
+              Are you sure you want to delete ticket <strong>#{deleteConfirm.ticketNo}</strong>? This action cannot be undone.
+            </p>
+            <div className="delete-confirm-actions">
+              <button
+                className="delete-confirm-cancel"
+                onClick={() => setDeleteConfirm({ open: false, ticketId: null, ticketNo: '' })}
+              >
+                Cancel
+              </button>
+              <button
+                className="delete-confirm-delete"
+                onClick={() => {
+                  onDeleteTicket(deleteConfirm.ticketId);
+                  setDeleteConfirm({ open: false, ticketId: null, ticketNo: '' });
+                }}
+              >
+                Delete
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

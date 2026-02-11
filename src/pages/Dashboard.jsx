@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { fetchTickets, createTicket, updateTicket, deleteTicket, updateTicketStatusOptimistic } from '../redux/ticketSlice';
 import '../assets/Styles/Dashboard.css';
+import '../assets/Styles/ListView.css';
 import KanbanBoard from '../components/ticketing/KanbanBoard';
 import ListView from '../components/ticketing/ListView';
 import CreateTicketModal from '../components/ticketing/CreateTicketModal';
@@ -10,6 +11,7 @@ import SearchBar from '../components/shared/SearchBar';
 import FilterDropdown from '../components/shared/FilterDropdown';
 import SortDropdown from '../components/shared/SortDropdown';
 import ProfileDropdown from '../components/profile/ProfileDropdown';
+import deleteIcon from '../assets/icons/delete.png';
 
 const Dashboard = ({ currentUser, onLogout }) => {
   const dispatch = useDispatch();
@@ -33,6 +35,7 @@ const Dashboard = ({ currentUser, onLogout }) => {
     orderId: ''
   });
   const [sortConfig, setSortConfig] = useState({ field: '', direction: 'asc' });
+  const [deleteConfirm, setDeleteConfirm] = useState({ open: false, ticketId: null, ticketNo: '' });
 
   useEffect(() => {
     dispatch(fetchTickets());
@@ -210,10 +213,15 @@ const Dashboard = ({ currentUser, onLogout }) => {
     setSelectedTicket(null);
   };
 
-  const handleDeleteTicket = async (ticketId) => {
-    if (window.confirm('Are you sure you want to delete this ticket?')) {
-      await dispatch(deleteTicket(ticketId));
-    }
+  const handleDeleteTicket = (ticketId) => {
+    const ticket = tickets.find(t => (t._id || t.id) === ticketId);
+    setDeleteConfirm({ open: true, ticketId, ticketNo: ticket?.ticketNo || 'N/A' });
+  };
+
+  const confirmDelete = async () => {
+    await dispatch(deleteTicket(deleteConfirm.ticketId));
+    dispatch(fetchTickets());
+    setDeleteConfirm({ open: false, ticketId: null, ticketNo: '' });
   };
 
   const handleTicketClick = (ticket) => {
@@ -422,6 +430,34 @@ const Dashboard = ({ currentUser, onLogout }) => {
           }}
           onUpdate={handleUpdateTicket}
         />
+      )}
+
+      {deleteConfirm.open && (
+        <div className="delete-confirm-overlay" onClick={() => setDeleteConfirm({ open: false, ticketId: null, ticketNo: '' })}>
+          <div className="delete-confirm-popup" onClick={(e) => e.stopPropagation()}>
+            <div className="delete-confirm-icon">
+              <img src={deleteIcon} alt="delete" style={{ width: '28px', height: '28px' }} />
+            </div>
+            <h3 className="delete-confirm-title">Delete Ticket</h3>
+            <p className="delete-confirm-msg">
+              Are you sure you want to delete ticket <strong>#{deleteConfirm.ticketNo}</strong>? This action cannot be undone.
+            </p>
+            <div className="delete-confirm-actions">
+              <button
+                className="delete-confirm-cancel"
+                onClick={() => setDeleteConfirm({ open: false, ticketId: null, ticketNo: '' })}
+              >
+                Cancel
+              </button>
+              <button
+                className="delete-confirm-delete"
+                onClick={confirmDelete}
+              >
+                Delete
+              </button>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );
