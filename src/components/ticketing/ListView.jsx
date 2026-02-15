@@ -64,7 +64,6 @@ const ListView = ({ tickets, onTicketClick, onDeleteTicket }) => {
             <th className="col-category">Category</th>
             <th className="col-status">Status</th>
             <th className="col-severity">Severity</th>
-            <th className="col-priority">Priority</th>
             <th className="col-action">Action</th>
           </tr>
         </thead>
@@ -90,7 +89,7 @@ const ListView = ({ tickets, onTicketClick, onDeleteTicket }) => {
                   </td>
                   <td>
                     <span className="title-text">
-                      {ticket.subject?.split(' ').slice(0, 5).join(' ')}{ticket.subject?.split(' ').length > 6 ? '...' : ''}
+                      {ticket.subject?.split(' ').slice(0, 4).join(' ')}{ticket.subject?.split(' ').length > 6 ? '...' : ''}
                     </span>
                   </td>
                   <td>
@@ -118,9 +117,7 @@ const ListView = ({ tickets, onTicketClick, onDeleteTicket }) => {
                       {ticket.severity || 'N/A'}
                     </span>
                   </td>
-                  <td>
-                    <span className="priority-text">{ticket.priority || '-'}/10</span>
-                  </td>
+                  
                   <td>
                     <button
                       className="list-delete-btn"

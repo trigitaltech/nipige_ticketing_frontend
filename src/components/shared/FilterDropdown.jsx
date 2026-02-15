@@ -28,18 +28,17 @@ const FilterDropdown = ({ filters, onFilterChange, onClearFilters, categories })
   return (
     <div className="dropdown-wrapper" ref={wrapperRef}>
       <button
-        className="dropdown-trigger"
+        className="dropdown-trigger rounded-xl shadow-sm"
         onClick={() => setIsOpen(!isOpen)}
         style={{
-          border: isOpen || hasActiveFilters ? '1px solid #5E6C84' : '1px solid #DFE1E6',
-          backgroundColor: isOpen || hasActiveFilters ? '#5E6C84' : 'white',
-          color: isOpen || hasActiveFilters ? 'white' : '#5E6C84',
+          border: isOpen || hasActiveFilters ? '1px solid #3B82F6' : '1px solid #E5E7EB',
+          backgroundColor: isOpen || hasActiveFilters ? '#EFF6FF' : 'white',
+          color: isOpen || hasActiveFilters ? '#3B82F6' : '#6B7280',
         }}
       >
-        <svg width="14" height="14" viewBox="0 0 16 16" fill="currentColor">
+        <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor">
           <path d="M1 2h14L9.5 8.5V13l-3 1.5V8.5L1 2z" />
         </svg>
-        Filter
       </button>
 
       {isOpen && (
