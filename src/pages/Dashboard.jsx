@@ -1,29 +1,33 @@
 import { useState, useEffect } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { fetchTickets, createTicket, updateTicket, deleteTicket, updateTicketStatusOptimistic } from '../redux/ticketSlice';
-import '../assets/Styles/Dashboard.css';
+import { fetchCategories } from '../redux/categorySlice';
+import { fetchProjects } from '../redux/projectSlice';
 import '../assets/Styles/ListView.css';
+import Sidebar from '../components/layout/Sidebar';
+import Header from '../components/layout/Header';
+import SearchFilterBar from '../components/layout/SearchFilterBar';
 import KanbanBoard from '../components/ticketing/KanbanBoard';
 import ListView from '../components/ticketing/ListView';
 import CreateTicketModal from '../components/ticketing/CreateTicketModal';
-import UpdateTicketModal from '../components/ticketing/UpdateTicketModal';
-import SearchBar from '../components/shared/SearchBar';
-import FilterDropdown from '../components/shared/FilterDropdown';
-import SortDropdown from '../components/shared/SortDropdown';
-import ProfileDropdown from '../components/profile/ProfileDropdown';
-import deleteIcon from '../assets/icons/delete.png';
+import TicketDetailsPage from './TicketDetailsPage';
+import ProjectMaster from './ProjectMaster';
+import ProjectDetailsPage from './ProjectDetailsPage';
+import DeleteConfirmModal from '../components/shared/DeleteConfirmModal';
 
 const Dashboard = ({ currentUser, onLogout }) => {
   const dispatch = useDispatch();
   const { tickets, loading, error } = useSelector((state) => state.tickets);
   const { user } = useSelector((state) => state.auth);
   const { categories } = useSelector((state) => state.categories);
+  const { projects } = useSelector((state) => state.projects);
 
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [isUpdateModalOpen, setIsUpdateModalOpen] = useState(false);
   const [selectedTicket, setSelectedTicket] = useState(null);
   const [activeFilter, setActiveFilter] = useState('all'); // 'all' or 'my'
   const [viewMode, setViewMode] = useState('kanban'); // 'kanban' or 'list'
+  const [groupBy, setGroupBy] = useState('status'); // 'status' | 'project' | 'category'
   const [searchQuery, setSearchQuery] = useState('');
   const [filters, setFilters] = useState({
     status: '',
@@ -36,9 +40,13 @@ const Dashboard = ({ currentUser, onLogout }) => {
   });
   const [sortConfig, setSortConfig] = useState({ field: '', direction: 'asc' });
   const [deleteConfirm, setDeleteConfirm] = useState({ open: false, ticketId: null, ticketNo: '' });
+  const [activePage, setActivePage] = useState('Dashboard');
+  const [selectedProject, setSelectedProject] = useState(null);
 
   useEffect(() => {
     dispatch(fetchTickets());
+    dispatch(fetchProjects());
+    dispatch(fetchCategories());
   }, [dispatch]);
 
   const handleClearFilters = () => {
@@ -147,17 +155,10 @@ const Dashboard = ({ currentUser, onLogout }) => {
   })();
 
   // Helper function to convert IST datetime-local input to UTC format for API
-  // Input: "YYYY-MM-DDTHH:mm" (treated as IST)
-  // Output: "YYYY-MM-DDTHH:mm:ss.000Z" (UTC)
   const formatDateForAPI = (dateString) => {
     if (!dateString) return null;
-
-    // Create a date object treating the input as IST
-    // We append IST timezone offset (+05:30) to make it explicit
     const istDateString = dateString + ':00+05:30';
     const date = new Date(istDateString);
-
-    // Convert to ISO string which gives UTC format: "YYYY-MM-DDTHH:mm:ss.000Z"
     return date.toISOString();
   };
 
@@ -169,12 +170,12 @@ const Dashboard = ({ currentUser, onLogout }) => {
       severity: ticketData.severity || 'Medium',
       assignTo: ticketData.assignTo,
       reportedTo: ticketData.reportedTo,
+      project: ticketData.project,
       category: ticketData.category,
       scope: ticketData.scope,
-      // The API will auto-populate: reportedBy, tenant, etc.
+      attachments: Array.isArray(ticketData.attachments) ? ticketData.attachments : [],
     };
 
-    // Add startDate and endDate if provided
     if (ticketData.startDate) {
       newTicket.startDate = formatDateForAPI(ticketData.startDate);
     }
@@ -183,7 +184,6 @@ const Dashboard = ({ currentUser, onLogout }) => {
     }
 
     await dispatch(createTicket(newTicket));
-    // Refetch tickets to ensure UI is in sync with server
     dispatch(fetchTickets());
     setIsCreateModalOpen(false);
   };
@@ -191,14 +191,12 @@ const Dashboard = ({ currentUser, onLogout }) => {
   const handleUpdateTicket = async (updatedTicket) => {
     const ticketId = updatedTicket._id || updatedTicket.id;
 
-    // Merge the updated fields with the original ticket data
     const ticketData = {
       ...selectedTicket,
       ...updatedTicket,
       _id: ticketId
     };
 
-    // Convert startDate and endDate to API format if they exist
     if (ticketData.startDate) {
       ticketData.startDate = formatDateForAPI(ticketData.startDate);
     }
@@ -207,7 +205,6 @@ const Dashboard = ({ currentUser, onLogout }) => {
     }
 
     await dispatch(updateTicket({ ticketId, ticketData }));
-    // Refetch tickets to ensure UI is in sync with server
     dispatch(fetchTickets());
     setIsUpdateModalOpen(false);
     setSelectedTicket(null);
@@ -230,20 +227,15 @@ const Dashboard = ({ currentUser, onLogout }) => {
   };
 
   const handleStatusChange = async (ticketId, newStatus) => {
-    // Convert ticketId to string for comparison with MongoDB ObjectIds
     const ticketIdStr = String(ticketId);
     const ticket = tickets.find(t => String(t.id || t._id) === ticketIdStr);
 
     if (ticket) {
-      console.log(`Updating ticket ${ticket.ticketNo} status from ${ticket.status} to ${newStatus}`);
-
-      // Optimistically update the UI immediately
       dispatch(updateTicketStatusOptimistic({
         ticketId: ticket._id || ticket.id,
         newStatus
       }));
 
-      // Update in background (no await, no refetch)
       dispatch(updateTicket({
         ticketId: ticket._id || ticket.id,
         ticketData: { ...ticket, status: newStatus }
@@ -261,7 +253,6 @@ const Dashboard = ({ currentUser, onLogout }) => {
     : '') ||
   '';
 
-
   const avatarLabel =
     (fullName &&
       fullName
@@ -273,147 +264,96 @@ const Dashboard = ({ currentUser, onLogout }) => {
     (userEmail ? userEmail[0]?.toUpperCase() : 'U');
 
   return (
-    <div className="dashboard-container">
-      <header className="dashboard-header">
-        <div className="header-left">
-          <h1>TRIGITAL Task Management Dashboard</h1>
-          <span className="user-info">Welcome, {fullName}</span>
-        </div>
-        <div className="header-right">
-          <button className="create-ticket-btn" onClick={() => setIsCreateModalOpen(true)}>
-            + Create Ticket
-          </button>
-          <ProfileDropdown avatarLabel={avatarLabel} userEmail={userEmail} onLogout={onLogout} />
-        </div>
-      </header>
+    <div className="flex h-screen bg-gray-50">
+      {/* Left Sidebar */}
+      <Sidebar onLogout={onLogout} activeItem={activePage} onNavigate={(page) => { setActivePage(page); setSelectedTicket(null); setSelectedProject(null); }} />
 
-
-
-      <div style={{
-        padding: '8px 20px',
-        display: 'flex',
-        justifyContent: 'space-between',
-        alignItems: 'center',
-        backgroundColor: '#fafafa'
-      }}>
-        <div style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
-          <button
-            onClick={() => setActiveFilter('all')}
-            style={{
-              padding: '8px 16px',
-              border: activeFilter === 'all' ? '1px solid #5E6C84' : '1px solid #DFE1E6',
-              borderRadius: '3px',
-              cursor: 'pointer',
-              fontWeight: '500',
-              fontSize: '14px',
-              backgroundColor: activeFilter === 'all' ? '#5E6C84' : 'white',
-              color: activeFilter === 'all' ? 'white' : '#5E6C84',
-              outline: 'none',
-              transform: 'none',
-              transition: 'none',
+      {/* Main Content Area */}
+      <div className="flex-1 ml-60 flex flex-col overflow-hidden">
+        {activePage === 'Projects' ? (
+          <>
+            <Header
+              fullName={fullName}
+              avatarLabel={avatarLabel}
+              userEmail={userEmail}
+              onCreateTicket={() => {}}
+              onLogout={onLogout}
+            />
+            <div className="flex-1 overflow-auto">
+              {selectedProject ? (
+                <ProjectDetailsPage
+                  project={selectedProject}
+                  onBack={() => setSelectedProject(null)}
+                />
+              ) : (
+                <ProjectMaster onOpenProject={setSelectedProject} />
+              )}
+            </div>
+          </>
+        ) : selectedTicket ? (
+          /* Ticket Details Full Page */
+          <TicketDetailsPage
+            ticket={selectedTicket}
+            onBack={() => {
+              setSelectedTicket(null);
+              setIsUpdateModalOpen(false);
             }}
-          >
-            All Tasks
-          </button>
-          <button
-            onClick={() => setActiveFilter('my')}
-            style={{
-              padding: '8px 16px',
-              border: activeFilter === 'my' ? '1px solid #5E6C84' : '1px solid #DFE1E6',
-              borderRadius: '3px',
-              cursor: 'pointer',
-              fontWeight: '500',
-              fontSize: '14px',
-              backgroundColor: activeFilter === 'my' ? '#5E6C84' : 'white',
-              color: activeFilter === 'my' ? 'white' : '#5E6C84',
-              outline: 'none',
-              transform: 'none',
-              transition: 'none',
-            }}
-          >
-            My Tasks
-          </button>
-        </div>
-
-        {/* Search bar, Filter & Sort dropdowns */}
-        <div style={{ display: 'flex', gap: '6px', alignItems: 'center', flex: 1, justifyContent: 'center' }}>
-          <SearchBar value={searchQuery} onChange={setSearchQuery} />
-          <FilterDropdown
-            filters={filters}
-            onFilterChange={setFilters}
-            onClearFilters={handleClearFilters}
-            categories={categories}
-          />
-          <SortDropdown
-            sortConfig={sortConfig}
-            onSortChange={setSortConfig}
-            onClearSort={() => setSortConfig({ field: '', direction: 'asc' })}
-          />
-        </div>
-
-        <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
-          <button
-            onClick={() => setViewMode('kanban')}
-            title="Kanban View"
-            style={{
-              padding: '8px 12px',
-              border: viewMode === 'kanban' ? '1px solid #5E6C84' : '1px solid #DFE1E6',
-              borderRadius: '3px',
-              cursor: 'pointer',
-              fontSize: '16px',
-              backgroundColor: viewMode === 'kanban' ? '#5E6C84' : 'white',
-              color: viewMode === 'kanban' ? 'white' : '#5E6C84',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              outline: 'none',
-              transform: 'none',
-              transition: 'none',
-            }}
-          >
-            ▦
-          </button>
-          <button
-            onClick={() => setViewMode('list')}
-            title="List View"
-            style={{
-              padding: '8px 12px',
-              border: viewMode === 'list' ? '1px solid #5E6C84' : '1px solid #DFE1E6',
-              borderRadius: '3px',
-              cursor: 'pointer',
-              fontSize: '16px',
-              backgroundColor: viewMode === 'list' ? '#5E6C84' : 'white',
-              color: viewMode === 'list' ? 'white' : '#5E6C84',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              outline: 'none',
-              transform: 'none',
-              transition: 'none',
-            }}
-          >
-            ☰
-          </button>
-        </div>
-      </div>
-
-      <div className="dashboard-content">
-        { viewMode === 'kanban' ? (
-          <KanbanBoard
-            tickets={sortedTickets || []}
-            onTicketClick={handleTicketClick}
-            onStatusChange={handleStatusChange}
-            onDeleteTicket={handleDeleteTicket}
+            onUpdate={handleUpdateTicket}
           />
         ) : (
-          <ListView
-            tickets={sortedTickets || []}
-            onTicketClick={handleTicketClick}
-            onDeleteTicket={handleDeleteTicket}
-          />
+          <>
+            {/* Top Header */}
+            <Header
+              fullName={fullName}
+              avatarLabel={avatarLabel}
+              userEmail={userEmail}
+              onCreateTicket={() => setIsCreateModalOpen(true)}
+              onLogout={onLogout}
+            />
+
+            {/* Search/Filter Bar */}
+            <SearchFilterBar
+              activeFilter={activeFilter}
+              setActiveFilter={setActiveFilter}
+              searchQuery={searchQuery}
+              setSearchQuery={setSearchQuery}
+              filters={filters}
+              setFilters={setFilters}
+              onClearFilters={handleClearFilters}
+              categories={categories}
+              sortConfig={sortConfig}
+              setSortConfig={setSortConfig}
+              viewMode={viewMode}
+              setViewMode={setViewMode}
+              groupBy={groupBy}
+              setGroupBy={setGroupBy}
+            />
+
+            {/* Content */}
+            <div className="flex-1 overflow-auto p-5">
+              {viewMode === 'kanban' ? (
+                <KanbanBoard
+                  tickets={sortedTickets || []}
+                  onTicketClick={handleTicketClick}
+                  onStatusChange={handleStatusChange}
+                  onDeleteTicket={handleDeleteTicket}
+                  groupBy={groupBy}
+                  projects={projects || []}
+                  categories={categories || []}
+                />
+              ) : (
+                <ListView
+                  tickets={sortedTickets || []}
+                  onTicketClick={handleTicketClick}
+                  onDeleteTicket={handleDeleteTicket}
+                />
+              )}
+            </div>
+          </>
         )}
       </div>
 
+      {/* Modals */}
       {isCreateModalOpen && (
         <CreateTicketModal
           onClose={() => setIsCreateModalOpen(false)}
@@ -421,44 +361,17 @@ const Dashboard = ({ currentUser, onLogout }) => {
         />
       )}
 
-      {isUpdateModalOpen && selectedTicket && (
-        <UpdateTicketModal
-          ticket={selectedTicket}
-          onClose={() => {
-            setIsUpdateModalOpen(false);
-            setSelectedTicket(null);
-          }}
-          onUpdate={handleUpdateTicket}
-        />
-      )}
-
-      {deleteConfirm.open && (
-        <div className="delete-confirm-overlay" onClick={() => setDeleteConfirm({ open: false, ticketId: null, ticketNo: '' })}>
-          <div className="delete-confirm-popup" onClick={(e) => e.stopPropagation()}>
-            <div className="delete-confirm-icon">
-              <img src={deleteIcon} alt="delete" style={{ width: '28px', height: '28px' }} />
-            </div>
-            <h3 className="delete-confirm-title">Delete Ticket</h3>
-            <p className="delete-confirm-msg">
-              Are you sure you want to delete ticket <strong>#{deleteConfirm.ticketNo}</strong>? This action cannot be undone.
-            </p>
-            <div className="delete-confirm-actions">
-              <button
-                className="delete-confirm-cancel"
-                onClick={() => setDeleteConfirm({ open: false, ticketId: null, ticketNo: '' })}
-              >
-                Cancel
-              </button>
-              <button
-                className="delete-confirm-delete"
-                onClick={confirmDelete}
-              >
-                Delete
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+      <DeleteConfirmModal
+        isOpen={deleteConfirm.open}
+        title="Delete Ticket"
+        message={(
+          <>
+            Are you sure you want to delete ticket <strong>#{deleteConfirm.ticketNo}</strong>? This action cannot be undone.
+          </>
+        )}
+        onCancel={() => setDeleteConfirm({ open: false, ticketId: null, ticketNo: '' })}
+        onConfirm={confirmDelete}
+      />
     </div>
   );
 };

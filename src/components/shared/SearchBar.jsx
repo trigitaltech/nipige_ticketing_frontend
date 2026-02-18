@@ -2,7 +2,7 @@ import '../../assets/Styles/SearchBar.css';
 
 const SearchBar = ({ value, onChange, placeholder = 'Search by username or email...' }) => {
   return (
-    <div className="search-bar-wrapper">
+    <div className="search-bar-wrapper bg-gray-50 rounded-3xl px-3 flex items-center gap-2 w-full">
       <svg
         className="search-bar-icon"
         width="15"

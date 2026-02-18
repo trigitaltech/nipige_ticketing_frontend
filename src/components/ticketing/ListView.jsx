@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import '../../assets/Styles/ListView.css';
 import deleteIcon from '../../assets/icons/delete.png';
+import DeleteConfirmModal from '../shared/DeleteConfirmModal';
 
 const ListView = ({ tickets, onTicketClick, onDeleteTicket }) => {
   const [currentPage, setCurrentPage] = useState(1);
@@ -64,7 +65,6 @@ const ListView = ({ tickets, onTicketClick, onDeleteTicket }) => {
             <th className="col-category">Category</th>
             <th className="col-status">Status</th>
             <th className="col-severity">Severity</th>
-            <th className="col-priority">Priority</th>
             <th className="col-action">Action</th>
           </tr>
         </thead>
@@ -90,7 +90,7 @@ const ListView = ({ tickets, onTicketClick, onDeleteTicket }) => {
                   </td>
                   <td>
                     <span className="title-text">
-                      {ticket.subject?.split(' ').slice(0, 5).join(' ')}{ticket.subject?.split(' ').length > 6 ? '...' : ''}
+                      {ticket.subject?.split(' ').slice(0, 4).join(' ')}{ticket.subject?.split(' ').length > 6 ? '...' : ''}
                     </span>
                   </td>
                   <td>
@@ -118,9 +118,7 @@ const ListView = ({ tickets, onTicketClick, onDeleteTicket }) => {
                       {ticket.severity || 'N/A'}
                     </span>
                   </td>
-                  <td>
-                    <span className="priority-text">{ticket.priority || '-'}/10</span>
-                  </td>
+                  
                   <td>
                     <button
                       className="list-delete-btn"
@@ -191,36 +189,20 @@ const ListView = ({ tickets, onTicketClick, onDeleteTicket }) => {
         Showing {indexOfFirstTicket + 1}-{Math.min(indexOfLastTicket, tickets.length)} of {tickets.length} tickets
       </div>
 
-      {deleteConfirm.open && (
-        <div className="delete-confirm-overlay" onClick={() => setDeleteConfirm({ open: false, ticketId: null, ticketNo: '' })}>
-          <div className="delete-confirm-popup" onClick={(e) => e.stopPropagation()}>
-            <div className="delete-confirm-icon">
-              <img src={deleteIcon} alt="delete" style={{ width: '28px', height: '28px' }} />
-            </div>
-            <h3 className="delete-confirm-title">Delete Ticket</h3>
-            <p className="delete-confirm-msg">
-              Are you sure you want to delete ticket <strong>#{deleteConfirm.ticketNo}</strong>? This action cannot be undone.
-            </p>
-            <div className="delete-confirm-actions">
-              <button
-                className="delete-confirm-cancel"
-                onClick={() => setDeleteConfirm({ open: false, ticketId: null, ticketNo: '' })}
-              >
-                Cancel
-              </button>
-              <button
-                className="delete-confirm-delete"
-                onClick={() => {
-                  onDeleteTicket(deleteConfirm.ticketId);
-                  setDeleteConfirm({ open: false, ticketId: null, ticketNo: '' });
-                }}
-              >
-                Delete
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+      <DeleteConfirmModal
+        isOpen={deleteConfirm.open}
+        title="Delete Ticket"
+        message={(
+          <>
+            Are you sure you want to delete ticket <strong>#{deleteConfirm.ticketNo}</strong>? This action cannot be undone.
+          </>
+        )}
+        onCancel={() => setDeleteConfirm({ open: false, ticketId: null, ticketNo: '' })}
+        onConfirm={() => {
+          onDeleteTicket(deleteConfirm.ticketId);
+          setDeleteConfirm({ open: false, ticketId: null, ticketNo: '' });
+        }}
+      />
     </div>
   );
 };

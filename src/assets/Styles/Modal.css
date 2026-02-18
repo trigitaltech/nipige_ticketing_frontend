@@ -33,6 +33,14 @@
   animation: slideUp 0.3s;
 }
 
+/* Larger + rounder create ticket modal */
+.modal-content-create {
+  max-width: 760px;
+  border-radius: 18px;
+  overflow-y: auto;
+  overflow-x: hidden;
+}
+
 @keyframes slideUp {
   from {
     transform: translateY(30px);
@@ -232,6 +240,65 @@
 
 .submit-btn:active {
   background: #0747A6;
+}
+
+.submit-btn:disabled {
+  opacity: 0.7;
+  cursor: not-allowed;
+}
+
+.upload-progress {
+  display: block;
+  margin-top: 6px;
+  font-size: 12px;
+  color: #0052CC;
+}
+
+.attachment-list {
+  margin-top: 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.attachment-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 8px 10px;
+  border: 1px solid #DFE1E6;
+  border-radius: 6px;
+  background: #FFFFFF;
+}
+
+.attachment-link {
+  color: #0052CC;
+  text-decoration: none;
+  font-size: 13px;
+  font-weight: 500;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.attachment-link:hover {
+  text-decoration: underline;
+}
+
+.attachment-remove-btn {
+  border: 1px solid #DFE1E6;
+  background: #FAFBFC;
+  color: #42526E;
+  font-size: 12px;
+  padding: 4px 8px;
+  border-radius: 4px;
+  cursor: pointer;
+  flex-shrink: 0;
+}
+
+.attachment-remove-btn:hover {
+  background: #EBECF0;
 }
 
 /* Two-column layout for UpdateTicketModal */

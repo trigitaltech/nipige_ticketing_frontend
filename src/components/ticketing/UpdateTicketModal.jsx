@@ -2,14 +2,17 @@ import { useState, useEffect } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { fetchCategories } from '../../redux/categorySlice';
 import { fetchUsers } from '../../redux/userSlice';
+import { fetchProjects } from '../../redux/projectSlice';
 import { postCommentAPI } from '../../services/api';
 import TicketInfoPanel from './TicketInfoPanel';
+import AlertModal from '../shared/AlertModal';
 import '../../assets/Styles/Modal.css';
 
 const UpdateTicketModal = ({ ticket, onClose, onUpdate }) => {
   const dispatch = useDispatch();
   const { categories, loading: categoriesLoading } = useSelector((state) => state.categories);
   const { users, loading: usersLoading } = useSelector((state) => state.users);
+  const { projects, loading: projectsLoading } = useSelector((state) => state.projects);
 
   // Helper function to convert UTC date to IST for datetime-local input
   // Input: "2026-01-24T00:00:00.000Z" (UTC)
@@ -43,6 +46,7 @@ const UpdateTicketModal = ({ ticket, onClose, onUpdate }) => {
     assignTo: ticket.assignTo || null,
     reportedTo: ticket.reportedTo || null,
     status: ticket.status || 'OPEN',
+    project: ticket.project?.id || ticket.project?._id || ticket.project || '',
     category: ticket.category?._id || ticket.category || '',
     scope: ticket.scope || '',
     startDate: formatDateTimeLocal(ticket.startDate),
@@ -53,10 +57,30 @@ const UpdateTicketModal = ({ ticket, onClose, onUpdate }) => {
   const [worknoteHistory, setWorknoteHistory] = useState(ticket.worknoteHistory || []);
   const [errors, setErrors] = useState({});
   const [isPostingComment, setIsPostingComment] = useState(false);
+  const [alertModal, setAlertModal] = useState({
+    isOpen: false,
+    type: 'info',
+    title: '',
+    message: '',
+  });
+
+  const openAlertModal = ({ type = 'info', title, message }) => {
+    setAlertModal({
+      isOpen: true,
+      type,
+      title,
+      message,
+    });
+  };
+
+  const closeAlertModal = () => {
+    setAlertModal((prev) => ({ ...prev, isOpen: false }));
+  };
 
   useEffect(() => {
     dispatch(fetchCategories());
     dispatch(fetchUsers());
+    dispatch(fetchProjects());
   }, [dispatch]);
 
   const handleChange = (e) => {
@@ -102,6 +126,17 @@ const UpdateTicketModal = ({ ticket, onClose, onUpdate }) => {
     }
   };
 
+  const handleProjectChange = (e) => {
+    const { value } = e.target;
+    setFormData((prev) => ({
+      ...prev,
+      project: value,
+    }));
+    if (errors.project) {
+      setErrors((prev) => ({ ...prev, project: '' }));
+    }
+  };
+
   const handleUserChange = (e, field) => {
     const userId = e.target.value;
     const selectedUser = users.find(user => user._id === userId);
@@ -133,6 +168,9 @@ const UpdateTicketModal = ({ ticket, onClose, onUpdate }) => {
 
   const validate = () => {
     const newErrors = {};
+    if (!formData.project) {
+      newErrors.project = 'Project is required';
+    }
     if (!formData.subject.trim()) {
       newErrors.subject = 'Subject is required';
     }
@@ -189,14 +227,18 @@ const UpdateTicketModal = ({ ticket, onClose, onUpdate }) => {
       setComment('');
       setErrors(prev => ({ ...prev, comment: '' }));
 
-      // Show success message
-      alert('Comment posted successfully!');
-
-      // You might want to refresh the ticket data here
-      // to show the new comment in the history
+      openAlertModal({
+        type: 'success',
+        title: 'Comment Posted',
+        message: 'Comment posted successfully.',
+      });
     } catch (error) {
       console.error('Error posting comment:', error);
-      alert('Failed to post comment. Please try again.');
+      openAlertModal({
+        type: 'error',
+        title: 'Post Failed',
+        message: 'Failed to post comment. Please try again.',
+      });
     } finally {
       setIsPostingComment(false);
     }
@@ -214,6 +256,31 @@ const UpdateTicketModal = ({ ticket, onClose, onUpdate }) => {
           <div className="modal-two-column">
             {/* Left Section - Form Fields */}
             <div className="modal-left-section">
+              <div className="form-group">
+                <label htmlFor="project">Project *</label>
+                <select
+                  id="project"
+                  name="project"
+                  value={formData.project}
+                  onChange={handleProjectChange}
+                  disabled={projectsLoading}
+                >
+                  <option value="">
+                    {projectsLoading ? 'Loading projects...' : 'Select a project'}
+                  </option>
+                  {Array.isArray(projects) && projects.map((project) => {
+                    const projectId = project._id || project.id;
+                    const projectName = project.name || project.projectName || 'Untitled Project';
+                    return (
+                      <option key={projectId} value={projectId}>
+                        {projectName}
+                      </option>
+                    );
+                  })}
+                </select>
+                {errors.project && <span className="error">{errors.project}</span>}
+              </div>
+
               <div className="form-group">
                 <label htmlFor="category">Category</label>
                 <select
@@ -446,6 +513,13 @@ const UpdateTicketModal = ({ ticket, onClose, onUpdate }) => {
           </div>
         </form>
       </div>
+      <AlertModal
+        isOpen={alertModal.isOpen}
+        type={alertModal.type}
+        title={alertModal.title}
+        message={alertModal.message}
+        onClose={closeAlertModal}
+      />
     </div>
   );
 };

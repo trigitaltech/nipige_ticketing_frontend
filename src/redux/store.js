@@ -3,6 +3,7 @@ import authReducer from './authSlice';
 import ticketReducer from './ticketSlice';
 import categoryReducer from './categorySlice';
 import userReducer from './userSlice';
+import projectReducer from './projectSlice';
 
 export const store = configureStore({
   reducer: {
@@ -10,6 +11,7 @@ export const store = configureStore({
     tickets: ticketReducer,
     categories: categoryReducer,
     users: userReducer,
+    projects: projectReducer,
   },
 });
 
