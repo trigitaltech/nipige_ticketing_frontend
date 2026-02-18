@@ -15,6 +15,8 @@ const SearchFilterBar = ({
   setSortConfig,
   viewMode,
   setViewMode,
+  groupBy,
+  setGroupBy,
 }) => {
   return (
     <div className="mx-5 mt-4 bg-white rounded-2xl shadow-sm border border-gray-100 px-5 py-2.5 flex items-center gap-4">
@@ -50,10 +52,14 @@ const SearchFilterBar = ({
       {/* Group By */}
       <div className="bg-gray-50 flex items-center gap-2 text-sm text-gray-500 border border-gray-100 rounded-3xl px-3 py-2 shrink-0">
         <span className="font-bold text-xs text-gray-500">GROUP BY:</span>
-        <select className="bg-transparent font-semibold text-gray-800 border-none outline-none cursor-pointer text-sm">
-          <option>Status</option>
-          <option>Priority</option>
-          <option>Category</option>
+        <select
+          value={groupBy}
+          onChange={(e) => setGroupBy(e.target.value)}
+          className="bg-transparent font-semibold text-gray-800 border-none outline-none cursor-pointer text-sm"
+        >
+          <option value="status">Status</option>
+          <option value="project">Project</option>
+          <option value="category">Category</option>
         </select>
       </div>
 

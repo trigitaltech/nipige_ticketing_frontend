@@ -1,9 +1,9 @@
 import axios from 'axios';
+import { extractBase64Data } from '../function/function';
 
 const API_BASE_URL = 'https://dev.app.trigital.in';
 const NIPIGE_BASE_URL = 'https://dev.app.nipige.com';
 
-// Trigital API instance
 const api = axios.create({
   baseURL: API_BASE_URL,
   headers: {
@@ -38,7 +38,6 @@ api.interceptors.response.use(
   }
 );
 
-// Nipige API instance (for tickets and categories)
 const nipige = axios.create({
   baseURL: NIPIGE_BASE_URL,
   headers: {
@@ -83,13 +82,39 @@ export const loginAPI = async (credentials, userType = 'EMPLOYEE') => {
   return response.data;
 };
 
+const normalizeAttachmentPayload = (attachmentsInput) => {
+  const attachments = Array.isArray(attachmentsInput)
+    ? attachmentsInput
+    : attachmentsInput
+      ? [attachmentsInput]
+      : [];
+
+  return attachments
+    .map((attachment) => {
+      if (typeof attachment === 'string') {
+        const url = attachment.trim();
+        return url ? { url } : null;
+      }
+
+      if (attachment && typeof attachment === 'object') {
+        const url = (attachment.url || attachment.fileUrl || '').trim();
+        return url ? { url } : null;
+      }
+
+      return null;
+    })
+    .filter(Boolean);
+};
+
 export const createTicketAPI = async (ticketData) => {
-  // Get user info from localStorage
   const userString = localStorage.getItem('user');
   const user = userString ? JSON.parse(userString) : null;
   const currentUser = user?.response?.user;
+  const projectId =
+    ticketData.project?.id ||
+    ticketData.project?._id ||
+    (typeof ticketData.project === 'string' ? ticketData.project : '');
 
-  // Prepare the create payload matching the API structure
   const createPayload = {
     category: ticketData.category?._id || ticketData.category || "62ecc5cb28d1be7e18db8315", // Default category if not provided
     description: ticketData.description,
@@ -100,24 +125,24 @@ export const createTicketAPI = async (ticketData) => {
       userType: currentUser?.category || "INSPECTOR",
       phone: currentUser?.phone
     },
-    attachments: ticketData.attachments || [],
+    attachments: normalizeAttachmentPayload(ticketData.attachments || ticketData.attachment),
     priority: ticketData.priority || 5,
     severity: ticketData.severity || "Medium"
   };
 
-  // Add reportedTo if provided
+  if (projectId) {
+    createPayload.project = { id: projectId };
+  }
+
   if (ticketData.reportedTo) {
     createPayload.reportedTo = ticketData.reportedTo;
   }
 
-  // Add assignTo if provided
   if (ticketData.assignTo) {
     createPayload.assignTo = ticketData.assignTo;
   }
 
-  console.log("Create Ticket Payload ====>", createPayload);
 
-  // Add startDate and endDate if provided
   if (ticketData.startDate) {
     createPayload.startDate = ticketData.startDate;
   }
@@ -127,24 +152,24 @@ export const createTicketAPI = async (ticketData) => {
 
   const response = await nipige.post('/servicerequest/ticket/create', createPayload);
 
-  console.log('Create Ticket Response:', response.data);
   return response.data;
 };
 
 export const getTicketsAPI = async () => {
   const response = await nipige.get('/servicerequest/ticket/list');
-
-  console.log('Ticket List Response:', response.data);
+  
   return response.data;
 };
 
 export const updateTicketAPI = async (ticketId, ticketData) => {
-  // Get user info from localStorage
   const userString = localStorage.getItem('user');
   const user = userString ? JSON.parse(userString) : null;
   const currentUser = user?.response?.user;
-
-  // Prepare the update payload matching the API structure
+  const projectId =
+    ticketData.project?.id ||
+    ticketData.project?._id ||
+    (typeof ticketData.project === 'string' ? ticketData.project : '');
+  
   const updatePayload = {
     _id: ticketId,
     category: ticketData.category?._id || ticketData.category,
@@ -154,7 +179,7 @@ export const updateTicketAPI = async (ticketId, ticketData) => {
     priority: ticketData.priority,
     severity: ticketData.severity,
     escalated: ticketData.escalated ? "true" : "false",
-    attachments: ticketData.attachments || [],
+    attachments: normalizeAttachmentPayload(ticketData.attachments || ticketData.attachment),
     ticketNo: ticketData.ticketNo,
     tenant: ticketData.tenant,
     scope: ticketData.scope,
@@ -171,29 +196,29 @@ export const updateTicketAPI = async (ticketId, ticketData) => {
     agentId: currentUser?._id
   };
 
-  // Add assignTo if provided
+  if (projectId) {
+    updatePayload.project = { id: projectId };
+  }
+
   if (ticketData.assignTo) {
     updatePayload.assignTo = ticketData.assignTo;
   }
 
-  // Add reportedTo if provided
+
   if (ticketData.reportedTo) {
     updatePayload.reportedTo = ticketData.reportedTo;
   }
 
-  console.log("Update Ticket Payload ====:>", updatePayload);
 
-  // Add startDate and endDate if provided
   if (ticketData.startDate) {
     updatePayload.startDate = ticketData.startDate;
   }
   if (ticketData.endDate) {
     updatePayload.endDate = ticketData.endDate;
   }
-
+  console.log("====>",updatePayload);
   const response = await nipige.put(`/servicerequest/ticket/update/${ticketId}`, updatePayload);
 
-  console.log('Update Ticket Response:', response.data);
   return response.data;
 };
 
@@ -212,11 +237,6 @@ export const getCategoriesAPI = async () => {
 
     const response = await nipige.get('/servicerequest/category/list');
 
-    console.log('Category API - Full Response:', response);
-    console.log('Category API - response.data:', response.data);
-    console.log('Category API - response.data.data:', response.data?.data);
-    console.log('Category API - Token:', token ? 'Token exists' : 'No token');
-
     return response.data;
 
   } catch (error) {
@@ -226,7 +246,6 @@ export const getCategoriesAPI = async () => {
 };
 
 export const postCommentAPI = async (ticketId, commentText) => {
-  // Get user info from localStorage
   const userString = localStorage.getItem('user');
   const user = userString ? JSON.parse(userString) : null;
   const currentUser = user?.response?.user;
@@ -246,7 +265,6 @@ export const postCommentAPI = async (ticketId, commentText) => {
 
   const response = await nipige.post(`/servicerequest/ticket/postcomment/${ticketId}`, commentPayload);
 
-  console.log('Post Comment Response:', response.data);
   return response.data;
 };
 
@@ -269,7 +287,6 @@ export const filterTicketsAPI = async (filters) => {
 
   const response = await nipige.post('/servicerequest/ticket/filter', filterPayload);
 
-  console.log('Filter Tickets Response:', response.data);
   return response.data;
 };
 
@@ -278,7 +295,6 @@ export const changePasswordAPI = async ({ currentPassword, newPassword }) => {
     currentPassword,
     newPassword,
   });
-  console.log('Change Password Response:', response.data);
   return response.data;
 };
 
@@ -292,9 +308,6 @@ export const getUsersAPI = async () => {
 
     const response = await api.get('/cap/users/admin/list?limit=50&page=1');
 
-    console.log('Users API - Full Response:', response);
-    console.log('Users API - response.data:', response.data);
-    console.log('Users API - response.data.response:', response.data?.response);
 
     return response.data;
 
@@ -302,6 +315,37 @@ export const getUsersAPI = async () => {
     console.error('User List Error:', error.response?.data || error.message);
     throw error;
   }
+};
+
+
+export const uploadImage = async (payload, onUploadProgress) => {
+
+
+  const base64DataUrl = payload?.image;
+  if (!base64DataUrl) {
+    throw new Error('uploadImage: payload.image is required');
+  }
+
+  const cleanedBase64 = extractBase64Data(base64DataUrl);
+  const requestBody = {
+    image: cleanedBase64,
+    key: payload?.key || String(Date.now()),
+    isPublic: payload?.isPublic ?? true,
+    replaceExisting: payload?.replaceExisting ?? false,
+    basePath: payload?.basePath || ['user', 'attachment'],
+  };
+
+  const response = await nipige.post('/storage/image/upload', requestBody, {
+    onUploadProgress: (progressEvent) => {
+      if (onUploadProgress && progressEvent.total) {
+        const percent = Math.round(
+          (progressEvent.loaded * 100) / progressEvent.total
+        );
+        onUploadProgress(percent);
+      }
+    },
+  });
+  return response.data;
 };
 
 export default api;

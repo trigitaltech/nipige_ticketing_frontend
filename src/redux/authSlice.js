@@ -12,7 +12,6 @@ export const login = createAsyncThunk(
       localStorage.setItem('user', JSON.stringify(response));
       if (token) {
         localStorage.setItem('token', token);
-        console.log('Token stored:', token);
       } else {
         console.warn('No token found in response:', response);
       }

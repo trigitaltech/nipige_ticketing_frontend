@@ -1,6 +1,8 @@
 import { useState, useEffect } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { fetchTickets, createTicket, updateTicket, deleteTicket, updateTicketStatusOptimistic } from '../redux/ticketSlice';
+import { fetchCategories } from '../redux/categorySlice';
+import { fetchProjects } from '../redux/projectSlice';
 import '../assets/Styles/ListView.css';
 import Sidebar from '../components/layout/Sidebar';
 import Header from '../components/layout/Header';
@@ -8,20 +10,24 @@ import SearchFilterBar from '../components/layout/SearchFilterBar';
 import KanbanBoard from '../components/ticketing/KanbanBoard';
 import ListView from '../components/ticketing/ListView';
 import CreateTicketModal from '../components/ticketing/CreateTicketModal';
-import UpdateTicketModal from '../components/ticketing/UpdateTicketModal';
-import deleteIcon from '../assets/icons/delete.png';
+import TicketDetailsPage from './TicketDetailsPage';
+import ProjectMaster from './ProjectMaster';
+import ProjectDetailsPage from './ProjectDetailsPage';
+import DeleteConfirmModal from '../components/shared/DeleteConfirmModal';
 
 const Dashboard = ({ currentUser, onLogout }) => {
   const dispatch = useDispatch();
   const { tickets, loading, error } = useSelector((state) => state.tickets);
   const { user } = useSelector((state) => state.auth);
   const { categories } = useSelector((state) => state.categories);
+  const { projects } = useSelector((state) => state.projects);
 
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [isUpdateModalOpen, setIsUpdateModalOpen] = useState(false);
   const [selectedTicket, setSelectedTicket] = useState(null);
   const [activeFilter, setActiveFilter] = useState('all'); // 'all' or 'my'
   const [viewMode, setViewMode] = useState('kanban'); // 'kanban' or 'list'
+  const [groupBy, setGroupBy] = useState('status'); // 'status' | 'project' | 'category'
   const [searchQuery, setSearchQuery] = useState('');
   const [filters, setFilters] = useState({
     status: '',
@@ -34,9 +40,13 @@ const Dashboard = ({ currentUser, onLogout }) => {
   });
   const [sortConfig, setSortConfig] = useState({ field: '', direction: 'asc' });
   const [deleteConfirm, setDeleteConfirm] = useState({ open: false, ticketId: null, ticketNo: '' });
+  const [activePage, setActivePage] = useState('Dashboard');
+  const [selectedProject, setSelectedProject] = useState(null);
 
   useEffect(() => {
     dispatch(fetchTickets());
+    dispatch(fetchProjects());
+    dispatch(fetchCategories());
   }, [dispatch]);
 
   const handleClearFilters = () => {
@@ -160,8 +170,10 @@ const Dashboard = ({ currentUser, onLogout }) => {
       severity: ticketData.severity || 'Medium',
       assignTo: ticketData.assignTo,
       reportedTo: ticketData.reportedTo,
+      project: ticketData.project,
       category: ticketData.category,
       scope: ticketData.scope,
+      attachments: Array.isArray(ticketData.attachments) ? ticketData.attachments : [],
     };
 
     if (ticketData.startDate) {
@@ -254,52 +266,91 @@ const Dashboard = ({ currentUser, onLogout }) => {
   return (
     <div className="flex h-screen bg-gray-50">
       {/* Left Sidebar */}
-      <Sidebar onLogout={onLogout} />
+      <Sidebar onLogout={onLogout} activeItem={activePage} onNavigate={(page) => { setActivePage(page); setSelectedTicket(null); setSelectedProject(null); }} />
 
       {/* Main Content Area */}
       <div className="flex-1 ml-60 flex flex-col overflow-hidden">
-        {/* Top Header */}
-        <Header
-          fullName={fullName}
-          avatarLabel={avatarLabel}
-          userEmail={userEmail}
-          onCreateTicket={() => setIsCreateModalOpen(true)}
-          onLogout={onLogout}
-        />
-
-        {/* Search/Filter Bar */}
-        <SearchFilterBar
-          activeFilter={activeFilter}
-          setActiveFilter={setActiveFilter}
-          searchQuery={searchQuery}
-          setSearchQuery={setSearchQuery}
-          filters={filters}
-          setFilters={setFilters}
-          onClearFilters={handleClearFilters}
-          categories={categories}
-          sortConfig={sortConfig}
-          setSortConfig={setSortConfig}
-          viewMode={viewMode}
-          setViewMode={setViewMode}
-        />
-
-        {/* Content */}
-        <div className="flex-1 overflow-auto p-5">
-          {viewMode === 'kanban' ? (
-            <KanbanBoard
-              tickets={sortedTickets || []}
-              onTicketClick={handleTicketClick}
-              onStatusChange={handleStatusChange}
-              onDeleteTicket={handleDeleteTicket}
+        {activePage === 'Projects' ? (
+          <>
+            <Header
+              fullName={fullName}
+              avatarLabel={avatarLabel}
+              userEmail={userEmail}
+              onCreateTicket={() => {}}
+              onLogout={onLogout}
             />
-          ) : (
-            <ListView
-              tickets={sortedTickets || []}
-              onTicketClick={handleTicketClick}
-              onDeleteTicket={handleDeleteTicket}
+            <div className="flex-1 overflow-auto">
+              {selectedProject ? (
+                <ProjectDetailsPage
+                  project={selectedProject}
+                  onBack={() => setSelectedProject(null)}
+                />
+              ) : (
+                <ProjectMaster onOpenProject={setSelectedProject} />
+              )}
+            </div>
+          </>
+        ) : selectedTicket ? (
+          /* Ticket Details Full Page */
+          <TicketDetailsPage
+            ticket={selectedTicket}
+            onBack={() => {
+              setSelectedTicket(null);
+              setIsUpdateModalOpen(false);
+            }}
+            onUpdate={handleUpdateTicket}
+          />
+        ) : (
+          <>
+            {/* Top Header */}
+            <Header
+              fullName={fullName}
+              avatarLabel={avatarLabel}
+              userEmail={userEmail}
+              onCreateTicket={() => setIsCreateModalOpen(true)}
+              onLogout={onLogout}
             />
-          )}
-        </div>
+
+            {/* Search/Filter Bar */}
+            <SearchFilterBar
+              activeFilter={activeFilter}
+              setActiveFilter={setActiveFilter}
+              searchQuery={searchQuery}
+              setSearchQuery={setSearchQuery}
+              filters={filters}
+              setFilters={setFilters}
+              onClearFilters={handleClearFilters}
+              categories={categories}
+              sortConfig={sortConfig}
+              setSortConfig={setSortConfig}
+              viewMode={viewMode}
+              setViewMode={setViewMode}
+              groupBy={groupBy}
+              setGroupBy={setGroupBy}
+            />
+
+            {/* Content */}
+            <div className="flex-1 overflow-auto p-5">
+              {viewMode === 'kanban' ? (
+                <KanbanBoard
+                  tickets={sortedTickets || []}
+                  onTicketClick={handleTicketClick}
+                  onStatusChange={handleStatusChange}
+                  onDeleteTicket={handleDeleteTicket}
+                  groupBy={groupBy}
+                  projects={projects || []}
+                  categories={categories || []}
+                />
+              ) : (
+                <ListView
+                  tickets={sortedTickets || []}
+                  onTicketClick={handleTicketClick}
+                  onDeleteTicket={handleDeleteTicket}
+                />
+              )}
+            </div>
+          </>
+        )}
       </div>
 
       {/* Modals */}
@@ -310,44 +361,17 @@ const Dashboard = ({ currentUser, onLogout }) => {
         />
       )}
 
-      {isUpdateModalOpen && selectedTicket && (
-        <UpdateTicketModal
-          ticket={selectedTicket}
-          onClose={() => {
-            setIsUpdateModalOpen(false);
-            setSelectedTicket(null);
-          }}
-          onUpdate={handleUpdateTicket}
-        />
-      )}
-
-      {deleteConfirm.open && (
-        <div className="delete-confirm-overlay" onClick={() => setDeleteConfirm({ open: false, ticketId: null, ticketNo: '' })}>
-          <div className="delete-confirm-popup" onClick={(e) => e.stopPropagation()}>
-            <div className="delete-confirm-icon">
-              <img src={deleteIcon} alt="delete" style={{ width: '28px', height: '28px' }} />
-            </div>
-            <h3 className="delete-confirm-title">Delete Ticket</h3>
-            <p className="delete-confirm-msg">
-              Are you sure you want to delete ticket <strong>#{deleteConfirm.ticketNo}</strong>? This action cannot be undone.
-            </p>
-            <div className="delete-confirm-actions">
-              <button
-                className="delete-confirm-cancel"
-                onClick={() => setDeleteConfirm({ open: false, ticketId: null, ticketNo: '' })}
-              >
-                Cancel
-              </button>
-              <button
-                className="delete-confirm-delete"
-                onClick={confirmDelete}
-              >
-                Delete
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+      <DeleteConfirmModal
+        isOpen={deleteConfirm.open}
+        title="Delete Ticket"
+        message={(
+          <>
+            Are you sure you want to delete ticket <strong>#{deleteConfirm.ticketNo}</strong>? This action cannot be undone.
+          </>
+        )}
+        onCancel={() => setDeleteConfirm({ open: false, ticketId: null, ticketNo: '' })}
+        onConfirm={confirmDelete}
+      />
     </div>
   );
 };

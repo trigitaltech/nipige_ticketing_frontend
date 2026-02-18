@@ -10,6 +10,14 @@ const severityConfig = {
 const defaultSeverity = { bg: 'bg-gray-100', text: 'text-gray-500', dot: 'bg-gray-500' };
 
 const TicketCard = ({ ticket, onDragStart, onClick, onDelete }) => {
+  const isLikelyId = (value = '') => {
+    const trimmed = String(value).trim();
+    if (!trimmed) return false;
+    const isMongoObjectId = /^[a-f0-9]{24}$/i.test(trimmed);
+    const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(trimmed);
+    return isMongoObjectId || isUuid;
+  };
+
   const formatDate = (dateString) => {
     if (!dateString) return '';
     const date = new Date(dateString);
@@ -57,7 +65,32 @@ const TicketCard = ({ ticket, onDragStart, onClick, onDelete }) => {
   const endDate = ticket.endDate;
   const escalated = ticket.escalated;
   const scope = ticket.scope || ticket.category?.scope || '';
-  const attachmentCount = ticket.attachments?.length || 0;
+  const rawProjectName =
+    ticket.project?.name ||
+    ticket.project?.projectName ||
+    ticket.projectName ||
+    ticket.project?.title ||
+    (typeof ticket.project === 'string' ? ticket.project : '');
+  const projectName = rawProjectName && !isLikelyId(rawProjectName) ? rawProjectName : '';
+
+  // Normalize attachments for count: handle both `attachments` array and single `attachment` object
+  const normalizedAttachments = (() => {
+    const arr = Array.isArray(ticket.attachments)
+      ? ticket.attachments
+      : ticket.attachments
+      ? [ticket.attachments]
+      : [];
+
+    const single = ticket.attachment
+      ? Array.isArray(ticket.attachment)
+        ? ticket.attachment
+        : [ticket.attachment]
+      : [];
+
+    return [...arr, ...single];
+  })();
+
+  const attachmentCount = normalizedAttachments.length;
   const category = ticket.category?.name || 'general Task';
   const startFormatted = formatDate(startDate);
   const endFormatted = formatDate(endDate);
@@ -88,10 +121,11 @@ const TicketCard = ({ ticket, onDragStart, onClick, onDelete }) => {
       {/* Description */}
       <p className="text-xs text-[#5E6C84] mb-3 leading-relaxed line-clamp-2">{description}</p>
 
-      {/* NIPIGE Tag */}
-      <div className="inline-block px-3.5 py-0.5 rounded-full bg-blue-50 text-[10px] font-bold tracking-widest text-blue-700 border-[1px] border-blue-100 uppercase mb-3">
-        NIPIGE
-      </div>
+      {projectName && (
+        <div className="inline-flex max-w-full px-3.5 py-0.5 rounded-full bg-blue-50 text-[10px] font-bold tracking-wide text-blue-700 border-[1px] border-blue-100 mb-3">
+          <span className="truncate">{projectName}</span>
+        </div>
+      )}
 
       {/* Scope + Attachments */}
       <div className="flex items-center gap-4 mb-3">

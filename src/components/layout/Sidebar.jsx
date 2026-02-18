@@ -1,4 +1,4 @@
-const Sidebar = ({ onLogout, activeItem = "Dashboard" }) => {
+const Sidebar = ({ onLogout, activeItem = "Dashboard", onNavigate }) => {
   const navItems = [
     {
       name: "Dashboard",
@@ -96,6 +96,7 @@ const Sidebar = ({ onLogout, activeItem = "Dashboard" }) => {
             return (
               <li key={item.name}>
                 <button
+                  onClick={() => onNavigate && onNavigate(item.name)}
                   className={`w-full flex items-center gap-3 px-4 py-2.5 rounded-lg text-sm font-medium transition-colors cursor-pointer ${
                     isActive
                       ? "bg-blue-50 text-blue-600"

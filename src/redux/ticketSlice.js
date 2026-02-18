@@ -6,7 +6,6 @@ export const fetchTickets = createAsyncThunk(
   async (_, { rejectWithValue }) => {
     try {
       const response = await getTicketsAPI();
-      console.log('Fetch Tickets Response:', response);
       // Extract the data array from the response
       return response.data || response || [];
     } catch (error) {
@@ -22,7 +21,6 @@ export const createTicket = createAsyncThunk(
   async (ticketData, { rejectWithValue }) => {
     try {
       const response = await createTicketAPI(ticketData);
-      console.log('Create Ticket Redux Response:', response);
       // Extract the ticket data from the response
       return response.data || response;
     } catch (error) {
@@ -38,7 +36,6 @@ export const updateTicket = createAsyncThunk(
   async ({ ticketId, ticketData }, { rejectWithValue }) => {
     try {
       const response = await updateTicketAPI(ticketId, ticketData);
-      console.log('Update Ticket Redux Response:', response);
       // Extract the ticket data from the response
       return response.data || response;
     } catch (error) {
