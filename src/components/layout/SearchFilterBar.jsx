@@ -11,6 +11,7 @@ const SearchFilterBar = ({
   setFilters,
   onClearFilters,
   categories,
+  projects = [],
   sortConfig,
   setSortConfig,
   viewMode,
@@ -70,6 +71,7 @@ const SearchFilterBar = ({
           onFilterChange={setFilters}
           onClearFilters={onClearFilters}
           categories={categories}
+          projects={projects}
         />
         <SortDropdown
           sortConfig={sortConfig}

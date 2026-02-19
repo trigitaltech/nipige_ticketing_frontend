@@ -240,7 +240,7 @@ const KanbanBoard = ({
   };
 
   return (
-    <div className="flex gap-4 h-full overflow-x-auto pb-4">
+    <div className="flex gap-2 h-full overflow-x-auto pb-4">
       {columns.map(column => {
         const config = statusConfig[column.id];
         const columnTitle = groupBy === 'status' ? (config?.title || column.id) : column.title;
@@ -274,7 +274,7 @@ const KanbanBoard = ({
             </div>
 
             {/* Column Content */}
-            <div className="flex-1 space-y-3 overflow-y-auto px-1">
+            <div className="kanban-column-scroll flex-1 space-y-3 overflow-y-auto px-1">
               {columnTickets.map(ticket => (
                 <TicketCard
                   key={ticket._id || ticket.id}

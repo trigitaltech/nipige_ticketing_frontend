@@ -50,8 +50,8 @@ export const createProjectAPI = async (projectData) => {
     startDate: projectData.startDate,
     endDate: projectData.endDate,
     category: projectData.category,
-    projectLead: projectData.projectLead,
-    client: projectData.client,
+    client: { name: typeof projectData.client === 'string' ? projectData.client : (projectData.client?.name || '') },
+    owner: projectData.owner || undefined,
   };
 
   const response = await projectApi.post('/servicerequest/project/create', payload);
@@ -59,7 +59,19 @@ export const createProjectAPI = async (projectData) => {
 };
 
 export const updateProjectAPI = async (projectId, projectData) => {
-  const response = await projectApi.put(`/servicerequest/project/update/${projectId}`, projectData);
+  const payload = {
+    name: projectData.name,
+    code: projectData.code,
+    description: projectData.description,
+    status: projectData.status,
+    startDate: projectData.startDate,
+    endDate: projectData.endDate,
+    category: projectData.category,
+    client: { name: typeof projectData.client === 'string' ? projectData.client : (projectData.client?.name || '') },
+    owner: projectData.owner || undefined,
+  };
+
+  const response = await projectApi.put(`/servicerequest/project/update/${projectId}`, payload);
   return response.data;
 };
 
