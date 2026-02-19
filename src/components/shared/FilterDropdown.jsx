@@ -2,7 +2,7 @@ import { useState, useRef, useEffect } from 'react';
 import { useSelector } from 'react-redux';
 import '../../assets/Styles/Dropdown.css';
 
-const FilterDropdown = ({ filters, onFilterChange, onClearFilters, categories }) => {
+const FilterDropdown = ({ filters, onFilterChange, onClearFilters, categories, projects = [] }) => {
   const [isOpen, setIsOpen] = useState(false);
   const wrapperRef = useRef(null);
   const { users, loading: usersLoading } = useSelector((state) => state.users);
@@ -10,7 +10,7 @@ const FilterDropdown = ({ filters, onFilterChange, onClearFilters, categories })
   const [clearClicked, setClearClicked] = useState(false);
 
   const hasActiveFilters = filters.status || filters.priority || filters.category ||
-    filters.assignTo || filters.fromDate || filters.toDate || filters.orderId;
+    filters.project || filters.assignTo || filters.fromDate || filters.toDate || filters.orderId;
 
   const handleChange = (field, value) => {
     onFilterChange({ ...filters, [field]: value });
@@ -88,6 +88,21 @@ const FilterDropdown = ({ filters, onFilterChange, onClearFilters, categories })
                   <option value="">All</option>
                   {categories && Array.isArray(categories) && categories.map((cat) => (
                     <option key={cat._id} value={cat._id}>{cat.name}</option>
+                  ))}
+                </select>
+              </div>
+
+              <div className="filter-row">
+                <span className="filter-row-label">Project</span>
+                <select
+                  value={filters.project || ''}
+                  onChange={(e) => handleChange('project', e.target.value)}
+                >
+                  <option value="">All</option>
+                  {projects && Array.isArray(projects) && projects.map((proj) => (
+                    <option key={proj._id || proj.id} value={proj._id || proj.id}>
+                      {proj.name || proj.projectName || 'Untitled Project'}
+                    </option>
                   ))}
                 </select>
               </div>

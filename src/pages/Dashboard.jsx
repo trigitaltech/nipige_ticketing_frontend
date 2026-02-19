@@ -33,6 +33,7 @@ const Dashboard = ({ currentUser, onLogout }) => {
     status: '',
     priority: null,
     category: '',
+    project: '',
     fromDate: '',
     toDate: '',
     assignTo: '',
@@ -54,6 +55,7 @@ const Dashboard = ({ currentUser, onLogout }) => {
       status: '',
       priority: null,
       category: '',
+      project: '',
       fromDate: '',
       toDate: '',
       assignTo: '',
@@ -94,6 +96,15 @@ const Dashboard = ({ currentUser, onLogout }) => {
     if (filters.category) {
       const ticketCategoryId = ticket.category?._id || ticket.category;
       if (ticketCategoryId !== filters.category) return false;
+    }
+    if (filters.project) {
+      const ticketProjectId =
+        (typeof ticket.project === 'string'
+          ? ticket.project
+          : ticket.project?.id || ticket.project?._id || ticket.project?.projectId) ||
+        ticket.projectId ||
+        '';
+      if (String(ticketProjectId) !== String(filters.project)) return false;
     }
     if (filters.assignTo) {
       const ticketAssignToId = ticket.assignTo?.id || ticket.assignTo?._id;
@@ -321,6 +332,7 @@ const Dashboard = ({ currentUser, onLogout }) => {
               setFilters={setFilters}
               onClearFilters={handleClearFilters}
               categories={categories}
+              projects={projects || []}
               sortConfig={sortConfig}
               setSortConfig={setSortConfig}
               viewMode={viewMode}

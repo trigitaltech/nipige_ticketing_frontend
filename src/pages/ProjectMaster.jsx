@@ -91,6 +91,18 @@ const CreateProjectView = ({ onBack }) => {
 
     setIsSubmitting(true);
     try {
+      const selectedUser = formData.projectLead
+        ? (Array.isArray(users) && users.find((u) => (u._id || u.id) === formData.projectLead))
+        : null;
+      const owner = selectedUser
+        ? {
+            id: selectedUser._id || selectedUser.id,
+            name: `${selectedUser.name?.first || ''} ${selectedUser.name?.last || ''}`.trim() || selectedUser.authentication?.userName || '',
+            email: selectedUser.authentication?.email || selectedUser.email || '',
+            phone: selectedUser.authentication?.phone || selectedUser.phone || '',
+          }
+        : undefined;
+
       const payload = {
         name: formData.name,
         code: formData.code,
@@ -99,8 +111,8 @@ const CreateProjectView = ({ onBack }) => {
         startDate: formData.startDate ? new Date(formData.startDate).toISOString() : undefined,
         endDate: formData.endDate ? new Date(formData.endDate).toISOString() : undefined,
         category: formData.category,
-        projectLead: formData.projectLead,
-        client: formData.client,
+        client: formData.client?.trim() || '',
+        owner,
       };
 
       await dispatch(createProject(payload)).unwrap();
@@ -239,11 +251,11 @@ const CreateProjectView = ({ onBack }) => {
                 <select name="projectLead" value={formData.projectLead} onChange={handleChange} disabled={usersLoading} className={selectClass}>
                   <option value="">{usersLoading ? 'Loading users...' : 'Select a lead'}</option>
                   {Array.isArray(users) && users.map((user) => {
-                    const userId = user._id;
-                    const userName = `${user.name?.first || ''} ${user.name?.last || ''}`.trim() || user.authentication?.userName || '';
-                    return userName ? (
-                      <option key={userId} value={userName}>{userName}</option>
-                    ) : null;
+                    const userId = user._id || user.id;
+                    const userName = `${user.name?.first || ''} ${user.name?.last || ''}`.trim() || user.authentication?.userName || 'Unknown';
+                    return (
+                      <option key={userId} value={userId}>{userName}</option>
+                    );
                   })}
                 </select>
               </div>
@@ -316,7 +328,7 @@ const UpdateProjectView = ({ project, onBack }) => {
     endDate: toDateInput(project.endDate),
     client: project.client?.name || project.client || '',
     category: project.category || 'Client delivery',
-    projectLead: project.lead?.name || project.lead || project.projectLead?.name || project.projectLead || '',
+    projectLead: project.owner?.id || project.owner?._id || project.lead?._id || project.lead?.id || project.projectLead?._id || project.projectLead?.id || (typeof project.projectLead === 'string' ? '' : ''),
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [errors, setErrors] = useState({});
@@ -372,6 +384,18 @@ const UpdateProjectView = ({ project, onBack }) => {
     setIsSubmitting(true);
     try {
       const projectId = project._id || project.id;
+      const selectedUser = formData.projectLead
+        ? (Array.isArray(users) && users.find((u) => (u._id || u.id) === formData.projectLead))
+        : null;
+      const owner = selectedUser
+        ? {
+            id: selectedUser._id || selectedUser.id,
+            name: `${selectedUser.name?.first || ''} ${selectedUser.name?.last || ''}`.trim() || selectedUser.authentication?.userName || '',
+            email: selectedUser.authentication?.email || selectedUser.email || '',
+            phone: selectedUser.authentication?.phone || selectedUser.phone || '',
+          }
+        : undefined;
+
       const payload = {
         name: formData.name,
         code: formData.code,
@@ -380,8 +404,8 @@ const UpdateProjectView = ({ project, onBack }) => {
         startDate: formData.startDate ? new Date(formData.startDate).toISOString() : undefined,
         endDate: formData.endDate ? new Date(formData.endDate).toISOString() : undefined,
         category: formData.category,
-        projectLead: formData.projectLead,
-        client: formData.client,
+        client: formData.client?.trim() || '',
+        owner,
       };
 
       await dispatch(updateProject({ projectId, projectData: payload })).unwrap();
@@ -518,10 +542,10 @@ const UpdateProjectView = ({ project, onBack }) => {
                 <select name="projectLead" value={formData.projectLead} onChange={handleChange} disabled={usersLoading} className={selectClass}>
                   <option value="">{usersLoading ? 'Loading users...' : 'Select a lead'}</option>
                   {Array.isArray(users) && users.map((user) => {
-                    const userId = user._id;
-                    const userName = `${user.name?.first || ''} ${user.name?.last || ''}`.trim() || user.authentication?.userName || '';
+                    const userId = user._id || user.id;
+                    const userName = `${user.name?.first || ''} ${user.name?.last || ''}`.trim() || user.authentication?.userName || 'Unknown';
                     return (
-                      <option key={userId} value={userName}>{userName}</option>
+                      <option key={userId} value={userId}>{userName}</option>
                     );
                   })}
                 </select>
@@ -671,7 +695,7 @@ const ProjectMaster = ({ onOpenProject = () => {} }) => {
                 const projectName = project.name || project.projectName || 'Untitled';
                 const projectId = project._id || project.id || '';
                 const clientName = project.client?.name || project.client || 'N/A';
-                const leadName = project.lead?.name || project.lead || project.projectLead?.name || project.projectLead || 'N/A';
+                const leadName = project.owner?.name || project.lead?.name || project.lead || project.projectLead?.name || project.projectLead || 'N/A';
                 const status = (project.status || 'ACTIVE').toUpperCase();
                 const startDate = project.startDate ? new Date(project.startDate).toLocaleDateString('en-CA') : 'N/A';
                 const endDate = project.endDate ? new Date(project.endDate).toLocaleDateString('en-CA') : 'N/A';

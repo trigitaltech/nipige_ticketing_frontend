@@ -38,8 +38,6 @@
   box-shadow: 0 4px 16px rgba(0, 0, 0, 0.12);
   z-index: 1000;
   min-width: 280px;
-  max-height: 400px;
-  overflow-y: auto;
 }
 
 .dropdown-overlay {
