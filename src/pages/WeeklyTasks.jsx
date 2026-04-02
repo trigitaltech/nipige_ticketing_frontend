@@ -52,7 +52,7 @@ const getStatusClass = (status) => {
 const createEmptyWeekData = () => {
   const empty = {};
   for (let i = 0; i < 7; i++) {
-    empty[i] = { projectNames: '', workDescription: '', status: '' };
+    empty[i] = { projectNames: '', workDescription: '', time: '', status: '' };
   }
   return empty;
 };
@@ -96,8 +96,9 @@ const WeeklyTasks = () => {
       date: date.toISOString(),
       projectNames: weekData[i]?.projectNames || '',
       workDescription: weekData[i]?.workDescription || '',
+      time: weekData[i]?.time || '',
       status: weekData[i]?.status || '',
-    })).filter(e => e.projectNames || e.workDescription || e.status);
+    })).filter(e => e.projectNames || e.workDescription || e.time || e.status);
 
     if (entries.length === 0) {
       toast.warning('Please fill in at least one day before saving.');
@@ -189,7 +190,23 @@ const WeeklyTasks = () => {
               ))}
             </tr>
 
-            {/* Row 4: Project Status */}
+            {/* Row 4: Time */}
+            <tr>
+              <td className="row-label row-label-time">Time</td>
+              {weekDates.map((_, i) => (
+                <td key={i} className="data-cell">
+                  <input
+                    type="text"
+                    className="cell-input cell-input-time"
+                    placeholder="e.g. 2h"
+                    value={weekData[i]?.time || ''}
+                    onChange={(e) => updateCell(i, 'time', e.target.value)}
+                  />
+                </td>
+              ))}
+            </tr>
+
+            {/* Row 5: Project Status */}
             <tr>
               <td className="row-label row-label-status">Project Status</td>
               {weekDates.map((_, i) => (

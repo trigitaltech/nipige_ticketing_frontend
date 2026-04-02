@@ -120,6 +120,11 @@
   color: #14532d;
 }
 
+.row-label-time {
+  background: #bfdbfe;
+  color: #1e3a5f;
+}
+
 .row-label-status {
   background: #f0abfc;
   color: #701a75;
@@ -170,6 +175,12 @@
   resize: none;
   font-family: inherit;
   line-height: 1.5;
+}
+
+.cell-input-time {
+  min-height: 44px;
+  text-align: center;
+  font-weight: 600;
 }
 
 .cell-input:focus {
