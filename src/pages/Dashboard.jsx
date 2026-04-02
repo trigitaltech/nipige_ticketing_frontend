@@ -13,6 +13,7 @@ import CreateTicketModal from '../components/ticketing/CreateTicketModal';
 import TicketDetailsPage from './TicketDetailsPage';
 import ProjectMaster from './ProjectMaster';
 import ProjectDetailsPage from './ProjectDetailsPage';
+import WeeklyTasks from './WeeklyTasks';
 import DeleteConfirmModal from '../components/shared/DeleteConfirmModal';
 
 const Dashboard = ({ currentUser, onLogout }) => {
@@ -299,6 +300,19 @@ const Dashboard = ({ currentUser, onLogout }) => {
               ) : (
                 <ProjectMaster onOpenProject={setSelectedProject} />
               )}
+            </div>
+          </>
+        ) : activePage === 'Weekly Tasks' ? (
+          <>
+            <Header
+              fullName={fullName}
+              avatarLabel={avatarLabel}
+              userEmail={userEmail}
+              onCreateTicket={() => {}}
+              onLogout={onLogout}
+            />
+            <div className="flex-1 overflow-auto">
+              <WeeklyTasks />
             </div>
           </>
         ) : selectedTicket ? (

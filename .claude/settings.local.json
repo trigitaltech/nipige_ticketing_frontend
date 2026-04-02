@@ -1,0 +1,8 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(grep -E \"\\(^[^/]*$|src/|config\\)\")",
+      "Bash(npm run:*)"
+    ]
+  }
+}
