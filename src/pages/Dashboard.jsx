@@ -73,15 +73,19 @@ const Dashboard = ({ currentUser, onLogout }) => {
       if (assignedUserId !== currentUserId) return false;
     }
 
-    // Search by email or username
+    // Search by subject, description, email, or username
     if (searchQuery.trim()) {
       const query = searchQuery.toLowerCase();
+      const subject = (ticket.subject || '').toLowerCase();
+      const description = (ticket.description || '').toLowerCase();
       const assignName = (ticket.assignTo?.name || ticket.assignTo?.username || '').toLowerCase();
       const assignEmail = (ticket.assignTo?.email || ticket.assignTo?.authentication?.email || '').toLowerCase();
       const reporterName = (ticket.reportedBy?.name || ticket.reportedBy?.username || '').toLowerCase();
       const reporterEmail = (ticket.reportedBy?.email || ticket.reportedBy?.authentication?.email || '').toLowerCase();
 
       if (
+        !subject.includes(query) &&
+        !description.includes(query) &&
         !assignName.includes(query) &&
         !assignEmail.includes(query) &&
         !reporterName.includes(query) &&
@@ -372,6 +376,9 @@ const Dashboard = ({ currentUser, onLogout }) => {
                   tickets={sortedTickets || []}
                   onTicketClick={handleTicketClick}
                   onDeleteTicket={handleDeleteTicket}
+                  groupBy={groupBy}
+                  projects={projects || []}
+                  categories={categories || []}
                 />
               )}
             </div>

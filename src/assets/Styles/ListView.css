@@ -436,6 +436,42 @@
   background: #B91C1C;
 }
 
+/* Group Header */
+.list-group-header {
+  background: #F7F8FA;
+  cursor: default;
+}
+
+.list-group-header:hover {
+  background: #F7F8FA;
+}
+
+.list-group-header td {
+  padding: 8px 12px;
+  font-size: 13px;
+  font-weight: 600;
+  color: #374151;
+  border-bottom: 1px solid #E8E8E8;
+}
+
+.group-label {
+  margin-right: 8px;
+}
+
+.group-count {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 20px;
+  height: 20px;
+  padding: 0 6px;
+  border-radius: 10px;
+  background: #E5E7EB;
+  color: #6B7280;
+  font-size: 11px;
+  font-weight: 600;
+}
+
 /* Empty State */
 .empty-list {
   padding: 48px 20px;
