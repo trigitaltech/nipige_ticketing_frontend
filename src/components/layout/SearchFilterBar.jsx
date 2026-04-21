@@ -1,6 +1,13 @@
 import SearchBar from '../shared/SearchBar';
 import FilterDropdown from '../shared/FilterDropdown';
 import SortDropdown from '../shared/SortDropdown';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 
 const SearchFilterBar = ({
   activeFilter,
@@ -51,17 +58,21 @@ const SearchFilterBar = ({
       </div>
 
       {/* Group By */}
-      <div className="bg-gray-50 flex items-center gap-2 text-sm text-gray-500 border border-gray-100 rounded-3xl px-3 py-2 shrink-0">
+      <div className="bg-gray-50 flex items-center gap-2 text-sm text-gray-500 border border-gray-100 rounded-3xl px-3 py-1 shrink-0">
         <span className="font-bold text-xs text-gray-500">GROUP BY:</span>
-        <select
-          value={groupBy}
-          onChange={(e) => setGroupBy(e.target.value)}
-          className="bg-transparent font-semibold text-gray-800 border-none outline-none cursor-pointer text-sm"
-        >
-          <option value="status">Status</option>
-          <option value="project">Project</option>
-          <option value="category">Category</option>
-        </select>
+        <Select value={groupBy} onValueChange={setGroupBy}>
+          <SelectTrigger
+            size="sm"
+            className="h-auto border-0 bg-transparent px-0 py-0 font-semibold text-gray-800 text-sm shadow-none gap-1 focus-visible:ring-0 focus-visible:border-0 hover:text-black cursor-pointer"
+          >
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent align="end">
+            <SelectItem value="status">Status</SelectItem>
+            <SelectItem value="project">Project</SelectItem>
+            <SelectItem value="category">Category</SelectItem>
+          </SelectContent>
+        </Select>
       </div>
 
       {/* Right: Filter, Sort, View Toggle */}

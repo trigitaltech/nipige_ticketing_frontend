@@ -6,6 +6,85 @@ import { fetchProjects } from '../../redux/projectSlice';
 import { uploadImage } from '../../services/api';
 import { fileToBase64 } from '../../function/function';
 import '../../assets/Styles/Modal.css';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Textarea } from '@/components/ui/textarea';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
+import EstimateTimePicker from '../shared/EstimateTimePicker';
+
+const severityConfig = {
+  Low:      { label: 'Low',      bg: 'bg-sky-50',    text: 'text-sky-700',    ring: 'ring-sky-200',    flag: 'text-sky-500' },
+  Medium:   { label: 'Medium',   bg: 'bg-amber-50',  text: 'text-amber-700',  ring: 'ring-amber-200',  flag: 'text-amber-500' },
+  High:     { label: 'High',     bg: 'bg-orange-50', text: 'text-orange-700', ring: 'ring-orange-200', flag: 'text-orange-500' },
+  Critical: { label: 'Critical', bg: 'bg-red-50',    text: 'text-red-700',    ring: 'ring-red-200',    flag: 'text-red-500' },
+};
+
+const avatarPalette = [
+  'bg-rose-500', 'bg-orange-500', 'bg-amber-500', 'bg-lime-500', 'bg-emerald-500',
+  'bg-teal-500', 'bg-sky-500', 'bg-indigo-500', 'bg-violet-500', 'bg-fuchsia-500',
+];
+
+const getInitials = (name) => {
+  if (!name) return '?';
+  const parts = String(name).trim().split(/\s+/).filter(Boolean);
+  if (parts.length === 0) return '?';
+  if (parts.length === 1) return parts[0].slice(0, 2).toUpperCase();
+  return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
+};
+
+const getAvatarColor = (name) => {
+  const str = String(name || '');
+  let hash = 0;
+  for (let i = 0; i < str.length; i++) hash = (hash * 31 + str.charCodeAt(i)) >>> 0;
+  return avatarPalette[hash % avatarPalette.length];
+};
+
+const Avatar = ({ name, email }) => {
+  const label = name || email || '';
+  if (!label) {
+    return (
+      <div className="w-6 h-6 rounded-full bg-slate-100 text-slate-400 flex items-center justify-center font-bold shrink-0 border border-dashed border-slate-300">
+        <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+          <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
+          <circle cx="12" cy="7" r="4" />
+        </svg>
+      </div>
+    );
+  }
+  return (
+    <div className={`w-6 h-6 rounded-full ${getAvatarColor(label)} text-white flex items-center justify-center text-[10px] font-bold shrink-0`} title={label}>
+      {getInitials(label)}
+    </div>
+  );
+};
+
+const PropertyRow = ({ icon, label, children }) => (
+  <div className="flex items-start gap-3 py-2 min-h-[40px] border-b border-dashed border-slate-100 last:border-b-0">
+    <div className="flex items-center gap-2 w-[130px] shrink-0 text-slate-500 pt-1.5 max-[640px]:w-[110px]">
+      {icon}
+      <span className="text-[12px] font-semibold">{label}</span>
+    </div>
+    <div className="flex-1 min-w-0">{children}</div>
+  </div>
+);
+
+const iconStatus   = <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>;
+const iconUser     = <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>;
+const iconCalendar = <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>;
+const iconFlag     = <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M4 2v20h2v-8h12l-2-4 2-4H6V2H4z"/></svg>;
+const iconPriority = <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="12" y1="20" x2="12" y2="10"/><line x1="18" y1="20" x2="18" y2="4"/><line x1="6" y1="20" x2="6" y2="16"/></svg>;
+const iconTag      = <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"/><line x1="7" y1="7" x2="7.01" y2="7"/></svg>;
+const iconFolder   = <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>;
+const iconGlobe    = <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>;
+const iconClock    = <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 8v4l3 3"/><circle cx="12" cy="12" r="10"/></svg>;
+
+const chipTriggerClass = 'w-full border-transparent bg-transparent text-slate-800 font-semibold text-[13px] hover:bg-slate-50 hover:border-slate-200 focus-visible:bg-white focus-visible:border-blue-400 focus-visible:ring-blue-100 transition-all shadow-none';
 
 const CreateTicketModal = ({ onClose, onCreate }) => {
   const dispatch = useDispatch();
@@ -25,6 +104,7 @@ const CreateTicketModal = ({ onClose, onCreate }) => {
     scope: '',
     startDate: '',
     endDate: '',
+    timeEstimateMs: 0,
   });
 
   const [errors, setErrors] = useState({});
@@ -32,6 +112,8 @@ const CreateTicketModal = ({ onClose, onCreate }) => {
   const [uploadProgress, setUploadProgress] = useState(null);
   const [isUploading, setIsUploading] = useState(false);
   const fileInputRef = useRef(null);
+
+  const sevInfo = severityConfig[formData.severity] || severityConfig.Medium;
 
   useEffect(() => {
     dispatch(fetchCategories());
@@ -132,7 +214,7 @@ const CreateTicketModal = ({ onClose, onCreate }) => {
       newErrors.category = 'Category is required';
     }
     if (!formData.subject.trim()) {
-      newErrors.subject = 'Subject is required';
+      newErrors.subject = 'Title is required';
     }
     if (!formData.description.trim()) {
       newErrors.description = 'Description is required';
@@ -201,172 +283,22 @@ const CreateTicketModal = ({ onClose, onCreate }) => {
           <h2>Create New Task</h2>
           <button className="close-btn" onClick={onClose}>×</button>
         </div>
-        <form onSubmit={handleSubmit}>
-          <div className="form-row">
-            <div className="form-group">
-              <label htmlFor="project">Project *</label>
-              <select
-                id="project"
-                name="project"
-                value={formData.project}
-                onChange={handleProjectChange}
-                disabled={projectsLoading}
-              >
-                <option value="">
-                  {projectsLoading ? 'Loading projects...' : 'Select a project'}
-                </option>
-                {Array.isArray(projects) && projects.map((project) => {
-                  const projectId = project._id || project.id;
-                  const projectName = project.name || project.projectName || 'Untitled Project';
-                  return (
-                    <option key={projectId} value={projectId}>
-                      {projectName}
-                    </option>
-                  );
-                })}
-              </select>
-              {errors.project && <span className="error">{errors.project}</span>}
-            </div>
+        <form onSubmit={handleSubmit} className="px-6 pt-5 pb-6">
+          {/* Title */}
+          <Input
+            type="text"
+            name="subject"
+            value={formData.subject}
+            onChange={handleChange}
+            placeholder="Enter task title"
+            autoFocus
+            className="!h-auto !border-0 !bg-transparent !px-2 -mx-2 py-1 !text-[20px] font-medium text-slate-900 !rounded-lg hover:!bg-slate-50 focus-visible:!bg-slate-50 focus-visible:!ring-0 mb-4"
+          />
+          {errors.subject && <span className="error -mt-3 mb-2">{errors.subject}</span>}
 
-            <div className="form-group">
-              <label htmlFor="category">Category *</label>
-              <select
-                id="category"
-                name="category"
-                value={formData.category}
-                onChange={handleCategoryChange}
-                disabled={categoriesLoading}
-              >
-                <option value="">
-                  {categoriesLoading ? 'Loading categories...' : 'Select a category'}
-                </option>
-                {Array.isArray(categories) && categories.map((category) => (
-                  <option key={category._id} value={category._id}>
-                    {category.name}
-                  </option>
-                ))}
-              </select>
-              {errors.category && <span className="error">{errors.category}</span>}
-            </div>
-          </div>
-
-          <div className="form-row">
-            <div className="form-group">
-              <label htmlFor="subject">Subject *</label>
-              <input
-                type="text"
-                id="subject"
-                name="subject"
-                value={formData.subject}
-                onChange={handleChange}
-                placeholder="Enter ticket subject"
-              />
-              {errors.subject && <span className="error">{errors.subject}</span>}
-            </div>
-
-            <div className="form-group">
-              <label htmlFor="priority">Priority (0-10)</label>
-              <input
-                type="number"
-                id="priority"
-                name="priority"
-                min="0"
-                max="10"
-                value={formData.priority}
-                onChange={handleChange}
-                placeholder="Priority level"
-              />
-            </div>
-          </div>
-
-          <div className="form-group">
-            <label htmlFor="description">Description *</label>
-            <textarea
-              id="description"
-              name="description"
-              value={formData.description}
-              onChange={handleChange}
-              placeholder="Enter ticket description"
-              rows="4"
-            />
-            {errors.description && <span className="error">{errors.description}</span>}
-          </div>
-
-          <div className="form-row">
-            <div className="form-group">
-              <label htmlFor="scope">Scope</label>
-              <input
-                type="text"
-                id="scope"
-                name="scope"
-                value={formData.scope}
-                onChange={handleChange}
-                placeholder="Scope (auto-filled)"
-                readOnly
-              />
-            </div>
-
-            <div className="form-group">
-              <label htmlFor="severity">Severity</label>
-              <select
-                id="severity"
-                name="severity"
-                value={formData.severity}
-                onChange={handleChange}
-              >
-                <option value="Low">Low</option>
-                <option value="Medium">Medium</option>
-                <option value="High">High</option>
-                <option value="Critical">Critical</option>
-              </select>
-            </div>
-          </div>
-
-          <div className="form-row">
-            <div className="form-group">
-              <label htmlFor="assignTo">Assign To</label>
-              <select
-                id="assignTo"
-                name="assignTo"
-                value={formData.assignTo?.id || ''}
-                onChange={(e) => handleUserChange(e, 'assignTo')}
-                disabled={usersLoading}
-              >
-                <option value="">
-                  {usersLoading ? 'Loading users...' : 'Select a user'}
-                </option>
-                {Array.isArray(users) && users.map((user) => (
-                  <option key={user._id} value={user._id}>
-                    {`${user.name?.first || ''} ${user.name?.last || ''}`.trim() || user.authentication?.userName}
-                  </option>
-                ))}
-              </select>
-            </div>
-
-            <div className="form-group">
-              <label htmlFor="reportedTo">Reported To</label>
-              <select
-                id="reportedTo"
-                name="reportedTo"
-                value={formData.reportedTo?.id || ''}
-                onChange={(e) => handleUserChange(e, 'reportedTo')}
-                disabled={usersLoading}
-              >
-                <option value="">
-                  {usersLoading ? 'Loading users...' : 'Select a user'}
-                </option>
-                {Array.isArray(users) && users.map((user) => (
-                  <option key={user._id} value={user._id}>
-                    {`${user.name?.first || ''} ${user.name?.last || ''}`.trim() || user.authentication?.userName}
-                  </option>
-                ))}
-              </select>
-            </div>
-          </div>
-
-          <div className="form-row">
-            <div className="form-group">
-              <label htmlFor="startDate">Start Date & Time</label>
+          {/* Properties grid */}
+          <div className="grid grid-cols-2 gap-x-8 gap-y-0 mb-5 max-[720px]:grid-cols-1 max-[720px]:gap-x-0 border-t border-slate-100">
+            <PropertyRow icon={iconCalendar} label="Start Date">
               <input
                 type="datetime-local"
                 id="startDate"
@@ -375,11 +307,11 @@ const CreateTicketModal = ({ onClose, onCreate }) => {
                 onChange={handleChange}
                 min="1900-01-01T00:00"
                 max="9999-12-31T23:59"
+                className="w-full px-2 py-1.5 text-[13px] font-semibold rounded-md border border-transparent bg-transparent text-slate-800 hover:bg-slate-50 hover:border-slate-200 focus:outline-none focus:bg-white focus:border-blue-400 focus:ring-2 focus:ring-blue-100 transition-all"
               />
-            </div>
+            </PropertyRow>
 
-            <div className="form-group">
-              <label htmlFor="endDate">End Date & Time</label>
+            <PropertyRow icon={iconCalendar} label="End Date">
               <input
                 type="datetime-local"
                 id="endDate"
@@ -388,20 +320,199 @@ const CreateTicketModal = ({ onClose, onCreate }) => {
                 onChange={handleChange}
                 min="1900-01-01T00:00"
                 max="9999-12-31T23:59"
+                className="w-full px-2 py-1.5 text-[13px] font-semibold rounded-md border border-transparent bg-transparent text-slate-800 hover:bg-slate-50 hover:border-slate-200 focus:outline-none focus:bg-white focus:border-blue-400 focus:ring-2 focus:ring-blue-100 transition-all"
               />
-            </div>
+            </PropertyRow>
+
+            <PropertyRow icon={iconUser} label="Assignee">
+              <div className="flex items-center gap-2">
+                <Avatar name={formData.assignTo?.name} email={formData.assignTo?.email} />
+                <Select
+                  value={formData.assignTo?.id || undefined}
+                  onValueChange={(value) => handleUserChange({ target: { value } }, 'assignTo')}
+                  disabled={usersLoading}
+                >
+                  <SelectTrigger size="sm" className={`${chipTriggerClass} flex-1 min-w-0`}>
+                    <SelectValue placeholder={usersLoading ? 'Loading...' : 'Empty'} />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {Array.isArray(users) && users.map((user) => (
+                      <SelectItem key={user._id} value={user._id}>
+                        {`${user.name?.first || ''} ${user.name?.last || ''}`.trim() || user.authentication?.userName}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            </PropertyRow>
+
+            <PropertyRow icon={iconTag} label={<span>Category <span className="text-red-500">*</span></span>}>
+              <Select
+                value={formData.category || undefined}
+                onValueChange={(value) => handleCategoryChange({ target: { value } })}
+                disabled={categoriesLoading}
+              >
+                <SelectTrigger size="sm" className={chipTriggerClass}>
+                  <SelectValue placeholder={categoriesLoading ? 'Loading...' : 'Empty'} />
+                </SelectTrigger>
+                <SelectContent>
+                  {Array.isArray(categories) && categories.map((cat) => (
+                    <SelectItem key={cat._id} value={cat._id}>{cat.name}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              {errors.category && <span className="block text-red-500 text-xs mt-1 px-2">{errors.category}</span>}
+            </PropertyRow>
+
+            <PropertyRow icon={iconUser} label="Reported To">
+              <div className="flex items-center gap-2">
+                <Avatar name={formData.reportedTo?.name} email={formData.reportedTo?.email} />
+                <Select
+                  value={formData.reportedTo?.id || undefined}
+                  onValueChange={(value) => handleUserChange({ target: { value } }, 'reportedTo')}
+                  disabled={usersLoading}
+                >
+                  <SelectTrigger size="sm" className={`${chipTriggerClass} flex-1 min-w-0`}>
+                    <SelectValue placeholder={usersLoading ? 'Loading...' : 'Empty'} />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {Array.isArray(users) && users.map((user) => (
+                      <SelectItem key={user._id} value={user._id}>
+                        {`${user.name?.first || ''} ${user.name?.last || ''}`.trim() || user.authentication?.userName}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            </PropertyRow>
+
+            <PropertyRow icon={iconGlobe} label="Scope">
+              <Input
+                type="text"
+                name="scope"
+                value={formData.scope}
+                onChange={handleChange}
+                placeholder="Auto-filled from category"
+                readOnly
+                className="!h-auto !border-0 !bg-transparent px-2 py-1.5 !rounded-md hover:!bg-slate-50 text-[13px] font-semibold"
+              />
+            </PropertyRow>
+
+            <PropertyRow icon={iconPriority} label="Priority">
+              <div className="flex items-center gap-2">
+                <input
+                  type="range"
+                  name="priority"
+                  min="0"
+                  max="10"
+                  value={formData.priority}
+                  onChange={handleChange}
+                  className="flex-1 h-1.5 bg-slate-200 rounded-full appearance-none cursor-pointer accent-blue-500"
+                />
+                <div className="flex items-baseline">
+                  <input
+                    type="number"
+                    name="priority"
+                    min="0"
+                    max="10"
+                    value={formData.priority}
+                    onChange={handleChange}
+                    className="w-6 p-0 text-[12px] font-bold text-slate-700 bg-transparent border-0 outline-none appearance-none text-right [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none [-moz-appearance:textfield]"
+                  />
+                  <span className="text-[12px] font-bold text-slate-400">/10</span>
+                </div>
+              </div>
+            </PropertyRow>
+
+            <PropertyRow icon={iconFlag} label="Severity">
+              <Select
+                value={formData.severity}
+                onValueChange={(value) => handleChange({ target: { name: 'severity', value } })}
+              >
+                <SelectTrigger
+                  size="sm"
+                  className={`${sevInfo.bg} ${sevInfo.text} ring-1 ${sevInfo.ring} border-0 shadow-none rounded-md font-bold h-auto py-1 pl-2 pr-2 w-auto min-w-[120px] gap-1.5 data-[placeholder]:text-current [&_svg:not([class*='text-'])]:text-current`}
+                >
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {['Critical', 'High', 'Medium', 'Low'].map((key) => {
+                    const cfg = severityConfig[key];
+                    return (
+                      <SelectItem key={key} value={key}>
+                        <span className="flex items-center gap-2">
+                          <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor" className={cfg.flag}><path d="M4 2v20h2v-8h12l-2-4 2-4H6V2H4z"/></svg>
+                          <span className="font-semibold">{key}</span>
+                        </span>
+                      </SelectItem>
+                    );
+                  })}
+                </SelectContent>
+              </Select>
+            </PropertyRow>
+
+            <PropertyRow icon={iconClock} label="Time Estimate">
+              <EstimateTimePicker
+                valueMs={formData.timeEstimateMs}
+                onChange={(ms) => setFormData((prev) => ({ ...prev, timeEstimateMs: ms }))}
+              />
+            </PropertyRow>
+
+            <PropertyRow icon={iconFolder} label={<span>Project <span className="text-red-500">*</span></span>}>
+              <Select
+                value={formData.project || undefined}
+                onValueChange={(value) => handleProjectChange({ target: { value } })}
+                disabled={projectsLoading}
+              >
+                <SelectTrigger size="sm" className={chipTriggerClass}>
+                  <SelectValue placeholder={projectsLoading ? 'Loading projects...' : 'Empty'} />
+                </SelectTrigger>
+                <SelectContent>
+                  {Array.isArray(projects) && projects.map((project) => {
+                    const projectId = project._id || project.id;
+                    const projectName = project.name || project.projectName || 'Untitled Project';
+                    return (
+                      <SelectItem key={projectId} value={projectId}>{projectName}</SelectItem>
+                    );
+                  })}
+                </SelectContent>
+              </Select>
+              {errors.project && <span className="block text-red-500 text-xs mt-1 px-2">{errors.project}</span>}
+            </PropertyRow>
           </div>
 
-          <div className="form-group">
-            <label htmlFor="attachments">Attachments</label>
-            <input
+          {/* Description */}
+          <div className="mb-5">
+            <div className="flex items-center gap-2 mb-2 text-slate-500">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="9" y1="13" x2="15" y2="13"/><line x1="9" y1="17" x2="15" y2="17"/></svg>
+              <span className="text-[12px] font-bold uppercase tracking-wide">Description <span className="text-red-500">*</span></span>
+            </div>
+            <Textarea
+              name="description"
+              value={formData.description}
+              onChange={handleChange}
+              placeholder="Add a description..."
+              className="min-h-[100px]"
+            />
+            {errors.description && <span className="error mt-1">{errors.description}</span>}
+          </div>
+
+          {/* Attachments */}
+          <div className="mb-5">
+            <div className="flex items-center gap-2 mb-2 text-slate-500">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.49"/></svg>
+              <span className="text-[12px] font-bold uppercase tracking-wide">
+                Attachments <span className="text-slate-400 font-semibold normal-case">({uploadedFiles.length})</span>
+              </span>
+            </div>
+            <Input
               type="file"
-              id="attachments"
               ref={fileInputRef}
               onChange={handleFileUpload}
               accept="image/*,video/*,.pdf"
               multiple
               disabled={isUploading}
+              className="file:mr-3 file:rounded-md file:bg-slate-100 file:px-3 file:text-slate-700 file:font-medium"
             />
             {isUploading && (
               <span className="upload-progress">Uploading... {uploadProgress || 0}%</span>
@@ -434,12 +545,16 @@ const CreateTicketModal = ({ onClose, onCreate }) => {
           </div>
 
           <div className="modal-footer">
-            <button type="button" className="cancel-btn" onClick={onClose}>
+            <Button type="button" variant="outline" onClick={onClose}>
               Cancel
-            </button>
-            <button type="submit" className="submit-btn" disabled={isUploading}>
+            </Button>
+            <Button
+              type="submit"
+              disabled={isUploading}
+              className="!bg-[#5449D6] text-white border-transparent hover:!bg-[#5449D6] hover:text-white hover:brightness-110 focus-visible:ring-[#5449D6]/30"
+            >
               {isUploading ? 'Uploading...' : 'Create Task'}
-            </button>
+            </Button>
           </div>
         </form>
       </div>

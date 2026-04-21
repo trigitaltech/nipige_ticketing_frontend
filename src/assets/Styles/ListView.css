@@ -129,7 +129,7 @@
 }
 
 .status-dot.open {
-  background-color: #3B82F6;
+  background-color: #ab4aba;
 }
 
 .status-dot.in-progress {
@@ -202,12 +202,12 @@
 }
 
 .status-badge.status-open {
-  background: #EFF6FF;
-  color: #2563EB;
+  background: #F7ECF7;
+  color: #ab4aba;
 }
 
 .status-badge.status-open .badge-dot {
-  background: #2563EB;
+  background: #ab4aba;
 }
 
 .status-badge.status-in-progress {

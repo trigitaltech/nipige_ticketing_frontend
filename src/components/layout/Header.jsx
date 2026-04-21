@@ -11,7 +11,7 @@ const Header = ({ fullName, avatarLabel, userEmail, onCreateTicket, onLogout }) 
       <div className="flex items-center gap-3">
         <Button
           onClick={onCreateTicket}
-          className="bg-gradient-to-b from-blue-500 to-blue-600 text-white border-blue-600/20 shadow-sm shadow-blue-600/20 hover:from-blue-500 hover:to-blue-700 hover:text-white focus-visible:ring-blue-500/30"
+          className="!bg-[#5449D6] text-white border-transparent hover:!bg-[#5449D6] hover:text-white hover:brightness-110 focus-visible:ring-[#5449D6]/30"
         >
           <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />

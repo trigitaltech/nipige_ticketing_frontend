@@ -106,6 +106,30 @@ const normalizeAttachmentPayload = (attachmentsInput) => {
     .filter(Boolean);
 };
 
+const formatDurationString = (value) => {
+  let totalMinutes;
+
+  if (typeof value === 'string') {
+    const trimmed = value.trim();
+    if (!trimmed) return null;
+    const hoursMatch = trimmed.match(/(\d+)\s*h/i);
+    const minutesMatch = trimmed.match(/(\d+)\s*m/i);
+    if (!hoursMatch && !minutesMatch) return null;
+    const h = hoursMatch ? Number(hoursMatch[1]) : 0;
+    const m = minutesMatch ? Number(minutesMatch[1]) : 0;
+    totalMinutes = h * 60 + m;
+  } else {
+    const ms = Number(value);
+    if (!Number.isFinite(ms) || ms < 0) return null;
+    totalMinutes = Math.floor(ms / (60 * 1000));
+  }
+
+  const hours = Math.floor(totalMinutes / 60);
+  const minutes = totalMinutes % 60;
+
+  return `${String(hours).padStart(2, '0')}h ${String(minutes).padStart(2, '0')}m`;
+};
+
 export const createTicketAPI = async (ticketData) => {
   const userString = localStorage.getItem('user');
   const user = userString ? JSON.parse(userString) : null;
@@ -148,6 +172,11 @@ export const createTicketAPI = async (ticketData) => {
   }
   if (ticketData.endDate) {
     createPayload.endDate = ticketData.endDate;
+  }
+
+  const estimateTime = formatDurationString(ticketData.timeEstimateMs ?? ticketData.estimateTime);
+  if (estimateTime) {
+    createPayload.estimateTime = estimateTime;
   }
 
   const response = await nipige.post('/servicerequest/ticket/create', createPayload);
@@ -216,7 +245,22 @@ export const updateTicketAPI = async (ticketId, ticketData) => {
   if (ticketData.endDate) {
     updatePayload.endDate = ticketData.endDate;
   }
-  console.log("====>",updatePayload);
+
+  const estimateTime = formatDurationString(ticketData.timeEstimateMs ?? ticketData.estimateTime);
+  if (estimateTime) {
+    updatePayload.estimateTime = estimateTime;
+  }
+
+  const trackTime = formatDurationString(
+    ticketData.trackedTimeMs ??
+    ticketData.timeTracked ??
+    ticketData.trackedTime ??
+    ticketData.trackTime
+  );
+  if (trackTime) {
+    updatePayload.trackTime = trackTime;
+  }
+
   const response = await nipige.put(`/servicerequest/ticket/update/${ticketId}`, updatePayload);
 
   return response.data;

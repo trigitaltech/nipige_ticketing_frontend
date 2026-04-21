@@ -190,6 +190,7 @@ const Dashboard = ({ currentUser, onLogout }) => {
       project: ticketData.project,
       category: ticketData.category,
       scope: ticketData.scope,
+      timeEstimateMs: ticketData.timeEstimateMs,
       attachments: Array.isArray(ticketData.attachments) ? ticketData.attachments : [],
     };
 

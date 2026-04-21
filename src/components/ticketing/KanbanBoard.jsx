@@ -14,7 +14,7 @@ const StatusIconClosed = () => (
 );
 
 const statusConfig = {
-  OPEN:        { title: 'Open',        Icon: StatusIconTodo,       color: '#87909E' },
+  OPEN:        { title: 'Open',        Icon: StatusIconTodo,       color: '#ab4aba' },
   IN_PROGRESS: { title: 'In Progress', Icon: StatusIconInProgress, color: 'rgb(8, 128, 234)' },
   RESOLVED:    { title: 'Complete',    Icon: StatusIconComplete,   color: 'rgb(41, 151, 100)' },
   CLOSED:      { title: 'Closed',      Icon: StatusIconClosed,     color: '#656F7D' },
