@@ -2,6 +2,13 @@ import { useState, useEffect } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { login, clearError } from '../redux/authSlice';
 import '../assets/Styles/Login.css';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 
 const Login = () => {
   const dispatch = useDispatch();
@@ -36,7 +43,7 @@ const Login = () => {
               className="logo-icon"
             />
           </div>
-          <h1>Ticket Management</h1>
+          <h1>Task Management</h1>
           <p className="login-subtitle">Sign in to your account</p>
         </div>
 
@@ -84,22 +91,15 @@ const Login = () => {
           </div>
           <div className="user-type-container">
             <label htmlFor="userType">User Type</label>
-            <div className="user-type-wrapper">
-              <select
-                id="userType"
-                value={userType}
-                onChange={(e) => setUserType(e.target.value)}
-                className="user-type-select-compact"
-              >
-                <option value="EMPLOYEE">Employee</option>
-                <option value="ADMIN">Admin</option>
-              </select>
-              <img
-                src="https://cdn-icons-png.flaticon.com/512/32/32195.png"
-                alt="Open user type dropdown"
-                className="user-type-icon"
-              />
-            </div>
+            <Select value={userType} onValueChange={setUserType}>
+              <SelectTrigger id="userType" className="w-full h-11 bg-white">
+                <SelectValue placeholder="Select user type" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="EMPLOYEE">Employee</SelectItem>
+                <SelectItem value="ADMIN">Admin</SelectItem>
+              </SelectContent>
+            </Select>
           </div>
           {error && (
             <div className="error-message">

@@ -4,7 +4,7 @@ import { fetchCategories } from '../redux/categorySlice';
 import { fetchUsers } from '../redux/userSlice';
 import { fetchProjects } from '../redux/projectSlice';
 import { postCommentAPI, uploadImage } from '../services/api';
-import { deleteTicket } from '../redux/ticketSlice';
+import { deleteTicket, updateTicket } from '../redux/ticketSlice';
 import { fileToBase64 } from '../function/function';
 import AlertModal from '../components/shared/AlertModal';
 import DeleteConfirmModal from '../components/shared/DeleteConfirmModal';
@@ -22,9 +22,10 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
+import EstimateTimePicker from '../components/shared/EstimateTimePicker';
 
 const statusConfig = {
-  OPEN:        { label: 'Open',        bg: 'bg-blue-100',    text: 'text-blue-700',    dot: 'bg-blue-500',    solid: 'bg-blue-500 text-white' },
+  OPEN:        { label: 'Open',        bg: 'bg-[#F7ECF7]',   text: 'text-[#ab4aba]',   dot: 'bg-[#ab4aba]',   solid: 'bg-[#ab4aba] text-white' },
   IN_PROGRESS: { label: 'In Progress', bg: 'bg-indigo-100',  text: 'text-indigo-700',  dot: 'bg-indigo-500',  solid: 'bg-indigo-500 text-white' },
   RESOLVED:    { label: 'Resolved',    bg: 'bg-emerald-100', text: 'text-emerald-700', dot: 'bg-emerald-500', solid: 'bg-emerald-500 text-white' },
   CLOSED:      { label: 'Closed',      bg: 'bg-slate-200',   text: 'text-slate-600',   dot: 'bg-slate-400',   solid: 'bg-slate-500 text-white' },
@@ -235,47 +236,19 @@ const TicketDetailsPage = ({ ticket, onBack, onUpdate }) => {
 
   const toggleTimer = () => {
     if (timerStartAt) {
-      setTrackedTimeMs((prev) => prev + (Date.now() - timerStartAt));
+      const newTrackedMs = trackedTimeMs + (Date.now() - timerStartAt);
+      setTrackedTimeMs(newTrackedMs);
       setTimerStartAt(null);
+      const ticketId = ticket._id || ticket.id;
+      if (ticketId) {
+        dispatch(updateTicket({
+          ticketId,
+          ticketData: { ...ticket, trackedTimeMs: newTrackedMs },
+        }));
+      }
     } else {
       setTimerStartAt(Date.now());
     }
-  };
-
-  const parseDurationInput = (input) => {
-    if (!input) return 0;
-    const str = String(input).toLowerCase().trim();
-    if (!str) return 0;
-    if (/^\d+$/.test(str)) return Number(str) * 60 * 60 * 1000;
-    const units = { d: 86400, h: 3600, w: 604800, m: 60, s: 1 };
-    const regex = /(\d+(?:\.\d+)?)\s*(d|h|m|s|w)/g;
-    let total = 0;
-    let match;
-    let matched = false;
-    while ((match = regex.exec(str)) !== null) {
-      matched = true;
-      total += Number(match[1]) * (units[match[2]] || 0);
-    }
-    return matched ? total * 1000 : 0;
-  };
-
-  const [estimateInput, setEstimateInput] = useState(
-    initialFormData.timeEstimateMs > 0
-      ? (() => {
-          const total = Math.floor(initialFormData.timeEstimateMs / 1000);
-          const h = Math.floor(total / 3600);
-          const m = Math.floor((total % 3600) / 60);
-          if (h > 0 && m > 0) return `${h}h ${m}m`;
-          if (h > 0) return `${h}h`;
-          if (m > 0) return `${m}m`;
-          return '';
-        })()
-      : ''
-  );
-
-  const commitEstimate = () => {
-    const ms = parseDurationInput(estimateInput);
-    setFormData((prev) => ({ ...prev, timeEstimateMs: ms }));
   };
 
   const formatDuration = (ms) => {
@@ -627,16 +600,10 @@ const TicketDetailsPage = ({ ticket, onBack, onUpdate }) => {
 
           {/* Body */}
           <div className="px-6 pt-5 pb-8 max-w-[960px] max-[640px]:px-4">
-            {/* Title */}
-            <input
-              type="text"
-              name="subject"
-              value={formData.subject}
-              onChange={handleChange}
-              placeholder="Untitled Ticket"
-              className="w-full text-[28px] font-bold text-slate-900 bg-transparent border-0 outline-none hover:bg-slate-50 focus:bg-slate-50 rounded-lg px-2 -mx-2 py-1 mb-3 max-[640px]:text-[22px]"
-            />
-            {errors.subject && <span className="block text-red-500 text-xs mb-2 px-2">{errors.subject}</span>}
+            {/* Title (read-only) */}
+            <h1 className="w-full text-[28px] font-bold text-slate-900 px-2 -mx-2 py-1 mb-3 max-[640px]:text-[22px]">
+              {formData.subject || 'Untitled Ticket'}
+            </h1>
 
             {/* Hero quick chips */}
             <div className="flex items-center flex-wrap gap-2 mb-6">
@@ -794,9 +761,18 @@ const TicketDetailsPage = ({ ticket, onBack, onUpdate }) => {
                     <SelectValue placeholder="Empty" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="Customer">Customer</SelectItem>
-                    <SelectItem value="Internal">Internal</SelectItem>
-                    <SelectItem value="Vendor">Vendor</SelectItem>
+                    {(() => {
+                      const presets = ['CUSTOMER', 'INTERNAL', 'VENDOR'];
+                      const current = formData.scope;
+                      const options = current && !presets.some((p) => p.toLowerCase() === String(current).toLowerCase())
+                        ? [current, ...presets]
+                        : presets;
+                      return options.map((scope) => (
+                        <SelectItem key={scope} value={scope}>
+                          {scope.charAt(0).toUpperCase() + scope.slice(1).toLowerCase()}
+                        </SelectItem>
+                      ));
+                    })()}
                   </SelectContent>
                 </Select>
               </PropertyRow>
@@ -890,22 +866,10 @@ const TicketDetailsPage = ({ ticket, onBack, onUpdate }) => {
                 icon={<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 8v4l3 3"/><circle cx="12" cy="12" r="10"/><path d="M16 2l4 4"/><path d="M8 2L4 6"/></svg>}
                 label="Time Estimate"
               >
-                <div className="flex items-center gap-2">
-                  <input
-                    type="text"
-                    value={estimateInput}
-                    onChange={(e) => setEstimateInput(e.target.value)}
-                    onBlur={commitEstimate}
-                    onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); e.currentTarget.blur(); } }}
-                    placeholder="e.g. 1h 30m"
-                    className="w-32 px-2 py-1 text-[13px] font-semibold rounded-md border border-transparent bg-transparent text-slate-800 hover:bg-slate-50 hover:border-slate-200 focus:outline-none focus:bg-white focus:border-blue-400 focus:ring-2 focus:ring-blue-100 transition-all"
-                  />
-                  {formData.timeEstimateMs > 0 && (
-                    <span className="text-[11px] text-slate-400 font-medium tabular-nums">
-                      = {formatDuration(formData.timeEstimateMs)}
-                    </span>
-                  )}
-                </div>
+                <EstimateTimePicker
+                  valueMs={formData.timeEstimateMs}
+                  onChange={(ms) => setFormData((prev) => ({ ...prev, timeEstimateMs: ms }))}
+                />
               </PropertyRow>
             </div>
 
@@ -1020,7 +984,7 @@ const TicketDetailsPage = ({ ticket, onBack, onUpdate }) => {
               <Button
                 type="submit"
                 disabled={!isDirty}
-                className="bg-gradient-to-b from-blue-500 to-blue-600 text-white border-blue-600/20 shadow-sm shadow-blue-600/20 hover:from-blue-500 hover:to-blue-700 hover:text-white focus-visible:ring-blue-500/30"
+                className="!bg-[#5449D6] text-white border-transparent hover:!bg-[#5449D6] hover:text-white hover:brightness-110 focus-visible:ring-[#5449D6]/30"
               >
                 Save Changes
               </Button>
@@ -1130,7 +1094,7 @@ const TicketDetailsPage = ({ ticket, onBack, onUpdate }) => {
                 size="sm"
                 onClick={handlePostComment}
                 disabled={isPostingComment || !comment.trim()}
-                className="bg-gradient-to-b from-blue-500 to-blue-600 text-white border-blue-600/20 shadow-sm shadow-blue-600/20 hover:from-blue-500 hover:to-blue-700 hover:text-white focus-visible:ring-blue-500/30"
+                className="!bg-[#5449D6] text-white border-transparent hover:!bg-[#5449D6] hover:text-white hover:brightness-110 focus-visible:ring-[#5449D6]/30"
               >
                 <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
                   <line x1="22" y1="2" x2="11" y2="13"/>

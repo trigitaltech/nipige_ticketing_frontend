@@ -113,9 +113,9 @@
   font-size: 11px;
 }
 
-.form-group input,
-.form-group textarea,
-.form-group select {
+.form-group input:not([data-slot="input"]),
+.form-group textarea:not([data-slot="textarea"]),
+.form-group select:not([data-slot="select-trigger"]) {
   width: 100%;
   padding: 8px 10px;
   border: 2px solid #DFE1E6;
@@ -128,28 +128,66 @@
 }
 
 /* Compact inputs for UpdateTicketModal */
-.modal-content-wide .form-group input,
-.modal-content-wide .form-group textarea,
-.modal-content-wide .form-group select {
+.modal-content-wide .form-group input:not([data-slot="input"]),
+.modal-content-wide .form-group textarea:not([data-slot="textarea"]),
+.modal-content-wide .form-group select:not([data-slot="select-trigger"]) {
   padding: 6px 8px;
   font-size: 13px;
 }
 
-.form-group input:focus,
-.form-group textarea:focus,
-.form-group select:focus {
+.form-group input:not([data-slot="input"]):focus,
+.form-group textarea:not([data-slot="textarea"]):focus,
+.form-group select:not([data-slot="select-trigger"]):focus {
   outline: none;
   border-color: #0052CC;
   background-color: #FFFFFF;
   box-shadow: none;
 }
 
-.form-group input::placeholder,
-.form-group textarea::placeholder {
+.form-group input:not([data-slot="input"])::placeholder,
+.form-group textarea:not([data-slot="textarea"])::placeholder {
   color: #8993A4;
 }
 
-.form-group textarea {
+/* Force shadcn components to use their own styling inside .form-group */
+.form-group [data-slot="input"],
+.form-group [data-slot="textarea"],
+.form-group [data-slot="select-trigger"] {
+  all: revert-layer;
+}
+.form-group [data-slot="input"] {
+  height: 2.5rem !important;
+  padding: 0.5rem 0.875rem !important;
+  border: 1px solid oklch(0.922 0 0) !important;
+  border-radius: 0.75rem !important;
+  background: transparent !important;
+  font-size: 0.875rem !important;
+  color: inherit !important;
+  transition: border-color 0.15s, box-shadow 0.15s !important;
+}
+.form-group [data-slot="textarea"] {
+  min-height: 100px !important;
+  padding: 0.625rem 0.875rem !important;
+  border: 1px solid oklch(0.922 0 0) !important;
+  border-radius: 0.75rem !important;
+  background: transparent !important;
+  font-size: 0.875rem !important;
+  color: inherit !important;
+  font-family: inherit !important;
+  resize: vertical !important;
+  transition: border-color 0.15s, box-shadow 0.15s !important;
+}
+.form-group [data-slot="input"]:focus,
+.form-group [data-slot="input"]:focus-visible,
+.form-group [data-slot="textarea"]:focus,
+.form-group [data-slot="textarea"]:focus-visible {
+  outline: none !important;
+  border-color: oklch(0.708 0 0) !important;
+  box-shadow: 0 0 0 3px oklch(0.708 0 0 / 0.2) !important;
+  background: transparent !important;
+}
+
+.form-group textarea:not([data-slot="textarea"]) {
   resize: vertical;
   min-height: 80px;
 }
@@ -191,7 +229,6 @@
   justify-content: flex-end;
   gap: 8px;
   padding-top: 16px;
-  border-top: 1px solid #DFE1E6;
 }
 
 .modal-footer-small {

@@ -1,4 +1,5 @@
 import deleteIcon from '../../assets/icons/delete.png';
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 
 const severityConfig = {
   Critical: { bg: 'bg-red-50', text: 'text-red-600', dot: 'bg-red-600' },
@@ -92,7 +93,14 @@ const TicketCard = ({ ticket, onDragStart, onClick, onDelete }) => {
       </div>
 
       {/* Title */}
-      <h4 className="text-sm text-[#172B4D] font-semibold leading-snug mb-3">{subject}</h4>
+      <Tooltip>
+        <TooltipTrigger asChild>
+          <h4 className="text-sm text-[#172B4D] font-semibold leading-snug mb-3 line-clamp-2 cursor-pointer">{subject}</h4>
+        </TooltipTrigger>
+        <TooltipContent side="top" align="start" className="max-w-xs">
+          {subject}
+        </TooltipContent>
+      </Tooltip>
 
       {projectName && (
         <div className="inline-flex max-w-full px-3.5 py-0.5 rounded-full bg-blue-50 text-[10px] font-bold tracking-wide text-blue-700 border-[1px] border-blue-100 mb-3">

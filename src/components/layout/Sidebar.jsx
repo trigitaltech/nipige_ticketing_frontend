@@ -4,6 +4,7 @@ import {
   SidebarFooter,
   SidebarGroup,
   SidebarGroupContent,
+  SidebarGroupLabel,
   SidebarHeader,
   SidebarMenu,
   SidebarMenuButton,
@@ -58,28 +59,50 @@ const navItems = [
   },
 ];
 
+const SIDEBAR_BG = '#3B2FB1';
+
+const itemBaseCls = 'h-11 rounded-lg text-[13px] font-medium transition-colors';
+const itemIdleCls = 'text-white/75 cursor-pointer';
+const itemActiveCls = '!bg-white/15 !text-white font-semibold ring-1 ring-inset ring-white/20 shadow-[inset_0_1px_0_rgba(255,255,255,0.06)]';
+const itemDisabledCls = 'opacity-40 cursor-not-allowed text-white/60';
+
 const Sidebar = ({ onLogout, activeItem = 'Dashboard', onNavigate }) => {
   const { toggleSidebar, state } = useSidebar();
   const isCollapsed = state === 'collapsed';
   return (
-    <ShadSidebar collapsible="icon">
-      <SidebarHeader>
+    <ShadSidebar
+      collapsible="icon"
+      className="border-r-0 text-white [&_[data-slot=sidebar-inner]]:bg-[var(--sidebar-bg)] [&_[data-slot=sidebar-container]]:border-r-0"
+      style={{
+        '--sidebar-bg': SIDEBAR_BG,
+        '--sidebar-accent': 'rgba(255, 255, 255, 0.1)',
+        '--sidebar-accent-foreground': '#ffffff',
+        '--sidebar-ring': 'rgba(255, 255, 255, 0.2)',
+      }}
+    >
+      <SidebarHeader className="border-b border-white/10 pb-3" style={{ backgroundColor: SIDEBAR_BG }}>
         <SidebarMenu>
           <SidebarMenuItem>
-            <SidebarMenuButton size="lg" className="cursor-default hover:bg-transparent hover:text-inherit active:bg-transparent data-[state=open]:bg-transparent">
-              <div className="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center text-white font-bold shrink-0">
+            <SidebarMenuButton
+              size="lg"
+              className="cursor-default h-12 text-white hover:bg-transparent hover:text-white active:bg-transparent data-[state=open]:bg-transparent"
+            >
+              <div className="w-9 h-9 bg-white/15 rounded-lg flex items-center justify-center text-white font-bold ring-1 ring-inset ring-white/20 shrink-0">
                 T
               </div>
-              <span className="font-semibold text-gray-800">TRIGITAL</span>
+              <span className="text-[15px] font-bold text-white tracking-tight">TRIGITAL</span>
             </SidebarMenuButton>
           </SidebarMenuItem>
         </SidebarMenu>
       </SidebarHeader>
 
-      <SidebarContent>
+      <SidebarContent className="pt-2" style={{ backgroundColor: SIDEBAR_BG }}>
         <SidebarGroup>
+          <SidebarGroupLabel className="text-[10px] font-bold text-white/50 uppercase tracking-[0.08em] px-3 mb-1">
+            Workspace
+          </SidebarGroupLabel>
           <SidebarGroupContent>
-            <SidebarMenu>
+            <SidebarMenu className="gap-1.5">
               {navItems.map((item) => {
                 const isActive = !item.disabled && item.name === activeItem;
                 return (
@@ -89,7 +112,9 @@ const Sidebar = ({ onLogout, activeItem = 'Dashboard', onNavigate }) => {
                       isActive={isActive}
                       disabled={item.disabled}
                       onClick={() => !item.disabled && onNavigate?.(item.name)}
-                      className={item.disabled ? 'opacity-60' : 'cursor-pointer'}
+                      className={`${itemBaseCls} ${
+                        isActive ? itemActiveCls : item.disabled ? itemDisabledCls : itemIdleCls
+                      }`}
                     >
                       {item.icon}
                       <span>{item.name}</span>
@@ -102,13 +127,13 @@ const Sidebar = ({ onLogout, activeItem = 'Dashboard', onNavigate }) => {
         </SidebarGroup>
       </SidebarContent>
 
-      <SidebarFooter>
-        <SidebarMenu>
+      <SidebarFooter className="pt-2 pb-3 border-t border-white/10" style={{ backgroundColor: SIDEBAR_BG }}>
+        <SidebarMenu className="gap-1.5">
           <SidebarMenuItem>
             <SidebarMenuButton
               tooltip={isCollapsed ? 'Expand sidebar' : 'Collapse sidebar'}
               onClick={toggleSidebar}
-              className="cursor-pointer"
+              className={`${itemBaseCls} ${itemIdleCls}`}
             >
               <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 {isCollapsed ? (
@@ -121,7 +146,11 @@ const Sidebar = ({ onLogout, activeItem = 'Dashboard', onNavigate }) => {
             </SidebarMenuButton>
           </SidebarMenuItem>
           <SidebarMenuItem>
-            <SidebarMenuButton tooltip="Logout" onClick={onLogout} className="cursor-pointer">
+            <SidebarMenuButton
+              tooltip="Logout"
+              onClick={onLogout}
+              className={`${itemBaseCls} text-white/75 hover:bg-red-500/20 hover:text-red-200 cursor-pointer`}
+            >
               <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
               </svg>

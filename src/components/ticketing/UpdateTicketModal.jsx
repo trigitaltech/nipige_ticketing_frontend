@@ -309,7 +309,7 @@ const UpdateTicketModal = ({ ticket, onClose, onUpdate }) => {
                   name="subject"
                   value={formData.subject}
                   onChange={handleChange}
-                  placeholder="Enter ticket subject"
+                  placeholder="Enter task subject"
                 />
                 {errors.subject && <span className="error">{errors.subject}</span>}
               </div>
