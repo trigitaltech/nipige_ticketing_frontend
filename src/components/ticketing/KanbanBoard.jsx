@@ -1,10 +1,23 @@
 import TicketCard from './TicketCard';
 
+const StatusIconTodo = () => (
+  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><circle cx="12" cy="12" r="9" /></svg>
+);
+const StatusIconInProgress = () => (
+  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="9" /><path d="M12 3a9 9 0 0 1 0 18 9 9 0 0 1 0-18z M12 3a9 9 0 0 1 9 9" fill="currentColor" stroke="none" /></svg>
+);
+const StatusIconComplete = () => (
+  <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z" /></svg>
+);
+const StatusIconClosed = () => (
+  <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm5 13.59L15.59 17 12 13.41 8.41 17 7 15.59 10.59 12 7 8.41 8.41 7 12 10.59 15.59 7 17 8.41 13.41 12 17 15.59z" /></svg>
+);
+
 const statusConfig = {
-  OPEN: { title: 'Open', dotColor: 'bg-blue-500' },
-  IN_PROGRESS: { title: 'In Progress', dotColor: 'bg-orange-400' },
-  RESOLVED: { title: 'Resolved', dotColor: 'bg-purple-500' },
-  CLOSED: { title: 'Closed', dotColor: 'bg-green-500' },
+  OPEN:        { title: 'Open',        Icon: StatusIconTodo,       color: '#87909E' },
+  IN_PROGRESS: { title: 'In Progress', Icon: StatusIconInProgress, color: 'rgb(8, 128, 234)' },
+  RESOLVED:    { title: 'Complete',    Icon: StatusIconComplete,   color: 'rgb(41, 151, 100)' },
+  CLOSED:      { title: 'Closed',      Icon: StatusIconClosed,     color: '#656F7D' },
 };
 
 const projectDotPalette = [
@@ -14,6 +27,15 @@ const projectDotPalette = [
   'bg-violet-500',
   'bg-cyan-500',
   'bg-rose-500',
+];
+
+const projectPillPalette = [
+  { pill: 'bg-blue-600',    count: 'text-blue-600',    bg: 'bg-blue-50',    accent: 'text-blue-600' },
+  { pill: 'bg-emerald-600', count: 'text-emerald-600', bg: 'bg-emerald-50', accent: 'text-emerald-600' },
+  { pill: 'bg-amber-500',   count: 'text-amber-600',   bg: 'bg-amber-50',   accent: 'text-amber-600' },
+  { pill: 'bg-violet-600',  count: 'text-violet-600',  bg: 'bg-violet-50',  accent: 'text-violet-600' },
+  { pill: 'bg-cyan-600',    count: 'text-cyan-600',    bg: 'bg-cyan-50',    accent: 'text-cyan-600' },
+  { pill: 'bg-rose-600',    count: 'text-rose-600',    bg: 'bg-rose-50',    accent: 'text-rose-600' },
 ];
 
 const KanbanBoard = ({
@@ -240,41 +262,64 @@ const KanbanBoard = ({
   };
 
   return (
-    <div className="flex gap-2 h-full overflow-x-auto pb-4">
-      {columns.map(column => {
+    <div className="flex gap-3 h-full overflow-x-auto pb-4 px-1">
+      {columns.map((column, index) => {
         const config = statusConfig[column.id];
+        const color = groupBy === 'status'
+          ? (config?.color || '#87909E')
+          : ['#1090E0', 'rgb(41,151,100)', '#D3A50E', '#8B5CF6', '#0891B2', '#E11D48'][index % 6];
         const columnTitle = groupBy === 'status' ? (config?.title || column.id) : column.title;
-        const dotColor = groupBy === 'status' ? (config?.dotColor || 'bg-gray-400') : (column.dotColor || 'bg-gray-400');
         const columnTickets = getTicketsByColumn(column.id);
         const totalTickets = columnTickets.length;
+        const columnBg = `color-mix(in srgb, ${color} 5%, transparent)`;
 
         return (
           <div
             key={column.id}
-            className="min-w-[320px] flex-1 flex flex-col"
+            className="group/col shrink-0 w-[320px] flex flex-col rounded-lg p-2"
+            style={{ backgroundColor: columnBg }}
             onDragOver={groupBy === 'status' ? handleDragOver : undefined}
             onDrop={groupBy === 'status' ? (e) => handleDrop(e, column.id) : undefined}
           >
-            {/* Column Header */}
-            <div className="flex items-center justify-between px-3 py-3 mb-3">
-              <div className="flex items-center gap-2">
-                <span className={`w-2.5 h-2.5 rounded-full ${dotColor}`} />
-                <h3 className="text-sm font-semibold text-gray-700">{columnTitle}</h3>
-                <span className="ml-1 text-sm font-medium text-gray-400">
-                  {totalTickets}
-                </span>
+            {/* Column Header — ClickUp-style pill */}
+            <div className="flex items-center gap-2 px-1 py-1 mb-2">
+              <span
+                className="inline-flex items-center gap-1.5 px-2 py-1 rounded-[4px] text-[11px] font-bold uppercase tracking-wide text-white"
+                style={{ backgroundColor: color }}
+              >
+                {groupBy === 'status' && config?.Icon ? <config.Icon /> : (
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><circle cx="12" cy="12" r="9" /></svg>
+                )}
+                {columnTitle}
+              </span>
+              <span className="text-[13px] font-bold tabular-nums" style={{ color }}>{totalTickets}</span>
+              <div className="ml-auto flex items-center gap-0.5 opacity-0 group-hover/col:opacity-100 transition-opacity">
+                <button
+                  type="button"
+                  className="w-6 h-6 rounded flex items-center justify-center text-slate-400 hover:bg-slate-100 hover:text-slate-600 cursor-pointer"
+                  title="More"
+                >
+                  <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
+                    <circle cx="5" cy="12" r="1.5" />
+                    <circle cx="12" cy="12" r="1.5" />
+                    <circle cx="19" cy="12" r="1.5" />
+                  </svg>
+                </button>
+                <button
+                  type="button"
+                  className="w-6 h-6 rounded flex items-center justify-center text-slate-400 hover:bg-slate-100 hover:text-slate-600 cursor-pointer"
+                  title="Add task"
+                >
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                    <line x1="12" y1="5" x2="12" y2="19" />
+                    <line x1="5" y1="12" x2="19" y2="12" />
+                  </svg>
+                </button>
               </div>
-              <button className="text-gray-400 hover:text-gray-600 cursor-pointer">
-                <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
-                  <circle cx="12" cy="5" r="1.5" />
-                  <circle cx="12" cy="12" r="1.5" />
-                  <circle cx="12" cy="19" r="1.5" />
-                </svg>
-              </button>
             </div>
 
             {/* Column Content */}
-            <div className="kanban-column-scroll flex-1 space-y-3 overflow-y-auto px-1">
+            <div className="flex-1 space-y-3 overflow-y-auto scroll-hover px-1">
               {columnTickets.map(ticket => (
                 <TicketCard
                   key={ticket._id || ticket.id}
@@ -284,13 +329,18 @@ const KanbanBoard = ({
                   onDelete={onDeleteTicket}
                 />
               ))}
-              {totalTickets === 0 && (
-                <div className="text-center text-gray-400 py-10 text-sm">
-                  No tickets
-                </div>
-              )}
+              <button
+                type="button"
+                className="w-full text-left text-[13px] font-semibold hover:brightness-90 px-2 py-2 rounded flex items-center gap-1.5 transition-all cursor-pointer"
+                style={{ color }}
+              >
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                  <line x1="12" y1="5" x2="12" y2="19" />
+                  <line x1="5" y1="12" x2="19" y2="12" />
+                </svg>
+                Add Task
+              </button>
             </div>
-
           </div>
         );
       })}

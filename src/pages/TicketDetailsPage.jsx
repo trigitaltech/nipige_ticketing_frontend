@@ -4,15 +4,103 @@ import { fetchCategories } from '../redux/categorySlice';
 import { fetchUsers } from '../redux/userSlice';
 import { fetchProjects } from '../redux/projectSlice';
 import { postCommentAPI, uploadImage } from '../services/api';
+import { deleteTicket } from '../redux/ticketSlice';
 import { fileToBase64 } from '../function/function';
 import AlertModal from '../components/shared/AlertModal';
+import DeleteConfirmModal from '../components/shared/DeleteConfirmModal';
+import { Button } from '@/components/ui/button';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
 
 const statusConfig = {
-  OPEN: { label: 'Open', bg: 'bg-blue-100', text: 'text-blue-700' },
-  IN_PROGRESS: { label: 'In Progress', bg: 'bg-blue-100', text: 'text-blue-600' },
-  RESOLVED: { label: 'Resolved', bg: 'bg-emerald-100', text: 'text-emerald-700' },
-  CLOSED: { label: 'Closed', bg: 'bg-gray-100', text: 'text-gray-500' },
+  OPEN:        { label: 'Open',        bg: 'bg-blue-100',    text: 'text-blue-700',    dot: 'bg-blue-500',    solid: 'bg-blue-500 text-white' },
+  IN_PROGRESS: { label: 'In Progress', bg: 'bg-indigo-100',  text: 'text-indigo-700',  dot: 'bg-indigo-500',  solid: 'bg-indigo-500 text-white' },
+  RESOLVED:    { label: 'Resolved',    bg: 'bg-emerald-100', text: 'text-emerald-700', dot: 'bg-emerald-500', solid: 'bg-emerald-500 text-white' },
+  CLOSED:      { label: 'Closed',      bg: 'bg-slate-200',   text: 'text-slate-600',   dot: 'bg-slate-400',   solid: 'bg-slate-500 text-white' },
 };
+
+const severityConfig = {
+  Low:      { label: 'Low',      bg: 'bg-sky-50',    text: 'text-sky-700',    ring: 'ring-sky-200',    flag: 'text-sky-500',    fill: 'bg-sky-500' },
+  Medium:   { label: 'Medium',   bg: 'bg-amber-50',  text: 'text-amber-700',  ring: 'ring-amber-200',  flag: 'text-amber-500',  fill: 'bg-amber-500' },
+  High:     { label: 'High',     bg: 'bg-orange-50', text: 'text-orange-700', ring: 'ring-orange-200', flag: 'text-orange-500', fill: 'bg-orange-500' },
+  Critical: { label: 'Critical', bg: 'bg-red-50',    text: 'text-red-700',    ring: 'ring-red-200',    flag: 'text-red-500',    fill: 'bg-red-500' },
+};
+
+const avatarPalette = [
+  'bg-rose-500', 'bg-orange-500', 'bg-amber-500', 'bg-lime-500', 'bg-emerald-500',
+  'bg-teal-500', 'bg-sky-500', 'bg-indigo-500', 'bg-violet-500', 'bg-fuchsia-500',
+];
+
+const getInitials = (name) => {
+  if (!name) return '?';
+  const parts = String(name).trim().split(/\s+/).filter(Boolean);
+  if (parts.length === 0) return '?';
+  if (parts.length === 1) return parts[0].slice(0, 2).toUpperCase();
+  return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
+};
+
+const getAvatarColor = (name) => {
+  const str = String(name || '');
+  let hash = 0;
+  for (let i = 0; i < str.length; i++) hash = (hash * 31 + str.charCodeAt(i)) >>> 0;
+  return avatarPalette[hash % avatarPalette.length];
+};
+
+const Avatar = ({ name, email, size = 'md', ring = false }) => {
+  const sizeCls = size === 'xs' ? 'w-5 h-5 text-[9px]' : size === 'sm' ? 'w-6 h-6 text-[10px]' : size === 'lg' ? 'w-10 h-10 text-sm' : 'w-7 h-7 text-[11px]';
+  const label = name || email || '';
+  const ringCls = ring ? 'ring-2 ring-white' : '';
+  if (!label) {
+    return (
+      <div className={`${sizeCls} rounded-full bg-slate-100 text-slate-400 flex items-center justify-center font-bold shrink-0 border border-dashed border-slate-300 ${ringCls}`} title="Unassigned">
+        <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+          <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
+          <circle cx="12" cy="7" r="4" />
+        </svg>
+      </div>
+    );
+  }
+  return (
+    <div className={`${sizeCls} rounded-full ${getAvatarColor(label)} text-white flex items-center justify-center font-bold shrink-0 ${ringCls}`} title={label}>
+      {getInitials(label)}
+    </div>
+  );
+};
+
+const getDueDateInfo = (endDate) => {
+  if (!endDate) return null;
+  const end = new Date(endDate).getTime();
+  if (Number.isNaN(end)) return null;
+  const diffDays = Math.round((end - Date.now()) / (24 * 60 * 60 * 1000));
+  if (diffDays < 0) {
+    const n = Math.abs(diffDays);
+    return { text: `Overdue ${n}d`, tone: 'text-red-600', pill: 'bg-red-50 ring-red-200 text-red-700' };
+  }
+  if (diffDays === 0) return { text: 'Due today', tone: 'text-amber-600', pill: 'bg-amber-50 ring-amber-200 text-amber-700' };
+  if (diffDays <= 3) return { text: `${diffDays}d left`, tone: 'text-amber-600', pill: 'bg-amber-50 ring-amber-200 text-amber-700' };
+  return { text: `${diffDays}d left`, tone: 'text-slate-500', pill: 'bg-slate-50 ring-slate-200 text-slate-600' };
+};
+
+const PropertyRow = ({ icon, label, children }) => (
+  <div className="flex items-start gap-3 py-2 min-h-[40px] border-b border-dashed border-slate-100 last:border-b-0">
+    <div className="flex items-center gap-2 w-[130px] shrink-0 text-slate-500 pt-1.5 max-[640px]:w-[110px]">
+      {icon}
+      <span className="text-[12px] font-semibold">{label}</span>
+    </div>
+    <div className="flex-1 min-w-0">{children}</div>
+  </div>
+);
 
 const TicketDetailsPage = ({ ticket, onBack, onUpdate }) => {
   const dispatch = useDispatch();
@@ -47,7 +135,7 @@ const TicketDetailsPage = ({ ticket, onBack, onUpdate }) => {
     return date.toLocaleDateString('en-US', { month: 'short', day: '2-digit', year: 'numeric', timeZone: 'Asia/Kolkata' });
   };
 
-  const [formData, setFormData] = useState({
+  const initialFormData = {
     subject: ticket.subject || ticket.title || '',
     description: ticket.description || '',
     priority: ticket.priority || 0,
@@ -60,7 +148,44 @@ const TicketDetailsPage = ({ ticket, onBack, onUpdate }) => {
     scope: ticket.scope || '',
     startDate: formatDateTimeLocal(ticket.startDate),
     endDate: formatDateTimeLocal(ticket.endDate),
+    timeEstimateMs: Number(ticket.timeEstimateMs) || 0,
+  };
+  const [formData, setFormData] = useState(initialFormData);
+  const initialSnapshotRef = useRef(JSON.stringify(initialFormData));
+
+  const timerStorageKey = `ticket-timer-${ticket._id || ticket.id || ticket.ticketNo}`;
+  const timerBackendMs = Number(ticket.trackedTimeMs) || Number(ticket.timeTracked) || 0;
+
+  const [trackedTimeMs, setTrackedTimeMs] = useState(() => {
+    try {
+      const raw = localStorage.getItem(timerStorageKey);
+      if (raw) {
+        const parsed = JSON.parse(raw);
+        if (typeof parsed?.trackedTimeMs === 'number') return parsed.trackedTimeMs;
+      }
+    } catch { /* ignore */ }
+    return timerBackendMs;
   });
+  const [timerStartAt, setTimerStartAt] = useState(() => {
+    try {
+      const raw = localStorage.getItem(timerStorageKey);
+      if (raw) {
+        const parsed = JSON.parse(raw);
+        if (typeof parsed?.timerStartAt === 'number') return parsed.timerStartAt;
+      }
+    } catch { /* ignore */ }
+    return null;
+  });
+  const [, setTimerNow] = useState(Date.now());
+
+  useEffect(() => {
+    try {
+      localStorage.setItem(
+        timerStorageKey,
+        JSON.stringify({ trackedTimeMs, timerStartAt })
+      );
+    } catch { /* ignore quota errors */ }
+  }, [timerStorageKey, trackedTimeMs, timerStartAt]);
 
   const [comment, setComment] = useState('');
   const [worknoteHistory, setWorknoteHistory] = useState(ticket.worknoteHistory || []);
@@ -71,6 +196,10 @@ const TicketDetailsPage = ({ ticket, onBack, onUpdate }) => {
   const [uploadProgress, setUploadProgress] = useState(null);
   const [isUploading, setIsUploading] = useState(false);
   const [viewingImage, setViewingImage] = useState(null);
+  const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [activityTab, setActivityTab] = useState('all');
+  const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
   const [alertModal, setAlertModal] = useState({
     isOpen: false,
     type: 'info',
@@ -97,6 +226,70 @@ const TicketDetailsPage = ({ ticket, onBack, onUpdate }) => {
     dispatch(fetchUsers());
     dispatch(fetchProjects());
   }, [dispatch]);
+
+  useEffect(() => {
+    if (!timerStartAt) return undefined;
+    const id = setInterval(() => setTimerNow(Date.now()), 1000);
+    return () => clearInterval(id);
+  }, [timerStartAt]);
+
+  const toggleTimer = () => {
+    if (timerStartAt) {
+      setTrackedTimeMs((prev) => prev + (Date.now() - timerStartAt));
+      setTimerStartAt(null);
+    } else {
+      setTimerStartAt(Date.now());
+    }
+  };
+
+  const parseDurationInput = (input) => {
+    if (!input) return 0;
+    const str = String(input).toLowerCase().trim();
+    if (!str) return 0;
+    if (/^\d+$/.test(str)) return Number(str) * 60 * 60 * 1000;
+    const units = { d: 86400, h: 3600, w: 604800, m: 60, s: 1 };
+    const regex = /(\d+(?:\.\d+)?)\s*(d|h|m|s|w)/g;
+    let total = 0;
+    let match;
+    let matched = false;
+    while ((match = regex.exec(str)) !== null) {
+      matched = true;
+      total += Number(match[1]) * (units[match[2]] || 0);
+    }
+    return matched ? total * 1000 : 0;
+  };
+
+  const [estimateInput, setEstimateInput] = useState(
+    initialFormData.timeEstimateMs > 0
+      ? (() => {
+          const total = Math.floor(initialFormData.timeEstimateMs / 1000);
+          const h = Math.floor(total / 3600);
+          const m = Math.floor((total % 3600) / 60);
+          if (h > 0 && m > 0) return `${h}h ${m}m`;
+          if (h > 0) return `${h}h`;
+          if (m > 0) return `${m}m`;
+          return '';
+        })()
+      : ''
+  );
+
+  const commitEstimate = () => {
+    const ms = parseDurationInput(estimateInput);
+    setFormData((prev) => ({ ...prev, timeEstimateMs: ms }));
+  };
+
+  const formatDuration = (ms) => {
+    const total = Math.max(0, Math.floor(ms / 1000));
+    const h = Math.floor(total / 3600);
+    const m = Math.floor((total % 3600) / 60);
+    const s = total % 60;
+    if (h > 0) return `${h}h ${m}m`;
+    if (m > 0) return `${m}m ${s}s`;
+    return `${s}s`;
+  };
+
+  const currentTrackedMs = trackedTimeMs + (timerStartAt ? Date.now() - timerStartAt : 0);
+  const timerRunning = !!timerStartAt;
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -169,7 +362,9 @@ const TicketDetailsPage = ({ ticket, onBack, onUpdate }) => {
 
     const mergedAttachments = [...existingUrls, ...uploadedFiles];
 
-    onUpdate({ ...ticket, ...formData, attachments: mergedAttachments });
+    const totalTrackedMs = trackedTimeMs + (timerStartAt ? Date.now() - timerStartAt : 0);
+    onUpdate({ ...ticket, ...formData, attachments: mergedAttachments, trackedTimeMs: totalTrackedMs });
+    try { localStorage.removeItem(timerStorageKey); } catch { /* ignore */ }
   };
 
   const handleFileUpload = async (e) => {
@@ -268,22 +463,42 @@ const TicketDetailsPage = ({ ticket, onBack, onUpdate }) => {
     }
   };
 
+  const handleDeleteTicket = async () => {
+    const ticketId = ticket._id || ticket.id;
+    if (!ticketId) return;
+    setIsDeleting(true);
+    try {
+      const result = await dispatch(deleteTicket(ticketId));
+      if (deleteTicket.fulfilled.match(result)) {
+        setDeleteConfirmOpen(false);
+        onBack?.();
+      } else {
+        openAlertModal({
+          type: 'error',
+          title: 'Delete Failed',
+          message: result.payload || 'Failed to delete ticket.',
+        });
+      }
+    } catch (error) {
+      console.error('Error deleting ticket:', error);
+      openAlertModal({
+        type: 'error',
+        title: 'Delete Failed',
+        message: 'Failed to delete ticket. Please try again.',
+      });
+    } finally {
+      setIsDeleting(false);
+    }
+  };
+
   const ticketNo = ticket.ticketNo || 'N/A';
+  const initialTrackedMs = Number(ticket.trackedTimeMs) || Number(ticket.timeTracked) || 0;
+  const isDirty =
+    JSON.stringify(formData) !== initialSnapshotRef.current ||
+    uploadedFiles.length > 0 ||
+    trackedTimeMs !== initialTrackedMs ||
+    timerRunning;
   const statusInfo = statusConfig[formData.status] || statusConfig.OPEN;
-  const selectedProject = Array.isArray(projects)
-    ? projects.find((project) => String(project._id || project.id) === String(formData.project))
-    : null;
-  const selectedProjectName =
-    selectedProject?.name ||
-    selectedProject?.projectName ||
-    ticket.project?.name ||
-    ticket.projectName ||
-    'N/A';
-  const assigneeName = ticket.assignTo?.name || 'Unassigned';
-  const assigneeEmail = ticket.assignTo?.email || '';
-  const reportedByName = ticket.reportedBy?.name || 'Unknown';
-  const reportedToName = ticket.reportedTo?.name || 'N/A';
-  const categoryName = ticket.category?.name || 'N/A';
 
   // Normalize attachments for display: support both URL strings and objects
   const attachments = (() => {
@@ -309,532 +524,631 @@ const TicketDetailsPage = ({ ticket, onBack, onUpdate }) => {
     });
   })();
 
-  const inputClass = 'w-full px-3.5 py-2.5 border-[1.5px] border-slate-200 rounded-[10px] text-sm font-[inherit] bg-slate-50 text-slate-900 transition-all duration-150 focus:outline-none focus:border-blue-500 focus:bg-white focus:ring-[3px] focus:ring-blue-500/[0.08] box-border appearance-none bg-no-repeat bg-[length:12px_8px]';
-  const selectClass = `${inputClass} pr-9 bg-[url("data:image/svg+xml,%3Csvg width='12' height='8' viewBox='0 0 12 8' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M1 1.5L6 6.5L11 1.5' stroke='%2364748B' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E")] bg-[position:right_12px_center]`;
-  const labelClass = 'block text-[13px] font-semibold text-slate-700 mb-1.5';
+  const inputClass = 'w-full px-3 py-2 border border-slate-200 rounded-lg text-[13px] font-[inherit] bg-white text-slate-900 transition-all duration-150 focus:outline-none focus:border-blue-500 focus:ring-[3px] focus:ring-blue-500/[0.08] box-border appearance-none bg-no-repeat bg-[length:12px_8px]';
+  const chipInputClass = 'w-full px-2 py-1.5 text-[13px] font-semibold rounded-md border border-transparent bg-transparent text-slate-800 hover:bg-slate-50 hover:border-slate-200 focus:outline-none focus:bg-white focus:border-blue-400 focus:ring-2 focus:ring-blue-100 transition-all box-border';
+  const chipTriggerClass = 'w-full border-transparent bg-transparent text-slate-800 font-semibold text-[13px] hover:bg-slate-50 hover:border-slate-200 focus-visible:bg-white focus-visible:border-blue-400 focus-visible:ring-blue-100 transition-all shadow-none';
+
+  const sevInfo = severityConfig[formData.severity] || severityConfig.Medium;
+  const due = getDueDateInfo(ticket.endDate);
+
+  // Combined activity feed (changes + comments)
+  const activityEvents = (() => {
+    const events = [];
+    (ticket.changeHistory || []).forEach((c, i) => events.push({
+      kind: 'change', id: c._id || `c${i}`,
+      by: c.updatedBy, at: c.updatedAt,
+      text: c.description || c.action || 'Updated',
+      action: c.action,
+    }));
+    (worknoteHistory || []).forEach((w, i) => events.push({
+      kind: 'comment', id: w._id || `w${i}`,
+      by: w.updatedBy, at: w.updatedAt,
+      text: w.description,
+    }));
+    events.sort((a, b) => new Date(b.at || 0) - new Date(a.at || 0));
+    return events;
+  })();
+  const visibleEvents = activityTab === 'all'
+    ? activityEvents
+    : activityEvents.filter((e) => (activityTab === 'comments' ? e.kind === 'comment' : e.kind === 'change'));
+
+  // Icons reused in property rows
+  const iconStatus     = <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>;
+  const iconUser       = <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>;
+  const iconCalendar   = <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>;
+  const iconFlag       = <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M4 2v20h2v-8h12l-2-4 2-4H6V2H4z"/></svg>;
+  const iconTag        = <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"/><line x1="7" y1="7" x2="7.01" y2="7"/></svg>;
+  const iconFolder     = <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>;
+  const iconGlobe      = <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>;
 
   return (
-    <div className="h-full flex flex-col overflow-hidden">
-      {/* Two Column Layout */}
-      <form onSubmit={handleSubmit} className="grid grid-cols-[1fr_380px] flex-1 overflow-hidden max-[1100px]:grid-cols-1">
-        {/* Left Column */}
-        <div className="overflow-y-auto px-7 pt-6 pb-10 border-r border-[#EBECF0] scrollbar-thin scrollbar-thumb-slate-300 scrollbar-track-transparent">
+    <div className="h-svh flex flex-col overflow-hidden">
+      <form onSubmit={handleSubmit} className="relative flex flex-1 overflow-hidden">
 
-          {/* Back button + Ticket badge row */}
-          <div className="flex items-center justify-between mb-5">
-            <div className="flex items-center gap-3">
+        {/* ===== LEFT: Main content ===== */}
+        <div className="flex-1 overflow-y-auto min-w-0 scroll-hover">
+
+          {/* Sticky mini top bar */}
+          <div className="sticky top-0 z-20 flex items-center justify-between gap-2 px-5 py-2.5 bg-white/90 backdrop-blur border-b border-slate-200 max-[640px]:px-3">
+            <div className="flex items-center gap-1.5 min-w-0">
               <button
                 type="button"
                 onClick={onBack}
-                title="Back to dashboard"
-                className="w-9 h-9 rounded-[10px] border border-slate-200 bg-white flex items-center justify-center cursor-pointer text-slate-400 hover:bg-slate-50 hover:text-slate-600 hover:border-slate-300 transition-all shrink-0"
+                title="Back"
+                className="w-7 h-7 rounded-md flex items-center justify-center cursor-pointer text-slate-500 hover:bg-slate-100 transition-all shrink-0"
               >
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                  <polyline points="15 18 9 12 15 6" />
-                </svg>
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
               </button>
-              <div className="flex items-center gap-2">
-                <span className="bg-blue-100 text-blue-600 text-[11px] font-bold px-2.5 py-0.5 rounded-md tracking-wide">#{ticketNo}</span>
-                <span className="text-slate-400 text-[10px]">&bull;</span>
-                <span className="text-[11px] font-semibold text-slate-500 tracking-wide uppercase">Project: {selectedProjectName}</span>
+              <div className="flex items-center px-2 py-1 rounded-md">
+                <span className="text-[12px] font-semibold text-slate-700">Task</span>
               </div>
-            </div>
-            <span className={`text-xs font-semibold px-4 py-1.5 rounded-full ${statusInfo.bg} ${statusInfo.text}`}>
-              {statusInfo.label}
-            </span>
-          </div>
-
-          {/* Ticket Title */}
-          <h1 className="text-[22px] font-bold text-slate-900 leading-tight mb-6">{formData.subject || 'Untitled Ticket'}</h1>
-
-          {/* BASIC INFORMATION */}
-          <div className="mb-7">
-            <div className="flex items-center gap-2 mb-1">
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#6B778C" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                <circle cx="12" cy="12" r="10" />
-                <line x1="12" y1="16" x2="12" y2="12" />
-                <line x1="12" y1="8" x2="12.01" y2="8" />
-              </svg>
-              <span className="text-xs font-bold text-slate-700 tracking-[0.8px] uppercase">BASIC INFORMATION</span>
-            </div>
-            <div className="h-px bg-slate-200 mt-2.5 mb-5" />
-
-            <div className="mb-4">
-              <label className={labelClass}>Project <span className="text-red-500">*</span></label>
-              <select
-                name="project"
-                value={formData.project}
-                onChange={handleProjectChange}
-                disabled={projectsLoading}
-                className={selectClass}
-              >
-                <option value="">{projectsLoading ? 'Loading projects...' : 'Select a project'}</option>
-                {Array.isArray(projects) && projects.map((project) => {
-                  const projectId = project._id || project.id;
-                  const projectName = project.name || project.projectName || 'Untitled Project';
-                  return (
-                    <option key={projectId} value={projectId}>
-                      {projectName}
-                    </option>
-                  );
-                })}
-              </select>
-              {errors.project && <span className="block text-red-500 text-xs mt-1">{errors.project}</span>}
-            </div>
-
-            <div className="grid grid-cols-2 gap-4 max-[640px]:grid-cols-1">
-              <div className="mb-0">
-                <label className={labelClass}>Category</label>
-                <select name="category" value={formData.category} onChange={handleCategoryChange} disabled={categoriesLoading} className={selectClass}>
-                  <option value="">{categoriesLoading ? 'Loading...' : 'Select a category'}</option>
-                  {Array.isArray(categories) && categories.map(cat => (
-                    <option key={cat._id} value={cat._id}>{cat.name}</option>
-                  ))}
-                </select>
-              </div>
-              <div className="mb-4">
-                <label className={labelClass}>Subject</label>
-                <input type="text" name="subject" value={formData.subject} onChange={handleChange} placeholder="Enter ticket subject" className={inputClass} />
-                {errors.subject && <span className="block text-red-500 text-xs mt-1">{errors.subject}</span>}
-              </div>
-            </div>
-
-            <div className="mb-4">
-              <label className={labelClass}>Description</label>
-              <textarea name="description" value={formData.description} onChange={handleChange} placeholder="Enter description" className={`${inputClass} resize-y min-h-[120px] overflow-hidden`} style={{ height: 'auto' }} ref={(el) => { if (el) { el.style.height = 'auto'; el.style.height = el.scrollHeight + 'px'; } }} />
-            </div>
-          </div>
-
-          {/* ATTACHMENTS */}
-          <div className="mb-6">
-            <div className="flex items-center gap-2 mb-1">
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#6B778C" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                <path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.49" />
-              </svg>
-              <span className="text-xs font-bold text-slate-700 tracking-[0.8px] uppercase">Attachments ({attachments.length + uploadedFiles.length})</span>
-            </div>
-            <div className="h-px bg-slate-200 mt-2.5 mb-5" />
-
-            <div className="grid grid-cols-3 gap-3.5 max-[1100px]:grid-cols-2 max-[640px]:grid-cols-1">
-              {attachments.map((att, idx) => (
-                <div key={`existing-${idx}`} className="border-[1.5px] border-slate-200 rounded-xl overflow-hidden bg-white group/card">
-                  <div className="h-[120px] bg-slate-100 flex items-center justify-center overflow-hidden relative">
-                    {att.type?.startsWith('image') ? (
-                      <img src={att.url} alt={att.name} className="w-full h-full object-cover" />
-                    ) : (
-                      <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#94A3B8" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-                        <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
-                        <polyline points="14 2 14 8 20 8" />
-                      </svg>
-                    )}
-                    {/* Hover overlay with view */}
-                    <div className="absolute inset-0 bg-black/40 opacity-0 group-hover/card:opacity-100 transition-opacity flex items-center justify-center">
-                      <button
-                        type="button"
-                        onClick={() => setViewingImage(att.url)}
-                        title="View"
-                        className="w-9 h-9 rounded-lg bg-white/90 hover:bg-white flex items-center justify-center cursor-pointer border-none transition-all"
-                      >
-                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#334155" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                          <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
-                          <circle cx="12" cy="12" r="3" />
-                        </svg>
-                      </button>
-                    </div>
-                  </div>
-                  <div className="px-3 py-2.5 flex flex-col gap-0.5">
-                    <span className="text-xs font-semibold text-slate-700 truncate">{att.name || `File ${idx + 1}`}</span>
-                    {att.size && <span className="text-[11px] text-slate-400">{att.size}</span>}
-                  </div>
-                </div>
-              ))}
-
-              {uploadedFiles.map((url, idx) => (
-                <div key={`uploaded-${idx}`} className="border-[1.5px] border-emerald-200 rounded-xl overflow-hidden bg-white group/card">
-                  <div className="h-[120px] bg-slate-100 flex items-center justify-center overflow-hidden relative">
-                    {url ? (
-                      <img src={url} alt={`Attachment ${idx + 1}`} className="w-full h-full object-cover" />
-                    ) : (
-                      <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#94A3B8" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-                        <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
-                        <polyline points="14 2 14 8 20 8" />
-                      </svg>
-                    )}
-                    {/* Hover overlay with view */}
-                    <div className="absolute inset-0 bg-black/40 opacity-0 group-hover/card:opacity-100 transition-opacity flex items-center justify-center">
-                      <button
-                        type="button"
-                        onClick={() => setViewingImage(url)}
-                        title="View"
-                        className="w-9 h-9 rounded-lg bg-white/90 hover:bg-white flex items-center justify-center cursor-pointer border-none transition-all"
-                      >
-                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#334155" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                          <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
-                          <circle cx="12" cy="12" r="3" />
-                        </svg>
-                      </button>
-                    </div>
-                  </div>
-                  <div className="px-3 py-2.5 flex flex-col gap-0.5">
-                    <span className="text-xs font-semibold text-slate-700 truncate">
-                      {url.split('/').pop() || `File ${idx + 1}`}
-                    </span>
-                  </div>
-                </div>
-              ))}
-
-              {/* Upload zone */}
-              <input
-                type="file"
-                ref={fileInputRef}
-                onChange={handleFileUpload}
-                accept="image/*,video/*,.pdf"
-                multiple
-                className="hidden"
-              />
-              <div
-                onClick={() => !isUploading && fileInputRef.current?.click()}
-                className={`border-2 border-dashed rounded-xl flex flex-col items-center justify-center gap-1.5 p-5 transition-all min-h-[120px] ${isUploading ? 'border-blue-300 bg-blue-50/30 cursor-wait' : 'border-slate-300 cursor-pointer hover:border-blue-500 hover:bg-blue-50/30'}`}
-              >
-                {isUploading ? (
-                  <>
-                    <svg className="animate-spin" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#3B82F6" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                      <path d="M21 12a9 9 0 1 1-6.219-8.56" />
-                    </svg>
-                    <span className="text-[13px] font-semibold text-blue-500">Uploading... {uploadProgress}%</span>
-                    <div className="w-full bg-slate-200 rounded-full h-1.5 mt-1">
-                      <div className="bg-blue-500 h-1.5 rounded-full transition-all" style={{ width: `${uploadProgress || 0}%` }} />
-                    </div>
-                  </>
-                ) : (
-                  <>
-                    <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#94A3B8" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-                      <path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.49" />
-                    </svg>
-                    <span className="text-[13px] font-semibold text-slate-500">Click to upload</span>
-                    <span className="text-[11px] text-slate-400">Image, Video, or PDF</span>
-                  </>
-                )}
-              </div>
-            </div>
-          </div>
-
-          {/* STATUS & SCOPE */}
-          <div className="mb-2">
-            <div className="flex items-center gap-2 mb-1">
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#6B778C" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                <circle cx="12" cy="12" r="10" />
-                <polyline points="12 6 12 12 16 14" />
-              </svg>
-              <span className="text-xs font-bold text-slate-700 tracking-[0.8px] uppercase">STATUS & SCOPE</span>
-            </div>
-            <div className="h-px bg-slate-200 mt-2.5 mb-3" />
-
-            <div className="grid grid-cols-2 gap-4 max-[640px]:grid-cols-1">
-              <div className="mb-4">
-                <label className={labelClass}>Status</label>
-                <select name="status" value={formData.status} onChange={handleChange} className={selectClass}>
-                  <option value="OPEN">Open</option>
-                  <option value="IN_PROGRESS">In Progress</option>
-                  <option value="RESOLVED">Resolved</option>
-                  <option value="CLOSED">Closed</option>
-                </select>
-              </div>
-              <div className="mb-4">
-                <label className={labelClass}>Scope</label>
-                <select name="scope" value={formData.scope} onChange={handleChange} className={selectClass}>
-                  <option value="">Select scope</option>
-                  <option value="Customer">Customer</option>
-                  <option value="Internal">Internal</option>
-                  <option value="Vendor">Vendor</option>
-                </select>
-              </div>
-            </div>
-          </div>
-
-          {/* SEVERITY & PRIORITY */}
-          <div className="mb-0">
-            <div className="flex items-center gap-2 mb-1">
-              <span className="text-lg font-bold text-[#6B778C] leading-none">#</span>
-              <span className="text-xs font-bold text-slate-700 tracking-[0.8px] uppercase">SEVERITY & PRIORITY</span>
-            </div>
-            <div className="h-px bg-slate-200 mt-2.5 mb-5" />
-
-            <div className="grid grid-cols-2 gap-4 max-[640px]:grid-cols-1">
-              <div className="mb-4">
-                <label className={labelClass}>Severity</label>
-                <select name="severity" value={formData.severity} onChange={handleChange} className={selectClass}>
-                  <option value="Low">Low</option>
-                  <option value="Medium">Medium</option>
-                  <option value="High">High</option>
-                  <option value="Critical">Critical</option>
-                </select>
-              </div>
-              <div className="mb-4">
-                <label className={labelClass}>Priority Score (0-10)</label>
-                <input type="number" name="priority" min="0" max="10" value={formData.priority} onChange={handleChange} className={inputClass} />
-              </div>
-            </div>
-          </div>
-
-          {/* ASSIGN TO / REPORTED TO */}
-          <div className="mb-0">
-            <div className="grid grid-cols-2 gap-4 max-[640px]:grid-cols-1">
-              <div className="mb-4">
-                <label className={labelClass}>Assign To</label>
-                <select name="assignTo" value={formData.assignTo?.id || ''} onChange={(e) => handleUserChange(e, 'assignTo')} disabled={usersLoading} className={selectClass}>
-                  <option value="">{usersLoading ? 'Loading...' : 'Select a user'}</option>
-                  {Array.isArray(users) && users.map(user => (
-                    <option key={user._id} value={user._id}>
-                      {`${user.name?.first || ''} ${user.name?.last || ''}`.trim() || user.authentication?.userName}
-                    </option>
-                  ))}
-                </select>
-              </div>
-              <div className="mb-4">
-                <label className={labelClass}>Reported To</label>
-                <select name="reportedTo" value={formData.reportedTo?.id || ''} onChange={(e) => handleUserChange(e, 'reportedTo')} disabled={usersLoading} className={selectClass}>
-                  <option value="">{usersLoading ? 'Loading...' : 'Select a user'}</option>
-                  {Array.isArray(users) && users.map(user => (
-                    <option key={user._id} value={user._id}>
-                      {`${user.name?.first || ''} ${user.name?.last || ''}`.trim() || user.authentication?.userName}
-                    </option>
-                  ))}
-                </select>
-              </div>
-            </div>
-          </div>
-
-          {/* TIMELINE */}
-          <div className="mb-0">
-            <div className="flex items-center gap-2 mb-1">
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#6B778C" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                <rect x="3" y="4" width="18" height="18" rx="2" ry="2" />
-                <line x1="16" y1="2" x2="16" y2="6" />
-                <line x1="8" y1="2" x2="8" y2="6" />
-                <line x1="3" y1="10" x2="21" y2="10" />
-              </svg>
-              <span className="text-xs font-bold text-slate-700 tracking-[0.8px] uppercase">TIMELINE</span>
-            </div>
-            <div className="h-px bg-slate-200 mt-2.5 mb-5" />
-
-            <div className="grid grid-cols-2 gap-4 max-[640px]:grid-cols-1">
-              <div className="mb-4">
-                <label className={labelClass}>Start Date & Time</label>
-                <input type="datetime-local" name="startDate" value={formData.startDate} onChange={handleChange} min="1900-01-01T00:00" max="9999-12-31T23:59" className={inputClass} />
-              </div>
-              <div className="mb-4">
-                <label className={labelClass}>End Date & Time</label>
-                <input type="datetime-local" name="endDate" value={formData.endDate} onChange={handleChange} min="1900-01-01T00:00" max="9999-12-31T23:59" className={inputClass} />
-              </div>
-            </div>
-          </div>
-
-          {/* DISCUSSION */}
-          <div className="mb-7">
-            <div className="flex items-center gap-2 mb-1">
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#6B778C" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                <path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z" />
-                <line x1="7" y1="7" x2="7.01" y2="7" />
-              </svg>
-              <span className="text-xs font-bold text-slate-700 tracking-[0.8px] uppercase">DISCUSSION</span>
-            </div>
-            <div className="h-px bg-slate-200 mt-2.5 mb-5" />
-
-            <div className="mb-4">
-              <textarea
-                value={comment}
-                onChange={(e) => setComment(e.target.value)}
-                placeholder="Enter update or comment..."
-                rows="4"
-                className={`${inputClass} resize-y min-h-[80px]`}
-              />
-              {errors.comment && <span className="block text-red-500 text-xs mt-1">{errors.comment}</span>}
-            </div>
-            <div className="flex justify-end mt-2">
               <button
                 type="button"
-                onClick={handlePostComment}
-                disabled={isPostingComment || !comment.trim()}
-                className="flex items-center gap-2 px-6 py-2.5 bg-blue-500 text-white rounded-[10px] text-sm font-semibold cursor-pointer hover:bg-blue-600 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
+                onClick={() => {
+                  navigator.clipboard?.writeText(`#${ticketNo}`);
+                  openAlertModal({ type: 'success', title: 'Copied', message: 'Ticket ID copied to clipboard.' });
+                }}
+                title="Copy ID"
+                className="font-mono text-[12px] text-slate-500 px-2 py-0.5 rounded hover:bg-slate-100 cursor-pointer transition-all max-[480px]:hidden"
               >
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                  <line x1="22" y1="2" x2="11" y2="13" />
-                  <polygon points="22 2 15 22 11 13 2 9 22 2" />
-                </svg>
-                {isPostingComment ? 'Posting...' : 'Post Comment'}
+                #{ticketNo}
+              </button>
+            </div>
+            <div className="flex items-center gap-1 shrink-0">
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <button type="button" title="More" className="w-7 h-7 rounded-md flex items-center justify-center cursor-pointer text-slate-500 hover:bg-slate-100 transition-all">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="1"/><circle cx="19" cy="12" r="1"/><circle cx="5" cy="12" r="1"/></svg>
+                  </button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" className="w-44">
+                  <DropdownMenuItem
+                    onSelect={() => setDeleteConfirmOpen(true)}
+                    className="text-red-600 focus:text-red-600 focus:bg-red-50"
+                  >
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2v2"/></svg>
+                    Delete task
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+              <div className="w-px h-5 bg-slate-200 mx-1 min-[1101px]:hidden" />
+              <button
+                type="button"
+                onClick={() => setSidebarOpen(true)}
+                title="Activity"
+                className="min-[1101px]:hidden relative flex items-center gap-1 px-2 h-7 rounded-md cursor-pointer text-slate-600 hover:bg-slate-100 transition-all"
+              >
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
+                <span className="text-[12px] font-semibold">Activity</span>
+                {activityEvents.length > 0 && <span className="text-[10px] font-bold bg-blue-500 text-white rounded-full px-1.5 min-w-[16px] text-center">{activityEvents.length}</span>}
               </button>
             </div>
           </div>
 
-          {/* Footer */}
-          <div className="flex justify-between items-center pt-6 border-t border-slate-200 mt-2">
-            <button type="button" onClick={onBack} className="px-7 py-2.5 rounded-[10px] border-[1.5px] border-slate-200 bg-white text-slate-700 text-sm font-semibold cursor-pointer hover:bg-slate-50 hover:border-slate-300 transition-all">
-              Cancel
-            </button>
-            <button type="submit" className="px-7 py-2.5 rounded-[10px] border-none bg-blue-500 text-white text-sm font-semibold cursor-pointer hover:bg-blue-600 transition-all">
-              Update Ticket
-            </button>
-          </div>
-        </div>
+          {/* Body */}
+          <div className="px-6 pt-5 pb-8 max-w-[960px] max-[640px]:px-4">
+            {/* Title */}
+            <input
+              type="text"
+              name="subject"
+              value={formData.subject}
+              onChange={handleChange}
+              placeholder="Untitled Ticket"
+              className="w-full text-[28px] font-bold text-slate-900 bg-transparent border-0 outline-none hover:bg-slate-50 focus:bg-slate-50 rounded-lg px-2 -mx-2 py-1 mb-3 max-[640px]:text-[22px]"
+            />
+            {errors.subject && <span className="block text-red-500 text-xs mb-2 px-2">{errors.subject}</span>}
 
-        {/* Right Column */}
-        <div className="overflow-y-auto px-6 pt-6 pb-10 bg-[#FAFBFC] flex flex-col gap-5 scrollbar-thin scrollbar-thumb-slate-300 scrollbar-track-transparent max-[1100px]:px-7">
-
-          {/* Ticket Information */}
-          <div className="bg-white border-[1.5px] border-slate-200 rounded-2xl p-5">
-            <div className="flex items-center gap-2 text-base font-bold text-slate-900">
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#2563EB" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                <circle cx="12" cy="12" r="10" />
-                <line x1="12" y1="16" x2="12" y2="12" />
-                <line x1="12" y1="8" x2="12.01" y2="8" />
-              </svg>
-              <span>Ticket Information</span>
+            {/* Hero quick chips */}
+            <div className="flex items-center flex-wrap gap-2 mb-6">
+              <span className={`inline-flex items-center gap-1.5 text-[11px] font-bold uppercase tracking-wide px-2.5 py-1 rounded-md ${statusInfo.solid}`}>
+                {statusInfo.label}
+              </span>
+              {due && (
+                <span className={`inline-flex items-center gap-1 text-[11px] font-bold px-2.5 py-1 rounded-md ring-1 ${due.pill}`}>
+                  <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+                  {due.text}
+                </span>
+              )}
+              <span className="text-[11px] text-slate-400 font-medium">Created {formatShortDate(ticket.createdAt)}</span>
             </div>
-            <div className="h-px bg-slate-200 my-3.5" />
 
-            <div className="flex flex-col">
-              {[
-                { label: 'TICKET NO', value: `#${ticketNo}` },
-                { label: 'PROJECT NAME', value: selectedProjectName, highlight: true },
-                { label: 'CATEGORY', value: categoryName },
-                { label: 'ASSIGNEE', value: assigneeName },
-                { label: 'ASSIGNEE EMAIL', value: assigneeEmail || 'N/A' },
-                { label: 'REPORTED BY', value: reportedByName },
-                { label: 'REPORTED TO', value: reportedToName },
-                { label: 'ESCALATED', value: ticket.escalated ? 'Yes' : 'No' },
-                { label: 'SCOPE', value: ticket.scope || 'N/A' },
-                { label: 'SEVERITY', value: ticket.severity || 'N/A' },
-                { label: 'START DATE', value: formatDateDisplay(ticket.startDate), labelColor: 'text-blue-500' },
-                { label: 'END DATE', value: formatDateDisplay(ticket.endDate), labelColor: 'text-red-500' },
-                { label: 'CREATED DATE', value: formatShortDate(ticket.createdAt) },
-              ].map((item, idx) => (
-                <div key={idx} className="py-2.5 border-b border-dashed border-slate-100 last:border-b-0 flex flex-col gap-0.5">
-                  <span className={`text-[10px] font-bold tracking-[0.8px] uppercase ${item.labelColor || 'text-slate-400'}`}>{item.label}</span>
-                  <span className={`text-sm font-semibold text-slate-900 break-words ${item.highlight ? 'text-blue-500 bg-blue-50 px-2 py-0.5 rounded-md inline-block' : ''}`}>
-                    {item.value}
-                  </span>
-                </div>
-              ))}
-            </div>
-          </div>
+            {/* Properties grid — ClickUp-style */}
+            <div className="grid grid-cols-2 gap-x-8 gap-y-0 mb-6 max-[720px]:grid-cols-1 max-[720px]:gap-x-0 border-t border-slate-100">
+              <PropertyRow icon={iconCalendar} label="Start Date">
+                <input
+                  type="datetime-local"
+                  name="startDate"
+                  value={formData.startDate}
+                  onChange={handleChange}
+                  min="1900-01-01T00:00"
+                  max="9999-12-31T23:59"
+                  className={chipInputClass}
+                />
+              </PropertyRow>
 
-          {/* Attachments Preview */}
-          {(attachments.length > 0 || uploadedFiles.length > 0) && (
-            <div className="bg-white border-[1.5px] border-slate-200 rounded-2xl p-5">
-              <div className="flex items-center gap-2 text-base font-bold text-slate-900">
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#2563EB" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                  <path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.49" />
-                </svg>
-                <span>Attachments ({attachments.length + uploadedFiles.length})</span>
-              </div>
-              <div className="h-px bg-slate-200 my-3.5" />
+              <PropertyRow icon={iconCalendar} label="End Date">
+                <input
+                  type="datetime-local"
+                  name="endDate"
+                  value={formData.endDate}
+                  onChange={handleChange}
+                  min="1900-01-01T00:00"
+                  max="9999-12-31T23:59"
+                  className={chipInputClass}
+                />
+              </PropertyRow>
 
-              <div className="flex flex-col gap-3">
-                {attachments.map((att, idx) => (
-                  <div
-                    key={`att-${idx}`}
-                    className="flex items-center gap-3 p-2.5 rounded-xl border border-slate-100 hover:border-blue-200 hover:bg-blue-50/40 transition-all group"
+              <PropertyRow icon={iconUser} label="Assignee">
+                <div className="flex items-center gap-2">
+                  <Avatar name={formData.assignTo?.name} email={formData.assignTo?.email} size="sm" />
+                  <Select
+                    value={formData.assignTo?.id || undefined}
+                    onValueChange={(value) => handleUserChange({ target: { value } }, 'assignTo')}
+                    disabled={usersLoading}
                   >
-                    <div className="w-12 h-12 rounded-lg bg-slate-100 flex items-center justify-center overflow-hidden shrink-0">
+                    <SelectTrigger size="sm" className={chipTriggerClass}>
+                      <SelectValue placeholder={usersLoading ? 'Loading...' : 'Empty'} />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {Array.isArray(users) && users.map(user => (
+                        <SelectItem key={user._id} value={user._id}>
+                          {`${user.name?.first || ''} ${user.name?.last || ''}`.trim() || user.authentication?.userName}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              </PropertyRow>
+
+              <PropertyRow icon={iconStatus} label="Status">
+                <Select
+                  value={formData.status}
+                  onValueChange={(value) => handleChange({ target: { name: 'status', value } })}
+                >
+                  <SelectTrigger size="sm" className={chipTriggerClass}>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="OPEN">Open</SelectItem>
+                    <SelectItem value="IN_PROGRESS">In Progress</SelectItem>
+                    <SelectItem value="RESOLVED">Resolved</SelectItem>
+                    <SelectItem value="CLOSED">Closed</SelectItem>
+                  </SelectContent>
+                </Select>
+              </PropertyRow>
+
+              <PropertyRow icon={iconUser} label="Reported To">
+                <div className="flex items-center gap-2">
+                  <Avatar name={formData.reportedTo?.name} email={formData.reportedTo?.email} size="sm" />
+                  <Select
+                    value={formData.reportedTo?.id || undefined}
+                    onValueChange={(value) => handleUserChange({ target: { value } }, 'reportedTo')}
+                    disabled={usersLoading}
+                  >
+                    <SelectTrigger size="sm" className={chipTriggerClass}>
+                      <SelectValue placeholder={usersLoading ? 'Loading...' : 'Empty'} />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {Array.isArray(users) && users.map(user => (
+                        <SelectItem key={user._id} value={user._id}>
+                          {`${user.name?.first || ''} ${user.name?.last || ''}`.trim() || user.authentication?.userName}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              </PropertyRow>
+
+              <PropertyRow icon={iconTag} label="Category">
+                <Select
+                  value={formData.category || undefined}
+                  onValueChange={(value) => handleCategoryChange({ target: { value } })}
+                  disabled={categoriesLoading}
+                >
+                  <SelectTrigger size="sm" className={chipTriggerClass}>
+                    <SelectValue placeholder={categoriesLoading ? 'Loading...' : 'Empty'} />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {Array.isArray(categories) && categories.map(cat => (
+                      <SelectItem key={cat._id} value={cat._id}>{cat.name}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </PropertyRow>
+
+              <PropertyRow
+                icon={<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="12" y1="20" x2="12" y2="10"/><line x1="18" y1="20" x2="18" y2="4"/><line x1="6" y1="20" x2="6" y2="16"/></svg>}
+                label="Priority"
+              >
+                <div className="flex items-center gap-2">
+                  <input
+                    type="range"
+                    name="priority"
+                    min="0"
+                    max="10"
+                    value={formData.priority}
+                    onChange={handleChange}
+                    className="flex-1 h-1.5 bg-slate-200 rounded-full appearance-none cursor-pointer accent-blue-500"
+                  />
+                  <div className="flex items-baseline">
+                    <input
+                      type="number"
+                      name="priority"
+                      min="0"
+                      max="10"
+                      value={formData.priority}
+                      onChange={handleChange}
+                      className="w-6 p-0 text-[12px] font-bold text-slate-700 bg-transparent border-0 outline-none appearance-none text-right [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none [-moz-appearance:textfield]"
+                    />
+                    <span className="text-[12px] font-bold text-slate-400">/10</span>
+                  </div>
+                </div>
+              </PropertyRow>
+
+              <PropertyRow icon={iconGlobe} label="Scope">
+                <Select
+                  value={formData.scope || undefined}
+                  onValueChange={(value) => handleChange({ target: { name: 'scope', value } })}
+                >
+                  <SelectTrigger size="sm" className={chipTriggerClass}>
+                    <SelectValue placeholder="Empty" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="Customer">Customer</SelectItem>
+                    <SelectItem value="Internal">Internal</SelectItem>
+                    <SelectItem value="Vendor">Vendor</SelectItem>
+                  </SelectContent>
+                </Select>
+              </PropertyRow>
+
+              <PropertyRow icon={iconFlag} label="Severity">
+                <Select
+                  value={formData.severity}
+                  onValueChange={(value) => handleChange({ target: { name: 'severity', value } })}
+                >
+                  <SelectTrigger
+                    size="sm"
+                    className={`${sevInfo.bg} ${sevInfo.text} ring-1 ${sevInfo.ring} border-0 shadow-none rounded-md font-bold h-auto py-1 pl-2 pr-2 w-auto min-w-[120px] gap-1.5 data-[placeholder]:text-current [&_svg:not([class*='text-'])]:text-current`}
+                  >
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {['Critical', 'High', 'Medium', 'Low'].map((key) => {
+                      const cfg = severityConfig[key];
+                      return (
+                        <SelectItem key={key} value={key}>
+                          <span className="flex items-center gap-2">
+                            <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor" className={cfg.flag}><path d="M4 2v20h2v-8h12l-2-4 2-4H6V2H4z"/></svg>
+                            <span className="font-semibold">{key}</span>
+                          </span>
+                        </SelectItem>
+                      );
+                    })}
+                  </SelectContent>
+                </Select>
+              </PropertyRow>
+
+              <PropertyRow
+                icon={<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>}
+                label="Track Time"
+              >
+                <div className="flex items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={toggleTimer}
+                    title={timerRunning ? 'Stop timer' : 'Start timer'}
+                    className={`w-6 h-6 rounded-full flex items-center justify-center cursor-pointer transition-all shrink-0 ${timerRunning ? 'bg-red-500 text-white hover:bg-red-600 ring-2 ring-red-200 animate-pulse' : 'bg-slate-100 text-slate-500 hover:bg-blue-500 hover:text-white'}`}
+                  >
+                    {timerRunning ? (
+                      <svg width="10" height="10" viewBox="0 0 24 24" fill="currentColor"><rect x="6" y="6" width="12" height="12" rx="1"/></svg>
+                    ) : (
+                      <svg width="10" height="10" viewBox="0 0 24 24" fill="currentColor"><polygon points="6 4 20 12 6 20 6 4"/></svg>
+                    )}
+                  </button>
+                  <span className={`text-[13px] font-bold tabular-nums ${timerRunning ? 'text-red-600' : currentTrackedMs > 0 ? 'text-slate-800' : 'text-slate-400'}`}>
+                    {currentTrackedMs > 0 || timerRunning ? formatDuration(currentTrackedMs) : '0h'}
+                  </span>
+                  {currentTrackedMs > 0 && !timerRunning && (
+                    <button
+                      type="button"
+                      onClick={() => setTrackedTimeMs(0)}
+                      title="Reset"
+                      className="text-[11px] text-slate-400 hover:text-red-500 px-1 cursor-pointer transition-all"
+                    >
+                      Reset
+                    </button>
+                  )}
+                </div>
+              </PropertyRow>
+
+              <PropertyRow
+                icon={iconFolder}
+                label={<span>Project <span className="text-red-500">*</span></span>}
+              >
+                <Select
+                  value={formData.project || undefined}
+                  onValueChange={(value) => handleProjectChange({ target: { value } })}
+                  disabled={projectsLoading}
+                >
+                  <SelectTrigger size="sm" className={chipTriggerClass}>
+                    <SelectValue placeholder={projectsLoading ? 'Loading projects...' : 'Empty'} />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {Array.isArray(projects) && projects.map((project) => {
+                      const projectId = project._id || project.id;
+                      const projectName = project.name || project.projectName || 'Untitled Project';
+                      return (
+                        <SelectItem key={projectId} value={projectId}>{projectName}</SelectItem>
+                      );
+                    })}
+                  </SelectContent>
+                </Select>
+                {errors.project && <span className="block text-red-500 text-xs mt-1 px-2">{errors.project}</span>}
+              </PropertyRow>
+
+              <PropertyRow
+                icon={<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 8v4l3 3"/><circle cx="12" cy="12" r="10"/><path d="M16 2l4 4"/><path d="M8 2L4 6"/></svg>}
+                label="Time Estimate"
+              >
+                <div className="flex items-center gap-2">
+                  <input
+                    type="text"
+                    value={estimateInput}
+                    onChange={(e) => setEstimateInput(e.target.value)}
+                    onBlur={commitEstimate}
+                    onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); e.currentTarget.blur(); } }}
+                    placeholder="e.g. 1h 30m"
+                    className="w-32 px-2 py-1 text-[13px] font-semibold rounded-md border border-transparent bg-transparent text-slate-800 hover:bg-slate-50 hover:border-slate-200 focus:outline-none focus:bg-white focus:border-blue-400 focus:ring-2 focus:ring-blue-100 transition-all"
+                  />
+                  {formData.timeEstimateMs > 0 && (
+                    <span className="text-[11px] text-slate-400 font-medium tabular-nums">
+                      = {formatDuration(formData.timeEstimateMs)}
+                    </span>
+                  )}
+                </div>
+              </PropertyRow>
+            </div>
+
+            {/* Description */}
+            <div className="mb-7">
+              <div className="flex items-center gap-2 mb-2 text-slate-500">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="9" y1="13" x2="15" y2="13"/><line x1="9" y1="17" x2="15" y2="17"/></svg>
+                <span className="text-[12px] font-bold uppercase tracking-wide">Description</span>
+              </div>
+              <textarea
+                name="description"
+                value={formData.description}
+                onChange={handleChange}
+                placeholder="Add a description..."
+                className={`${inputClass} resize-y min-h-[100px] border-transparent bg-slate-50/60 hover:bg-slate-50 focus:bg-white focus:border-blue-500`}
+              />
+            </div>
+
+            {/* Attachments */}
+            <div className="mb-7">
+              <div className="flex items-center gap-2 mb-2 text-slate-500">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.49"/></svg>
+                <span className="text-[12px] font-bold uppercase tracking-wide">
+                  Attachments <span className="text-slate-400 font-semibold normal-case">({attachments.length + uploadedFiles.length})</span>
+                </span>
+              </div>
+
+              <div className="grid grid-cols-3 gap-2.5 max-[720px]:grid-cols-2 max-[420px]:grid-cols-1">
+                {attachments.map((att, idx) => (
+                  <div key={`existing-${idx}`} className="border border-slate-200 rounded-lg overflow-hidden bg-white group/card hover:border-blue-300 transition-all">
+                    <div className="h-[100px] bg-slate-100 flex items-center justify-center overflow-hidden relative">
                       {att.type?.startsWith('image') ? (
                         <img src={att.url} alt={att.name} className="w-full h-full object-cover" />
                       ) : (
-                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#94A3B8" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-                          <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
-                          <polyline points="14 2 14 8 20 8" />
-                        </svg>
+                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#94A3B8" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
                       )}
+                      <div className="absolute inset-0 bg-black/40 opacity-0 group-hover/card:opacity-100 transition-opacity flex items-center justify-center">
+                        <button
+                          type="button"
+                          onClick={() => setViewingImage(att.url)}
+                          title="View"
+                          className="w-8 h-8 rounded-lg bg-white/90 hover:bg-white flex items-center justify-center cursor-pointer border-none transition-all"
+                        >
+                          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#334155" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+                        </button>
+                      </div>
                     </div>
-                    <div className="flex flex-col gap-0.5 min-w-0 flex-1">
-                      <span className="text-[13px] font-semibold text-slate-700 truncate">{att.name || `File ${idx + 1}`}</span>
-                      {att.size && <span className="text-[11px] text-slate-400">{att.size}</span>}
+                    <div className="px-2.5 py-1.5">
+                      <span className="text-[11px] font-semibold text-slate-700 truncate block">{att.name || `File ${idx + 1}`}</span>
                     </div>
-                    <button
-                      type="button"
-                      onClick={() => setViewingImage(att.url)}
-                      title="View"
-                      className="w-8 h-8 rounded-lg border border-slate-200 bg-white hover:bg-blue-50 hover:border-blue-300 flex items-center justify-center cursor-pointer transition-all shrink-0"
-                    >
-                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#64748B" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                        <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
-                        <circle cx="12" cy="12" r="3" />
-                      </svg>
-                    </button>
                   </div>
                 ))}
 
                 {uploadedFiles.map((url, idx) => (
-                  <div
-                    key={`uploaded-side-${idx}`}
-                    className="flex items-center gap-3 p-2.5 rounded-xl border border-emerald-100 hover:border-emerald-200 hover:bg-emerald-50/40 transition-all group"
-                  >
-                    <div className="w-12 h-12 rounded-lg bg-slate-100 flex items-center justify-center overflow-hidden shrink-0">
-                      <img src={url} alt={`New attachment ${idx + 1}`} className="w-full h-full object-cover" />
+                  <div key={`uploaded-${idx}`} className="border border-emerald-200 rounded-lg overflow-hidden bg-white group/card">
+                    <div className="h-[100px] bg-slate-100 flex items-center justify-center overflow-hidden relative">
+                      <img src={url} alt={`Attachment ${idx + 1}`} className="w-full h-full object-cover" />
+                      <div className="absolute inset-0 bg-black/40 opacity-0 group-hover/card:opacity-100 transition-opacity flex items-center justify-center">
+                        <button
+                          type="button"
+                          onClick={() => setViewingImage(url)}
+                          title="View"
+                          className="w-8 h-8 rounded-lg bg-white/90 hover:bg-white flex items-center justify-center cursor-pointer border-none transition-all"
+                        >
+                          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#334155" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+                        </button>
+                      </div>
+                      <span className="absolute top-1.5 right-1.5 text-[9px] font-bold bg-emerald-500 text-white px-1.5 py-0.5 rounded">NEW</span>
                     </div>
-                    <div className="flex flex-col gap-0.5 min-w-0 flex-1">
-                      <span className="text-[13px] font-semibold text-slate-700 truncate">{url.split('/').pop() || `File ${idx + 1}`}</span>
-                      <span className="text-[10px] font-medium text-emerald-500">New</span>
+                    <div className="px-2.5 py-1.5">
+                      <span className="text-[11px] font-semibold text-slate-700 truncate block">{url.split('/').pop() || `File ${idx + 1}`}</span>
                     </div>
-                    <button
-                      type="button"
-                      onClick={() => setViewingImage(url)}
-                      title="View"
-                      className="w-8 h-8 rounded-lg border border-slate-200 bg-white hover:bg-emerald-50 hover:border-emerald-300 flex items-center justify-center cursor-pointer transition-all shrink-0"
-                    >
-                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#64748B" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                        <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
-                        <circle cx="12" cy="12" r="3" />
-                      </svg>
-                    </button>
                   </div>
                 ))}
+
+                <input
+                  type="file"
+                  ref={fileInputRef}
+                  onChange={handleFileUpload}
+                  accept="image/*,video/*,.pdf"
+                  multiple
+                  className="hidden"
+                />
+                <div
+                  onClick={() => !isUploading && fileInputRef.current?.click()}
+                  className={`border-2 border-dashed rounded-lg flex flex-col items-center justify-center gap-1 p-3 transition-all min-h-[100px] ${isUploading ? 'border-blue-300 bg-blue-50/30 cursor-wait' : 'border-slate-300 cursor-pointer hover:border-blue-500 hover:bg-blue-50/30'}`}
+                >
+                  {isUploading ? (
+                    <>
+                      <svg className="animate-spin" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#3B82F6" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 12a9 9 0 1 1-6.219-8.56"/></svg>
+                      <span className="text-[11px] font-semibold text-blue-500">{uploadProgress}%</span>
+                      <div className="w-full bg-slate-200 rounded-full h-1 mt-0.5">
+                        <div className="bg-blue-500 h-1 rounded-full transition-all" style={{ width: `${uploadProgress || 0}%` }} />
+                      </div>
+                    </>
+                  ) : (
+                    <>
+                      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#94A3B8" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.49"/></svg>
+                      <span className="text-[11px] font-semibold text-slate-500">Upload</span>
+                      <span className="text-[10px] text-slate-400">Image, Video, PDF</span>
+                    </>
+                  )}
+                </div>
               </div>
             </div>
-          )}
 
-          {/* Priority Detail */}
-          <div className="bg-amber-50 border-[1.5px] border-amber-200 rounded-2xl px-5 py-4">
-            <span className="text-[11px] font-bold text-amber-800 tracking-[0.8px] uppercase">PRIORITY DETAIL</span>
-            <div className="flex items-center gap-3 mt-3">
-              <span className="text-[13px] font-semibold text-red-600">{formData.severity} Severity</span>
-              <span className="text-[13px] font-bold text-amber-800 bg-amber-100 px-3.5 py-1 rounded-lg border border-amber-200">Score: {formData.priority}/10</span>
-            </div>
-          </div>
-
-          {/* Change History */}
-          <div className="bg-white border-[1.5px] border-slate-200 rounded-2xl p-5">
-            <span className="text-[11px] font-bold text-blue-500 tracking-[0.8px] uppercase">CHANGE HISTORY</span>
-            <div className="mt-4 flex flex-col">
-              {(!ticket.changeHistory || ticket.changeHistory.length === 0) && (
-                <p className="text-[13px] text-slate-400 my-2">No changes yet</p>
-              )}
-              {(ticket.changeHistory || []).map((change, idx) => (
-                <div key={change._id || idx} className="py-2.5 border-b border-dashed border-slate-100 last:border-b-0">
-                  <span className="text-[13px] font-semibold text-slate-900">{change.action || 'Updated'}</span>
-                  {change.description && <p className="text-[12px] text-slate-500 mt-0.5">{change.description}</p>}
-                  <span className="text-[11px] text-slate-400">by {change.updatedBy?.name || 'Unknown'} &middot; {formatDateDisplay(change.updatedAt)}</span>
-                </div>
-              ))}
-            </div>
-          </div>
-
-          {/* Comment History */}
-          <div className="bg-white border-[1.5px] border-slate-200 rounded-2xl p-5">
-            <span className="text-[11px] font-bold text-emerald-500 tracking-[0.8px] uppercase">COMMENT HISTORY</span>
-            <div className="mt-4 flex flex-col">
-              {(!worknoteHistory || worknoteHistory.length === 0) && (
-                <p className="text-[13px] text-slate-400 my-2">No comments yet</p>
-              )}
-              {(worknoteHistory || []).map((wn, idx) => (
-                <div key={wn._id || idx} className="py-2.5 border-b border-dashed border-slate-100 last:border-b-0">
-                  <span className="text-[13px] font-semibold text-slate-900">{wn.description}</span>
-                  <p className="text-[11px] text-slate-400 mt-0.5">by {wn.updatedBy?.name || 'Unknown'} &middot; {formatDateDisplay(wn.updatedAt)}</p>
-                </div>
-              ))}
+            {/* Footer */}
+            <div className="flex justify-end items-center gap-3 pt-5 border-t border-slate-200 flex-wrap">
+              <Button type="button" variant="outline" onClick={onBack}>
+                Cancel
+              </Button>
+              <Button
+                type="submit"
+                disabled={!isDirty}
+                className="bg-gradient-to-b from-blue-500 to-blue-600 text-white border-blue-600/20 shadow-sm shadow-blue-600/20 hover:from-blue-500 hover:to-blue-700 hover:text-white focus-visible:ring-blue-500/30"
+              >
+                Save Changes
+              </Button>
             </div>
           </div>
         </div>
+
+        {/* ===== RIGHT: Activity sidebar (desktop inline, mobile drawer) ===== */}
+        <aside
+          className={`bg-white flex flex-col w-[400px] shrink-0 border-l border-slate-200 max-[1100px]:fixed max-[1100px]:inset-y-0 max-[1100px]:right-0 max-[1100px]:w-[min(400px,100vw)] max-[1100px]:shadow-2xl max-[1100px]:z-50 transition-transform duration-300 ${sidebarOpen ? '' : 'max-[1100px]:translate-x-full'}`}
+        >
+          <div className="flex items-center justify-between px-4 py-3 border-b border-slate-200 shrink-0">
+            <div className="flex items-center gap-2">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#475569" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
+              <h2 className="text-[14px] font-bold text-slate-900">Activity</h2>
+              {activityEvents.length > 0 && <span className="text-[10px] font-bold bg-slate-100 text-slate-600 rounded-full px-2 py-0.5">{activityEvents.length}</span>}
+            </div>
+            <button
+              type="button"
+              onClick={() => setSidebarOpen(false)}
+              title="Close"
+              className="min-[1101px]:hidden w-7 h-7 rounded-md flex items-center justify-center cursor-pointer text-slate-500 hover:bg-slate-100 transition-all"
+            >
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+            </button>
+          </div>
+
+          <div className="flex gap-1 px-3 py-2 border-b border-slate-200 shrink-0">
+            {[
+              { id: 'all', label: 'All' },
+              { id: 'comments', label: 'Comments' },
+              { id: 'history', label: 'History' },
+            ].map(t => (
+              <button
+                type="button"
+                key={t.id}
+                onClick={() => setActivityTab(t.id)}
+                className={`px-3 py-1 rounded-md text-[12px] font-semibold transition-all ${
+                  activityTab === t.id ? 'bg-blue-50 text-blue-700' : 'text-slate-500 hover:bg-slate-50'
+                }`}
+              >
+                {t.label}
+              </button>
+            ))}
+          </div>
+
+          <div className="flex-1 overflow-y-auto px-4 py-4 scroll-hover">
+            {visibleEvents.length === 0 ? (
+              <div className="flex flex-col items-center justify-center h-full text-center text-slate-400 py-10">
+                <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className="mb-2 opacity-50"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/></svg>
+                <p className="text-[13px] font-medium">No activity yet</p>
+                <p className="text-[11px] mt-1">Changes and comments will show here.</p>
+              </div>
+            ) : (
+              <div className="relative pl-5">
+                <div className="absolute left-[9px] top-1 bottom-1 w-px bg-slate-200" />
+                {visibleEvents.map((e) => (
+                  <div key={`${e.kind}-${e.id}`} className="relative pb-4 last:pb-0">
+                    <span className={`absolute -left-[16px] top-0.5 w-5 h-5 rounded-full flex items-center justify-center ring-2 ring-white ${e.kind === 'comment' ? 'bg-emerald-100' : 'bg-blue-100'}`}>
+                      {e.kind === 'comment' ? (
+                        <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="#059669" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+                      ) : (
+                        <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="#2563EB" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+                      )}
+                    </span>
+                    <div className="flex items-start gap-2">
+                      <Avatar name={e.by?.name} email={e.by?.email} size="sm" />
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-1.5 flex-wrap">
+                          <span className="text-[12px] font-semibold text-slate-800">{e.by?.name || 'Unknown'}</span>
+                          <span className="text-[11px] text-slate-400">{e.kind === 'comment' ? 'commented' : (e.action || 'updated')}</span>
+                          <span className="text-slate-300 text-[11px]">&middot;</span>
+                          <span className="text-[11px] text-slate-400">{formatDateDisplay(e.at)}</span>
+                        </div>
+                        {e.text && (
+                          <div className={`mt-1 text-[13px] text-slate-700 break-words whitespace-pre-wrap ${e.kind === 'comment' ? 'bg-slate-50 rounded-lg px-2.5 py-1.5' : ''}`}>
+                            {e.text}
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+
+          <div className="border-t border-slate-200 p-3 shrink-0 bg-white">
+            <textarea
+              value={comment}
+              onChange={(e) => setComment(e.target.value)}
+              placeholder="Write a comment..."
+              rows="2"
+              className={`${inputClass} resize-y min-h-[44px] text-[13px]`}
+              onKeyDown={(e) => {
+                if ((e.metaKey || e.ctrlKey) && e.key === 'Enter') {
+                  e.preventDefault();
+                  if (comment.trim() && !isPostingComment) handlePostComment();
+                }
+              }}
+            />
+            {errors.comment && <span className="block text-red-500 text-xs mt-1">{errors.comment}</span>}
+            <div className="flex justify-between items-center mt-2">
+              <span className="text-[10px] text-slate-400 font-medium">&#8984; + Enter to send</span>
+              <Button
+                type="button"
+                size="sm"
+                onClick={handlePostComment}
+                disabled={isPostingComment || !comment.trim()}
+                className="bg-gradient-to-b from-blue-500 to-blue-600 text-white border-blue-600/20 shadow-sm shadow-blue-600/20 hover:from-blue-500 hover:to-blue-700 hover:text-white focus-visible:ring-blue-500/30"
+              >
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                  <line x1="22" y1="2" x2="11" y2="13"/>
+                  <polygon points="22 2 15 22 11 13 2 9 22 2"/>
+                </svg>
+                {isPostingComment ? 'Posting...' : 'Send'}
+              </Button>
+            </div>
+          </div>
+        </aside>
+
+        {/* Mobile backdrop */}
+        {sidebarOpen && (
+          <div
+            className="min-[1101px]:hidden fixed inset-0 bg-black/30 z-40"
+            onClick={() => setSidebarOpen(false)}
+          />
+        )}
       </form>
 
       {/* Image Viewer Modal */}
@@ -866,6 +1180,15 @@ const TicketDetailsPage = ({ ticket, onBack, onUpdate }) => {
           </div>
         </div>
       )}
+
+      <DeleteConfirmModal
+        isOpen={deleteConfirmOpen}
+        title="Delete task?"
+        message={`Are you sure you want to delete "${formData.subject || `#${ticketNo}`}"? This action cannot be undone.`}
+        confirmText={isDeleting ? 'Deleting...' : 'Delete'}
+        onCancel={() => !isDeleting && setDeleteConfirmOpen(false)}
+        onConfirm={handleDeleteTicket}
+      />
 
       <AlertModal
         isOpen={alertModal.isOpen}
