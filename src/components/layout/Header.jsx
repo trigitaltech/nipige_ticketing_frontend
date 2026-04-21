@@ -1,4 +1,5 @@
 import ProfileDropdown from '../profile/ProfileDropdown';
+import { Button } from '@/components/ui/button';
 
 const Header = ({ fullName, avatarLabel, userEmail, onCreateTicket, onLogout }) => {
   return (
@@ -8,15 +9,15 @@ const Header = ({ fullName, avatarLabel, userEmail, onCreateTicket, onLogout }) 
         <p className="text-sm text-gray-500 mt-0.5">Welcome back, {fullName}</p>
       </div>
       <div className="flex items-center gap-3">
-        <button
+        <Button
           onClick={onCreateTicket}
-          className="flex items-center gap-2 px-6 py-2.5 bg-blue-600 text-white rounded-2xl text-sm font-medium hover:bg-blue-700 transition-colors cursor-pointer"
+          className="bg-gradient-to-b from-blue-500 to-blue-600 text-white border-blue-600/20 shadow-sm shadow-blue-600/20 hover:from-blue-500 hover:to-blue-700 hover:text-white focus-visible:ring-blue-500/30"
         >
-          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
           </svg>
           Create Task
-        </button>
+        </Button>
         <button className="relative p-2 text-gray-400 hover:text-gray-600 transition-colors cursor-pointer">
           <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />

@@ -18,24 +18,6 @@ const TicketCard = ({ ticket, onDragStart, onClick, onDelete }) => {
     return isMongoObjectId || isUuid;
   };
 
-  const formatDate = (dateString) => {
-    if (!dateString) return '';
-    const date = new Date(dateString);
-    const dateParts = date.toLocaleDateString('en-US', {
-      month: 'short',
-      day: '2-digit',
-      year: 'numeric',
-      timeZone: 'Asia/Kolkata',
-    });
-    const timeParts = date.toLocaleTimeString('en-IN', {
-      hour: '2-digit',
-      minute: '2-digit',
-      hour12: true,
-      timeZone: 'Asia/Kolkata',
-    });
-    return { date: dateParts, time: timeParts };
-  };
-
   const formatShortDate = (dateString) => {
     if (!dateString) return '';
     const date = new Date(dateString);
@@ -54,17 +36,13 @@ const TicketCard = ({ ticket, onDragStart, onClick, onDelete }) => {
 
   const ticketNo = ticket.ticketNo || 'N/A';
   const subject = ticket.subject || ticket.title || 'No Subject';
-  const description = ticket.description || 'No description';
   const severity = ticket.severity || ticket.category?.severity || 'Low';
   const priority = ticket.priority || 0;
   const assignedTo = ticket.assignTo?.name || ticket.assignedTo || 'Unassigned';
   const assignedEmail = ticket.assignTo?.email || '';
   const reportedBy = ticket.reportedBy?.name || 'Unknown';
   const createdAt = ticket.createdAt;
-  const startDate = ticket.startDate;
-  const endDate = ticket.endDate;
   const escalated = ticket.escalated;
-  const scope = ticket.scope || ticket.category?.scope || '';
   const rawProjectName =
     ticket.project?.name ||
     ticket.project?.projectName ||
@@ -92,13 +70,11 @@ const TicketCard = ({ ticket, onDragStart, onClick, onDelete }) => {
 
   const attachmentCount = normalizedAttachments.length;
   const category = ticket.category?.name || 'general Task';
-  const startFormatted = formatDate(startDate);
-  const endFormatted = formatDate(endDate);
   const sev = severityConfig[severity] || defaultSeverity;
 
   return (
     <div
-      className="bg-white border-[1.5px] border-gray-100 rounded-xl p-5 cursor-pointer transition-all duration-150 shadow-xs hover:shadow-sm active:scale-[0.98]"
+      className="bg-white border-[1.5px] border-gray-100 rounded-xl p-5 cursor-pointer transition-all duration-150 hover:border-gray-200 active:scale-[0.98]"
       draggable
       onDragStart={(e) => onDragStart(e, ticketId)}
       onClick={() => onClick(ticket)}
@@ -116,10 +92,7 @@ const TicketCard = ({ ticket, onDragStart, onClick, onDelete }) => {
       </div>
 
       {/* Title */}
-      <h4 className="text-sm text-[#172B4D] font-semibold leading-snug mb-1.5">{subject}</h4>
-
-      {/* Description */}
-      <p className="text-xs text-[#5E6C84] mb-3 leading-relaxed line-clamp-2">{description}</p>
+      <h4 className="text-sm text-[#172B4D] font-semibold leading-snug mb-3">{subject}</h4>
 
       {projectName && (
         <div className="inline-flex max-w-full px-3.5 py-0.5 rounded-full bg-blue-50 text-[10px] font-bold tracking-wide text-blue-700 border-[1px] border-blue-100 mb-3">
@@ -144,38 +117,6 @@ const TicketCard = ({ ticket, onDragStart, onClick, onDelete }) => {
           </span>
         )}
       </div>
-
-      {/* Date Box */}
-      {(startDate || endDate) && (
-        <div className="bg-[#F8F9FB] rounded-[10px] px-3.5 py-3 mb-3.5 flex flex-col gap-1.5 border border-gray-100">
-          {startDate && (
-            <div className="flex items-center gap-2.5">
-              <svg className="shrink-0" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#4A7BF7" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                <rect x="3" y="4" width="18" height="18" rx="2" ry="2" />
-                <line x1="16" y1="2" x2="16" y2="6" />
-                <line x1="8" y1="2" x2="8" y2="6" />
-                <line x1="3" y1="10" x2="21" y2="10" />
-              </svg>
-              <div className="flex flex-col gap-px">
-                <span className="text-[9px] font-bold tracking-wide text-gray-400 uppercase">START DATE</span>
-                <span className="text-[10px] font-bold text-gray-500">{startFormatted.date} · {startFormatted.time}</span>
-              </div>
-            </div>
-          )}
-          {endDate && (
-            <div className="flex items-center gap-2.5">
-              <svg className="shrink-0" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#EF4444" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                <circle cx="12" cy="12" r="10" />
-                <polyline points="12 6 12 12 16 14" />
-              </svg>
-              <div className="flex flex-col gap-px">
-                <span className="text-[9px] font-bold tracking-wide text-gray-400 uppercase">END DATE</span>
-                <span className="text-[10px] font-bold text-gray-500">{endFormatted.date} · {endFormatted.time}</span>
-              </div>
-            </div>
-          )}
-        </div>
-      )}
 
       {/* Footer */}
       <div className="flex justify-between items-start pt-3.5 border-t border-[#EBECF0]">

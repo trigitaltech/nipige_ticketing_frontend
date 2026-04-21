@@ -5,6 +5,7 @@ import { fetchCategories } from '../redux/categorySlice';
 import { fetchProjects } from '../redux/projectSlice';
 import '../assets/Styles/ListView.css';
 import Sidebar from '../components/layout/Sidebar';
+import { SidebarInset, SidebarProvider } from '@/components/ui/sidebar';
 import Header from '../components/layout/Header';
 import SearchFilterBar from '../components/layout/SearchFilterBar';
 import KanbanBoard from '../components/ticketing/KanbanBoard';
@@ -280,12 +281,12 @@ const Dashboard = ({ currentUser, onLogout }) => {
     (userEmail ? userEmail[0]?.toUpperCase() : 'U');
 
   return (
-    <div className="flex h-screen bg-gray-50">
+    <SidebarProvider>
       {/* Left Sidebar */}
       <Sidebar onLogout={onLogout} activeItem={activePage} onNavigate={(page) => { setActivePage(page); setSelectedTicket(null); setSelectedProject(null); }} />
 
       {/* Main Content Area */}
-      <div className="flex-1 ml-60 flex flex-col overflow-hidden">
+      <SidebarInset className="h-svh flex flex-col overflow-hidden bg-gray-50">
         {activePage === 'Projects' ? (
           <>
             <Header
@@ -360,7 +361,7 @@ const Dashboard = ({ currentUser, onLogout }) => {
             />
 
             {/* Content */}
-            <div className="flex-1 overflow-auto p-5">
+            <div className={`flex-1 min-h-0 p-5 ${viewMode === 'kanban' ? 'overflow-hidden' : 'overflow-auto'}`}>
               {viewMode === 'kanban' ? (
                 <KanbanBoard
                   tickets={sortedTickets || []}
@@ -384,7 +385,7 @@ const Dashboard = ({ currentUser, onLogout }) => {
             </div>
           </>
         )}
-      </div>
+      </SidebarInset>
 
       {/* Modals */}
       {isCreateModalOpen && (
@@ -405,7 +406,7 @@ const Dashboard = ({ currentUser, onLogout }) => {
         onCancel={() => setDeleteConfirm({ open: false, ticketId: null, ticketNo: '' })}
         onConfirm={confirmDelete}
       />
-    </div>
+    </SidebarProvider>
   );
 };
 
