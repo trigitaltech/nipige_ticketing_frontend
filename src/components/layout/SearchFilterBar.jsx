@@ -8,6 +8,13 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from '@/components/ui/tooltip';
+import { exportTicketsToCsv } from '../../function/exportUtils';
 
 const SearchFilterBar = ({
   activeFilter,
@@ -25,7 +32,16 @@ const SearchFilterBar = ({
   setViewMode,
   groupBy,
   setGroupBy,
+  tickets = [],
 }) => {
+  const handleExport = () => {
+    exportTicketsToCsv(tickets, {
+      filename: activeFilter === 'my' ? 'my_tasks' : 'all_tasks',
+      projects,
+      categories,
+    });
+  };
+
   return (
     <div className="mx-5 mt-4 bg-white rounded-2xl shadow-sm border border-gray-100 px-5 py-2.5 flex items-center gap-4">
       {/* Left: Task filter toggle */}
@@ -89,6 +105,27 @@ const SearchFilterBar = ({
           onSortChange={setSortConfig}
           onClearSort={() => setSortConfig({ field: '', direction: 'asc' })}
         />
+
+        {/* Export */}
+        <TooltipProvider delayDuration={150}>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <button
+                type="button"
+                onClick={handleExport}
+                disabled={!tickets || tickets.length === 0}
+                className="w-8 h-8 rounded-xl shadow-sm border border-gray-200 bg-white text-gray-500 hover:text-blue-500 hover:border-blue-300 hover:bg-blue-50 disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:bg-white disabled:hover:text-gray-500 disabled:hover:border-gray-200 flex items-center justify-center cursor-pointer transition-colors"
+              >
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+                  <polyline points="7 10 12 15 17 10" />
+                  <line x1="12" y1="15" x2="12" y2="3" />
+                </svg>
+              </button>
+            </TooltipTrigger>
+            <TooltipContent side="bottom">Export as CSV</TooltipContent>
+          </Tooltip>
+        </TooltipProvider>
 
         {/* View toggle */}
         <div className="flex items-center gap-0.5 rounded-xl px-1 py-1 bg-gray-50">

@@ -1,4 +1,11 @@
 import TicketCard from './TicketCard';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
+import { exportTicketsToCsv } from '../../function/exportUtils';
 
 const StatusIconTodo = () => (
   <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><circle cx="12" cy="12" r="9" /></svg>
@@ -239,6 +246,14 @@ const KanbanBoard = ({
     return tickets.filter((ticket) => ticket.status === columnId);
   };
 
+  const handleExportColumn = (columnTickets, columnTitle) => {
+    exportTicketsToCsv(columnTickets, {
+      filename: columnTitle,
+      projects,
+      categories,
+    });
+  };
+
   const handleDragStart = (e, ticketId) => {
     e.dataTransfer.setData('ticketId', String(ticketId));
   };
@@ -293,18 +308,35 @@ const KanbanBoard = ({
                 {columnTitle}
               </span>
               <span className="text-[13px] font-bold tabular-nums" style={{ color }}>{totalTickets}</span>
-              <div className="ml-auto flex items-center gap-0.5 opacity-0 group-hover/col:opacity-100 transition-opacity">
-                <button
-                  type="button"
-                  className="w-6 h-6 rounded flex items-center justify-center text-slate-400 hover:bg-slate-100 hover:text-slate-600 cursor-pointer"
-                  title="More"
-                >
-                  <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
-                    <circle cx="5" cy="12" r="1.5" />
-                    <circle cx="12" cy="12" r="1.5" />
-                    <circle cx="19" cy="12" r="1.5" />
-                  </svg>
-                </button>
+              <div className="ml-auto flex items-center gap-0.5 opacity-0 group-hover/col:opacity-100 focus-within:opacity-100 transition-opacity">
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <button
+                      type="button"
+                      className="w-6 h-6 rounded flex items-center justify-center text-slate-400 hover:bg-slate-100 hover:text-slate-600 cursor-pointer"
+                      title="More"
+                    >
+                      <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
+                        <circle cx="5" cy="12" r="1.5" />
+                        <circle cx="12" cy="12" r="1.5" />
+                        <circle cx="19" cy="12" r="1.5" />
+                      </svg>
+                    </button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end" className="w-40">
+                    <DropdownMenuItem
+                      onSelect={() => handleExportColumn(columnTickets, columnTitle)}
+                      disabled={columnTickets.length === 0}
+                    >
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+                        <polyline points="7 10 12 15 17 10" />
+                        <line x1="12" y1="15" x2="12" y2="3" />
+                      </svg>
+                      Export
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
                 <button
                   type="button"
                   className="w-6 h-6 rounded flex items-center justify-center text-slate-400 hover:bg-slate-100 hover:text-slate-600 cursor-pointer"
