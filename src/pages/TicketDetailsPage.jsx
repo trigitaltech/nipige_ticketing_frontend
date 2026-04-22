@@ -136,6 +136,19 @@ const TicketDetailsPage = ({ ticket, onBack, onUpdate }) => {
     return date.toLocaleDateString('en-US', { month: 'short', day: '2-digit', year: 'numeric', timeZone: 'Asia/Kolkata' });
   };
 
+  const parseDurationToMs = (value) => {
+    if (value == null) return 0;
+    if (typeof value === 'number' && Number.isFinite(value)) return Math.max(0, value);
+    const str = String(value).trim();
+    if (!str) return 0;
+    const hoursMatch = str.match(/(\d+)\s*h/i);
+    const minutesMatch = str.match(/(\d+)\s*m/i);
+    if (!hoursMatch && !minutesMatch) return 0;
+    const h = hoursMatch ? Number(hoursMatch[1]) : 0;
+    const m = minutesMatch ? Number(minutesMatch[1]) : 0;
+    return (h * 60 + m) * 60 * 1000;
+  };
+
   const initialFormData = {
     subject: ticket.subject || ticket.title || '',
     description: ticket.description || '',
@@ -149,13 +162,18 @@ const TicketDetailsPage = ({ ticket, onBack, onUpdate }) => {
     scope: ticket.scope || '',
     startDate: formatDateTimeLocal(ticket.startDate),
     endDate: formatDateTimeLocal(ticket.endDate),
-    timeEstimateMs: Number(ticket.timeEstimateMs) || 0,
+    timeEstimateMs: Number(ticket.timeEstimateMs) || parseDurationToMs(ticket.estimateTime) || 0,
   };
   const [formData, setFormData] = useState(initialFormData);
   const initialSnapshotRef = useRef(JSON.stringify(initialFormData));
 
   const timerStorageKey = `ticket-timer-${ticket._id || ticket.id || ticket.ticketNo}`;
-  const timerBackendMs = Number(ticket.trackedTimeMs) || Number(ticket.timeTracked) || 0;
+  const timerBackendMs =
+    Number(ticket.trackedTimeMs) ||
+    Number(ticket.timeTracked) ||
+    parseDurationToMs(ticket.trackTime) ||
+    parseDurationToMs(ticket.trackedTime) ||
+    0;
 
   const [trackedTimeMs, setTrackedTimeMs] = useState(() => {
     try {
@@ -465,7 +483,12 @@ const TicketDetailsPage = ({ ticket, onBack, onUpdate }) => {
   };
 
   const ticketNo = ticket.ticketNo || 'N/A';
-  const initialTrackedMs = Number(ticket.trackedTimeMs) || Number(ticket.timeTracked) || 0;
+  const initialTrackedMs =
+    Number(ticket.trackedTimeMs) ||
+    Number(ticket.timeTracked) ||
+    parseDurationToMs(ticket.trackTime) ||
+    parseDurationToMs(ticket.trackedTime) ||
+    0;
   const isDirty =
     JSON.stringify(formData) !== initialSnapshotRef.current ||
     uploadedFiles.length > 0 ||
