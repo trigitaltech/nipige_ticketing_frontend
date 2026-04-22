@@ -359,6 +359,7 @@ const Dashboard = ({ currentUser, onLogout }) => {
               setViewMode={setViewMode}
               groupBy={groupBy}
               setGroupBy={setGroupBy}
+              tickets={sortedTickets || []}
             />
 
             {/* Content */}
