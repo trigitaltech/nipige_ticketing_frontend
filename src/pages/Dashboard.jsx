@@ -1,8 +1,10 @@
 import { useState, useEffect } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
+import { Routes, Route, useNavigate, useParams, Navigate } from 'react-router-dom';
 import { fetchTickets, createTicket, updateTicket, deleteTicket, updateTicketStatusOptimistic } from '../redux/ticketSlice';
 import { fetchCategories } from '../redux/categorySlice';
 import { fetchProjects } from '../redux/projectSlice';
+import { fetchUsers } from '../redux/userSlice';
 import '../assets/Styles/ListView.css';
 import Sidebar from '../components/layout/Sidebar';
 import { SidebarInset, SidebarProvider } from '@/components/ui/sidebar';
@@ -16,18 +18,68 @@ import ProjectMaster from './ProjectMaster';
 import ProjectDetailsPage from './ProjectDetailsPage';
 import WeeklyTasks from './WeeklyTasks';
 import DeleteConfirmModal from '../components/shared/DeleteConfirmModal';
+import DashboardOverview from '../components/layout/DashboardOverview';
+import usePersistentState from '../hooks/usePersistentState';
+import TicketDetailsSkeleton from '../components/skeletons/TicketDetailsSkeleton';
+
+// Resolves a ticket from Redux by URL param and renders TicketDetailsPage.
+const TicketDetailsRoute = ({ tickets, loading, onUpdate }) => {
+  const { ticketId } = useParams();
+  const navigate = useNavigate();
+  const ticket = tickets.find((t) => String(t._id || t.id) === String(ticketId));
+
+  if (!ticket) {
+    if (loading) return <TicketDetailsSkeleton />;
+    return (
+      <div className="p-10 text-slate-500">
+        Ticket not found.{' '}
+        <button
+          type="button"
+          onClick={() => navigate('/')}
+          className="text-blue-600 hover:underline"
+        >
+          Go back
+        </button>
+      </div>
+    );
+  }
+
+  return (
+    <TicketDetailsPage
+      ticket={ticket}
+      onBack={() => navigate('/')}
+      onUpdate={onUpdate}
+    />
+  );
+};
+
+// Resolves a project by URL param.
+const ProjectDetailsRoute = () => {
+  const { projectId } = useParams();
+  const navigate = useNavigate();
+  const { projects } = useSelector((state) => state.projects);
+  const project = projects.find((p) => String(p._id || p.id) === String(projectId));
+
+  if (!project) {
+    return (
+      <div className="p-10 text-slate-500">Loading project…</div>
+    );
+  }
+
+  return <ProjectDetailsPage project={project} onBack={() => navigate('/projects')} />;
+};
 
 const Dashboard = ({ currentUser, onLogout }) => {
   const dispatch = useDispatch();
+  const navigate = useNavigate();
   const { tickets, loading, error } = useSelector((state) => state.tickets);
   const { user } = useSelector((state) => state.auth);
   const { categories } = useSelector((state) => state.categories);
   const { projects } = useSelector((state) => state.projects);
 
+  const [sidebarOpen, setSidebarOpen] = usePersistentState('sidebar.open', true);
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [createPrefill, setCreatePrefill] = useState(null);
-  const [isUpdateModalOpen, setIsUpdateModalOpen] = useState(false);
-  const [selectedTicket, setSelectedTicket] = useState(null);
   const [activeFilter, setActiveFilter] = useState('all'); // 'all' or 'my'
   const [viewMode, setViewMode] = useState('kanban'); // 'kanban' or 'list'
   const [groupBy, setGroupBy] = useState('status'); // 'status' | 'project' | 'category'
@@ -44,13 +96,12 @@ const Dashboard = ({ currentUser, onLogout }) => {
   });
   const [sortConfig, setSortConfig] = useState({ field: '', direction: 'asc' });
   const [deleteConfirm, setDeleteConfirm] = useState({ open: false, ticketId: null, ticketNo: '' });
-  const [activePage, setActivePage] = useState('Dashboard');
-  const [selectedProject, setSelectedProject] = useState(null);
 
   useEffect(() => {
     dispatch(fetchTickets());
     dispatch(fetchProjects());
     dispatch(fetchCategories());
+    dispatch(fetchUsers());
   }, [dispatch]);
 
   const handleClearFilters = () => {
@@ -214,11 +265,12 @@ const Dashboard = ({ currentUser, onLogout }) => {
 
   const handleUpdateTicket = async (updatedTicket) => {
     const ticketId = updatedTicket._id || updatedTicket.id;
+    const existing = tickets.find((t) => (t._id || t.id) === ticketId) || {};
 
     const ticketData = {
-      ...selectedTicket,
+      ...existing,
       ...updatedTicket,
-      _id: ticketId
+      _id: ticketId,
     };
 
     if (ticketData.startDate) {
@@ -230,8 +282,6 @@ const Dashboard = ({ currentUser, onLogout }) => {
 
     await dispatch(updateTicket({ ticketId, ticketData }));
     dispatch(fetchTickets());
-    setIsUpdateModalOpen(false);
-    setSelectedTicket(null);
   };
 
   const handleDeleteTicket = (ticketId) => {
@@ -246,8 +296,8 @@ const Dashboard = ({ currentUser, onLogout }) => {
   };
 
   const handleTicketClick = (ticket) => {
-    setSelectedTicket(ticket);
-    setIsUpdateModalOpen(true);
+    const id = ticket?._id || ticket?.id;
+    if (id) navigate(`/tickets/${id}`);
   };
 
   const handleStatusChange = async (ticketId, newStatus) => {
@@ -287,116 +337,115 @@ const Dashboard = ({ currentUser, onLogout }) => {
         .slice(0, 2)) ||
     (userEmail ? userEmail[0]?.toUpperCase() : 'U');
 
-  return (
-    <SidebarProvider>
-      {/* Left Sidebar */}
-      <Sidebar onLogout={onLogout} activeItem={activePage} onNavigate={(page) => { setActivePage(page); setSelectedTicket(null); setSelectedProject(null); }} />
-
-      {/* Main Content Area */}
-      <SidebarInset className="h-svh flex flex-col overflow-hidden bg-gray-50">
-        {activePage === 'Projects' ? (
-          <>
-            <Header
-              fullName={fullName}
-              avatarLabel={avatarLabel}
-              userEmail={userEmail}
-              onCreateTicket={() => {}}
-              onLogout={onLogout}
-            />
-            <div className="flex-1 overflow-auto">
-              {selectedProject ? (
-                <ProjectDetailsPage
-                  project={selectedProject}
-                  onBack={() => setSelectedProject(null)}
-                />
-              ) : (
-                <ProjectMaster onOpenProject={setSelectedProject} />
-              )}
-            </div>
-          </>
-        ) : activePage === 'Weekly Tasks' ? (
-          <>
-            <Header
-              fullName={fullName}
-              avatarLabel={avatarLabel}
-              userEmail={userEmail}
-              onCreateTicket={() => {}}
-              onLogout={onLogout}
-            />
-            <div className="flex-1 overflow-auto">
-              <WeeklyTasks />
-            </div>
-          </>
-        ) : selectedTicket ? (
-          /* Ticket Details Full Page */
-          <TicketDetailsPage
-            ticket={selectedTicket}
-            onBack={() => {
-              setSelectedTicket(null);
-              setIsUpdateModalOpen(false);
+  const workspaceCard = (
+    <div className="mx-5 mt-2 mb-2 border border-slate-200 rounded-xl flex-1 min-h-0 flex flex-col overflow-hidden">
+      <div className="px-5 pt-2.5 pb-1.5">
+        <h1 className="text-[16px] font-medium text-slate-900 truncate">
+          {fullName ? `${fullName}'s Workspace` : 'Workspace'}
+        </h1>
+      </div>
+      <SearchFilterBar
+        activeFilter={activeFilter}
+        setActiveFilter={setActiveFilter}
+        filters={filters}
+        setFilters={setFilters}
+        onClearFilters={handleClearFilters}
+        categories={categories}
+        projects={projects || []}
+        sortConfig={sortConfig}
+        setSortConfig={setSortConfig}
+        viewMode={viewMode}
+        setViewMode={setViewMode}
+        groupBy={groupBy}
+        setGroupBy={setGroupBy}
+        tickets={sortedTickets || []}
+      />
+      <div className={`flex-1 min-h-0 px-3 pt-2 pb-0 ${viewMode === 'kanban' ? 'overflow-hidden' : 'overflow-auto'}`}>
+        {viewMode === 'kanban' ? (
+          <KanbanBoard
+            tickets={sortedTickets || []}
+            onTicketClick={handleTicketClick}
+            onStatusChange={handleStatusChange}
+            onDeleteTicket={handleDeleteTicket}
+            onAddTask={(prefill) => {
+              setCreatePrefill(prefill);
+              setIsCreateModalOpen(true);
             }}
-            onUpdate={handleUpdateTicket}
+            groupBy={groupBy}
+            projects={projects || []}
+            categories={categories || []}
+            loading={loading}
           />
         ) : (
-          <>
-            {/* Top Header */}
-            <Header
-              fullName={fullName}
-              avatarLabel={avatarLabel}
-              userEmail={userEmail}
-              onCreateTicket={() => setIsCreateModalOpen(true)}
-              onLogout={onLogout}
-            />
-
-            {/* Search/Filter Bar */}
-            <SearchFilterBar
-              activeFilter={activeFilter}
-              setActiveFilter={setActiveFilter}
-              searchQuery={searchQuery}
-              setSearchQuery={setSearchQuery}
-              filters={filters}
-              setFilters={setFilters}
-              onClearFilters={handleClearFilters}
-              categories={categories}
-              projects={projects || []}
-              sortConfig={sortConfig}
-              setSortConfig={setSortConfig}
-              viewMode={viewMode}
-              setViewMode={setViewMode}
-              groupBy={groupBy}
-              setGroupBy={setGroupBy}
-              tickets={sortedTickets || []}
-            />
-
-            {/* Content */}
-            <div className={`flex-1 min-h-0 p-5 ${viewMode === 'kanban' ? 'overflow-hidden' : 'overflow-auto'}`}>
-              {viewMode === 'kanban' ? (
-                <KanbanBoard
-                  tickets={sortedTickets || []}
-                  onTicketClick={handleTicketClick}
-                  onStatusChange={handleStatusChange}
-                  onDeleteTicket={handleDeleteTicket}
-                  onAddTask={(prefill) => {
-                    setCreatePrefill(prefill);
-                    setIsCreateModalOpen(true);
-                  }}
-                  groupBy={groupBy}
-                  projects={projects || []}
-                  categories={categories || []}
-                />
-              ) : (
-                <ListView
-                  tickets={sortedTickets || []}
-                  onTicketClick={handleTicketClick}
-                  onDeleteTicket={handleDeleteTicket}
-                  groupBy={groupBy}
-                  projects={projects || []}
-                  categories={categories || []}
-                />
-              )}
-            </div>
-          </>
+          <ListView
+            tickets={sortedTickets || []}
+            onTicketClick={handleTicketClick}
+            onDeleteTicket={handleDeleteTicket}
+            groupBy={groupBy}
+            projects={projects || []}
+            categories={categories || []}
+            loading={loading}
+          />
         )}
+      </div>
+    </div>
+  );
+
+  const dashboardHeader = (
+    <Header
+      avatarLabel={avatarLabel}
+      userEmail={userEmail}
+      onCreateTicket={() => setIsCreateModalOpen(true)}
+      onLogout={onLogout}
+      searchQuery={searchQuery}
+      setSearchQuery={setSearchQuery}
+    />
+  );
+
+  const DashboardPage = (
+    <>
+      {dashboardHeader}
+      <DashboardOverview tickets={tickets || []} loading={loading} />
+    </>
+  );
+
+  const TasksPage = (
+    <>
+      {dashboardHeader}
+      {workspaceCard}
+    </>
+  );
+
+  const withHeader = (node) => (
+    <>
+      <Header
+        fullName={fullName}
+        avatarLabel={avatarLabel}
+        userEmail={userEmail}
+        onCreateTicket={() => {}}
+        onLogout={onLogout}
+      />
+      <div className="flex-1 overflow-auto">{node}</div>
+    </>
+  );
+
+  return (
+    <SidebarProvider open={sidebarOpen} onOpenChange={setSidebarOpen}>
+      <Sidebar onLogout={onLogout} />
+
+      <SidebarInset className="h-svh flex flex-col overflow-hidden bg-gray-50">
+        <Routes>
+          <Route path="/" element={DashboardPage} />
+          <Route path="/tasks" element={TasksPage} />
+          <Route
+            path="/tickets/:ticketId"
+            element={<TicketDetailsRoute tickets={tickets || []} loading={loading} onUpdate={handleUpdateTicket} />}
+          />
+          <Route path="/projects" element={withHeader(<ProjectMaster />)} />
+          <Route path="/projects/:projectId" element={withHeader(<ProjectDetailsRoute />)} />
+          <Route path="/weekly-tasks" element={withHeader(<WeeklyTasks />)} />
+          <Route path="*" element={<Navigate to="/" replace />} />
+        </Routes>
       </SidebarInset>
 
       {/* Modals */}

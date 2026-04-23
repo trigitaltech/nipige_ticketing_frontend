@@ -14,10 +14,10 @@
 
 .search-bar-input {
   width: 60%;
-  padding: 8px 12px 8px 36px;
+  padding: 4px 12px 4px 30px;
   border: none;
   border-radius: 8px;
-  font-size: 14px;
+  font-size: 13px;
   color: #172B4D;
   background: transparent;
   outline: none;

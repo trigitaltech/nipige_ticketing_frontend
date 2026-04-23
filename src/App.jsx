@@ -1,4 +1,5 @@
 import { useSelector, useDispatch } from 'react-redux';
+import { BrowserRouter } from 'react-router-dom';
 import { ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 import './App.css';
@@ -13,8 +14,6 @@ function App() {
   const handleLogout = () => {
     dispatch(logout());
   };
-  console.log("=====>user", user);
-  const currentUser = user ;
 
   return (
     <div className="App">
@@ -22,7 +21,9 @@ function App() {
       {!isAuthenticated ? (
         <Login />
       ) : (
-        <Dashboard currentUser={currentUser} onLogout={handleLogout} />
+        <BrowserRouter>
+          <Dashboard currentUser={user} onLogout={handleLogout} />
+        </BrowserRouter>
       )}
     </div>
   );

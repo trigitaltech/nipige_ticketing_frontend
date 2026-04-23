@@ -1,4 +1,6 @@
 import TicketCard from './TicketCard';
+import TicketCardSkeleton from '../skeletons/TicketCardSkeleton';
+import usePersistentState from '../../hooks/usePersistentState';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -8,6 +10,7 @@ import {
 import {
   Tooltip,
   TooltipContent,
+  TooltipProvider,
   TooltipTrigger,
 } from '@/components/ui/tooltip';
 import { exportTicketsToCsv } from '../../function/exportUtils';
@@ -24,11 +27,15 @@ const StatusIconComplete = () => (
 const StatusIconClosed = () => (
   <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm5 13.59L15.59 17 12 13.41 8.41 17 7 15.59 10.59 12 7 8.41 8.41 7 12 10.59 15.59 7 17 8.41 13.41 12 17 15.59z" /></svg>
 );
+const StatusIconBacklog = () => (
+  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="9" strokeDasharray="3 3" /></svg>
+);
 
 const statusConfig = {
   OPEN:        { title: 'Open',        Icon: StatusIconTodo,       color: '#ab4aba' },
   IN_PROGRESS: { title: 'In Progress', Icon: StatusIconInProgress, color: 'rgb(8, 128, 234)' },
   RESOLVED:    { title: 'Complete',    Icon: StatusIconComplete,   color: 'rgb(41, 151, 100)' },
+  BACKLOG:     { title: 'Backlog',     Icon: StatusIconBacklog,    color: '#a18072' },
   CLOSED:      { title: 'Closed',      Icon: StatusIconClosed,     color: '#656F7D' },
 };
 
@@ -41,15 +48,6 @@ const projectDotPalette = [
   'bg-rose-500',
 ];
 
-const projectPillPalette = [
-  { pill: 'bg-blue-600',    count: 'text-blue-600',    bg: 'bg-blue-50',    accent: 'text-blue-600' },
-  { pill: 'bg-emerald-600', count: 'text-emerald-600', bg: 'bg-emerald-50', accent: 'text-emerald-600' },
-  { pill: 'bg-amber-500',   count: 'text-amber-600',   bg: 'bg-amber-50',   accent: 'text-amber-600' },
-  { pill: 'bg-violet-600',  count: 'text-violet-600',  bg: 'bg-violet-50',  accent: 'text-violet-600' },
-  { pill: 'bg-cyan-600',    count: 'text-cyan-600',    bg: 'bg-cyan-50',    accent: 'text-cyan-600' },
-  { pill: 'bg-rose-600',    count: 'text-rose-600',    bg: 'bg-rose-50',    accent: 'text-rose-600' },
-];
-
 const KanbanBoard = ({
   tickets,
   onTicketClick,
@@ -59,7 +57,15 @@ const KanbanBoard = ({
   groupBy = 'status',
   projects = [],
   categories = [],
+  loading = false,
 }) => {
+  const showInitialSkeleton = loading && (!tickets || tickets.length === 0);
+  const [collapsedColumns, setCollapsedColumns] = usePersistentState('kanban.collapsedColumns', {});
+
+  const toggleColumnCollapsed = (columnId) => {
+    setCollapsedColumns((prev) => ({ ...prev, [columnId]: !prev[columnId] }));
+  };
+
   const buildColumnPrefill = (columnId) => {
     if (groupBy === 'status') return { status: columnId };
     if (groupBy === 'project') {
@@ -81,6 +87,7 @@ const KanbanBoard = ({
     { id: 'OPEN' },
     { id: 'IN_PROGRESS' },
     { id: 'RESOLVED' },
+    { id: 'BACKLOG' },
     { id: 'CLOSED' },
   ];
 
@@ -300,7 +307,8 @@ const KanbanBoard = ({
   };
 
   return (
-    <div className="flex gap-3 h-full overflow-x-auto pb-4 px-1">
+    <TooltipProvider delayDuration={200}>
+    <div className="flex gap-3 h-full overflow-x-auto pb-1 px-1">
       {columns.map((column, index) => {
         const config = statusConfig[column.id];
         const color = groupBy === 'status'
@@ -310,6 +318,42 @@ const KanbanBoard = ({
         const columnTickets = getTicketsByColumn(column.id);
         const totalTickets = columnTickets.length;
         const columnBg = `color-mix(in srgb, ${color} 5%, transparent)`;
+        const isCollapsed = !!collapsedColumns[column.id];
+
+        if (isCollapsed) {
+          return (
+            <div
+              key={column.id}
+              className="group/col shrink-0 self-start w-[44px] flex flex-col items-center rounded-lg py-3 px-1 cursor-pointer"
+              style={{ backgroundColor: columnBg }}
+              onDragOver={groupBy === 'status' ? handleDragOver : undefined}
+              onDrop={groupBy === 'status' ? (e) => handleDrop(e, column.id) : undefined}
+            >
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <button
+                    type="button"
+                    onClick={() => toggleColumnCollapsed(column.id)}
+                    className="flex flex-col items-center gap-2 cursor-pointer"
+                    aria-label="Expand group"
+                  >
+                    <span
+                      className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-md text-[11px] font-semibold uppercase tracking-wide text-white [writing-mode:vertical-rl]"
+                      style={{ backgroundColor: color }}
+                    >
+                      {groupBy === 'status' && config?.Icon ? <config.Icon /> : (
+                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><circle cx="12" cy="12" r="9" /></svg>
+                      )}
+                      {columnTitle}
+                    </span>
+                    <span className="text-[13px] font-bold tabular-nums" style={{ color }}>{totalTickets}</span>
+                  </button>
+                </TooltipTrigger>
+                <TooltipContent side="top">Expand group</TooltipContent>
+              </Tooltip>
+            </div>
+          );
+        }
 
         return (
           <div
@@ -322,7 +366,7 @@ const KanbanBoard = ({
             {/* Column Header — ClickUp-style pill */}
             <div className="flex items-center gap-2 px-1 py-1 mb-2">
               <span
-                className="inline-flex items-center gap-1.5 px-2 py-1 rounded-[4px] text-[11px] font-bold uppercase tracking-wide text-white"
+                className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-md text-[11px] font-semibold uppercase tracking-wide text-white"
                 style={{ backgroundColor: color }}
               >
                 {groupBy === 'status' && config?.Icon ? <config.Icon /> : (
@@ -332,6 +376,21 @@ const KanbanBoard = ({
               </span>
               <span className="text-[13px] font-bold tabular-nums" style={{ color }}>{totalTickets}</span>
               <div className="ml-auto flex items-center gap-0.5">
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <button
+                      type="button"
+                      onClick={() => toggleColumnCollapsed(column.id)}
+                      className="w-6 h-6 rounded flex items-center justify-center text-slate-400 hover:bg-slate-100 hover:text-slate-600 cursor-pointer"
+                      aria-label="Collapse group"
+                    >
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round">
+                        <polyline points="15 18 9 12 15 6" />
+                      </svg>
+                    </button>
+                  </TooltipTrigger>
+                  <TooltipContent side="top">Collapse group</TooltipContent>
+                </Tooltip>
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
                     <button
@@ -381,15 +440,21 @@ const KanbanBoard = ({
 
             {/* Column Content */}
             <div className="flex-1 space-y-3 overflow-y-auto scroll-hover px-1">
-              {columnTickets.map(ticket => (
-                <TicketCard
-                  key={ticket._id || ticket.id}
-                  ticket={ticket}
-                  onDragStart={handleDragStart}
-                  onClick={onTicketClick}
-                  onDelete={onDeleteTicket}
-                />
-              ))}
+              {showInitialSkeleton ? (
+                Array.from({ length: 3 }).map((_, i) => (
+                  <TicketCardSkeleton key={`skeleton-${column.id}-${i}`} />
+                ))
+              ) : (
+                columnTickets.map(ticket => (
+                  <TicketCard
+                    key={ticket._id || ticket.id}
+                    ticket={ticket}
+                    onDragStart={handleDragStart}
+                    onClick={onTicketClick}
+                    onDelete={onDeleteTicket}
+                  />
+                ))
+              )}
               <button
                 type="button"
                 onClick={() => handleAddClick(column.id)}
@@ -407,6 +472,7 @@ const KanbanBoard = ({
         );
       })}
     </div>
+    </TooltipProvider>
   );
 };
 

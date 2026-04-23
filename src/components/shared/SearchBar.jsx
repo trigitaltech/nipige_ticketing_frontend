@@ -1,8 +1,8 @@
 import '../../assets/Styles/SearchBar.css';
 
-const SearchBar = ({ value, onChange, placeholder = 'Search by subject, description, user...' }) => {
+const SearchBar = ({ value, onChange, placeholder = 'Search' }) => {
   return (
-    <div className="search-bar-wrapper bg-gray-50 rounded-3xl px-3 flex items-center gap-2 w-full">
+    <div className="search-bar-wrapper bg-white border border-slate-200 rounded-3xl px-3 flex items-center gap-2 w-full focus-within:border-blue-400 focus-within:ring-2 focus-within:ring-blue-100 transition-colors">
       <svg
         className="search-bar-icon"
         width="15"
