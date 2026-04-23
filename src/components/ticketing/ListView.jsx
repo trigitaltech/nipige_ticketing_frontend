@@ -2,6 +2,12 @@ import { useState, useMemo } from 'react';
 import '../../assets/Styles/ListView.css';
 import deleteIcon from '../../assets/icons/delete.png';
 import DeleteConfirmModal from '../shared/DeleteConfirmModal';
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from '@/components/ui/tooltip';
 
 const ListView = ({ tickets, onTicketClick, onDeleteTicket, groupBy = 'status', projects = [], categories = [] }) => {
   const [currentPage, setCurrentPage] = useState(1);
@@ -184,9 +190,20 @@ const ListView = ({ tickets, onTicketClick, onDeleteTicket, groupBy = 'status', 
           </div>
         </td>
         <td>
-          <span className="title-text">
-            {ticket.subject?.split(' ').slice(0, 4).join(' ')}{ticket.subject?.split(' ').length > 6 ? '...' : ''}
-          </span>
+          {ticket.subject ? (
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <span className="title-text">
+                  {ticket.subject.split(' ').slice(0, 4).join(' ')}{ticket.subject.split(' ').length > 6 ? '...' : ''}
+                </span>
+              </TooltipTrigger>
+              <TooltipContent side="top" align="start">
+                {ticket.subject}
+              </TooltipContent>
+            </Tooltip>
+          ) : (
+            <span className="title-text">-</span>
+          )}
         </td>
         <td>
           <span className="assigned-name">
@@ -230,6 +247,7 @@ const ListView = ({ tickets, onTicketClick, onDeleteTicket, groupBy = 'status', 
   };
 
   return (
+    <TooltipProvider delayDuration={200}>
     <div className="list-view-container">
       <table className="list-table">
         <thead>
@@ -331,6 +349,7 @@ const ListView = ({ tickets, onTicketClick, onDeleteTicket, groupBy = 'status', 
         }}
       />
     </div>
+    </TooltipProvider>
   );
 };
 

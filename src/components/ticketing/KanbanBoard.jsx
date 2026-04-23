@@ -5,6 +5,11 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from '@/components/ui/tooltip';
 import { exportTicketsToCsv } from '../../function/exportUtils';
 
 const StatusIconTodo = () => (
@@ -50,10 +55,28 @@ const KanbanBoard = ({
   onTicketClick,
   onStatusChange,
   onDeleteTicket,
+  onAddTask,
   groupBy = 'status',
   projects = [],
   categories = [],
 }) => {
+  const buildColumnPrefill = (columnId) => {
+    if (groupBy === 'status') return { status: columnId };
+    if (groupBy === 'project') {
+      return columnId === 'UNASSIGNED' ? {} : { project: columnId };
+    }
+    if (groupBy === 'category') {
+      if (columnId === 'UNCATEGORIZED' || String(columnId).startsWith('NAME:')) return {};
+      return { category: columnId };
+    }
+    return {};
+  };
+
+  const handleAddClick = (columnId) => {
+    if (typeof onAddTask === 'function') {
+      onAddTask(buildColumnPrefill(columnId));
+    }
+  };
   const statusColumns = [
     { id: 'OPEN' },
     { id: 'IN_PROGRESS' },
@@ -308,7 +331,7 @@ const KanbanBoard = ({
                 {columnTitle}
               </span>
               <span className="text-[13px] font-bold tabular-nums" style={{ color }}>{totalTickets}</span>
-              <div className="ml-auto flex items-center gap-0.5 opacity-0 group-hover/col:opacity-100 focus-within:opacity-100 transition-opacity">
+              <div className="ml-auto flex items-center gap-0.5">
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
                     <button
@@ -337,16 +360,22 @@ const KanbanBoard = ({
                     </DropdownMenuItem>
                   </DropdownMenuContent>
                 </DropdownMenu>
-                <button
-                  type="button"
-                  className="w-6 h-6 rounded flex items-center justify-center text-slate-400 hover:bg-slate-100 hover:text-slate-600 cursor-pointer"
-                  title="Add task"
-                >
-                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
-                    <line x1="12" y1="5" x2="12" y2="19" />
-                    <line x1="5" y1="12" x2="19" y2="12" />
-                  </svg>
-                </button>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <button
+                      type="button"
+                      onClick={() => handleAddClick(column.id)}
+                      className="w-6 h-6 rounded flex items-center justify-center text-slate-400 hover:bg-slate-100 hover:text-slate-600 cursor-pointer"
+                      aria-label="Add task"
+                    >
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                        <line x1="12" y1="5" x2="12" y2="19" />
+                        <line x1="5" y1="12" x2="19" y2="12" />
+                      </svg>
+                    </button>
+                  </TooltipTrigger>
+                  <TooltipContent side="top">Add task</TooltipContent>
+                </Tooltip>
               </div>
             </div>
 
@@ -363,6 +392,7 @@ const KanbanBoard = ({
               ))}
               <button
                 type="button"
+                onClick={() => handleAddClick(column.id)}
                 className="w-full text-left text-[13px] font-semibold hover:brightness-90 px-2 py-2 rounded flex items-center gap-1.5 transition-all cursor-pointer"
                 style={{ color }}
               >

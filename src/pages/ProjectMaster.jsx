@@ -1,10 +1,26 @@
 import { useState, useEffect } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
+import { format } from 'date-fns';
+import { Plus, ChevronLeft, Rocket, Calendar as CalendarIcon } from 'lucide-react';
 import { fetchProjects, createProject, updateProject, deleteProject } from '../redux/projectSlice';
 import { fetchUsers } from '../redux/userSlice';
 import deleteIcon from '../assets/icons/delete.png';
 import AlertModal from '../components/shared/AlertModal';
 import DeleteConfirmModal from '../components/shared/DeleteConfirmModal';
+import { Button } from '@/components/ui/button';
+import { Calendar } from '@/components/ui/calendar';
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from '@/components/ui/popover';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 import '../assets/Styles/ListView.css';
 
 const getInitials = (name) => {
@@ -21,8 +37,50 @@ const statusStyles = {
 };
 
 const inputClass = 'w-full px-4 py-3 border border-gray-200 rounded-xl text-sm bg-gray-50 text-gray-900 focus:outline-none focus:border-blue-400 focus:bg-white transition-all placeholder:text-gray-400';
-const selectClass = `${inputClass} appearance-none bg-[url("data:image/svg+xml,%3Csvg width='12' height='8' viewBox='0 0 12 8' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M1 1.5L6 6.5L11 1.5' stroke='%2364748B' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E")] bg-no-repeat bg-[position:right_14px_center] bg-[length:12px_8px] pr-10`;
+const selectTriggerClass = 'w-full h-auto px-4 py-3 border-gray-200 rounded-xl text-sm bg-gray-50 text-gray-900 hover:bg-gray-50 focus-visible:border-blue-400 focus-visible:ring-0 data-[state=open]:bg-white transition-all data-placeholder:text-gray-400';
 const labelClass = 'block text-sm font-semibold text-gray-800 mb-2';
+
+const toDateString = (date) => {
+  const y = date.getFullYear();
+  const m = String(date.getMonth() + 1).padStart(2, '0');
+  const d = String(date.getDate()).padStart(2, '0');
+  return `${y}-${m}-${d}`;
+};
+
+const DatePickerField = ({ value, onChange, placeholder = 'Pick a date' }) => {
+  const [open, setOpen] = useState(false);
+  const selectedDate = value ? new Date(`${value}T00:00:00`) : undefined;
+
+  return (
+    <Popover open={open} onOpenChange={setOpen}>
+      <PopoverTrigger asChild>
+        <Button
+          variant="outline"
+          className="w-full h-auto px-4 py-3 justify-between font-normal rounded-xl border-gray-200 bg-gray-50 text-sm hover:bg-gray-50 data-[state=open]:bg-white data-[state=open]:border-blue-400 text-gray-900"
+        >
+          {selectedDate ? (
+            format(selectedDate, 'PPP')
+          ) : (
+            <span className="text-gray-400">{placeholder}</span>
+          )}
+          <CalendarIcon className="w-4 h-4 text-gray-500" />
+        </Button>
+      </PopoverTrigger>
+      <PopoverContent className="w-auto p-0" align="start">
+        <Calendar
+          mode="single"
+          selected={selectedDate}
+          onSelect={(date) => {
+            onChange(date ? toDateString(date) : '');
+            setOpen(false);
+          }}
+          defaultMonth={selectedDate}
+          initialFocus
+        />
+      </PopoverContent>
+    </Popover>
+  );
+};
 
 const CreateProjectView = ({ onBack }) => {
   const dispatch = useDispatch();
@@ -141,36 +199,32 @@ const CreateProjectView = ({ onBack }) => {
       <div className="px-8 pt-6 pb-4">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-4">
-            <button
+            <Button
+              variant="outline"
+              size="icon"
               onClick={onBack}
-              className="w-9 h-9 rounded-xl border border-gray-200 bg-white flex items-center justify-center cursor-pointer text-gray-400 hover:bg-gray-50 hover:text-gray-600 hover:border-gray-300 transition-all shrink-0"
+              aria-label="Back"
+              className="rounded-xl"
             >
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                <polyline points="15 18 9 12 15 6" />
-              </svg>
-            </button>
+              <ChevronLeft className="w-5 h-5" />
+            </Button>
             <div>
               <h1 className="text-2xl font-bold text-gray-900">Create New Project</h1>
               <p className="text-sm text-gray-500 mt-0.5">Configure enterprise-grade project settings and governance</p>
             </div>
           </div>
           <div className="flex items-center gap-3">
-            <button
-              onClick={onBack}
-              className="px-6 py-2.5 border border-gray-200 rounded-2xl text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors cursor-pointer"
-            >
+            <Button variant="outline" onClick={onBack}>
               Discard
-            </button>
-            <button
+            </Button>
+            <Button
               onClick={handleSubmit}
               disabled={isSubmitting}
-              className="flex items-center gap-2 px-6 py-2.5 bg-blue-600 text-white rounded-2xl text-sm font-medium hover:bg-blue-700 transition-colors cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+              className="!bg-[#5449D6] text-white border-transparent hover:!bg-[#5449D6] hover:text-white hover:brightness-110 focus-visible:ring-[#5449D6]/30"
             >
-             <svg xmlns="http://www.w3.org/2000/svg" className='w-4 h-4' viewBox="0 0 24 24" fill="#FFFFFF"><g fill="none" stroke="#FFFFFF" stroke-width="2"><path d="M16 21v-2c0-1.886 0-2.828-.586-3.414C14.828 15 13.886 15 12 15h-1c-1.886 0-2.828 0-3.414.586C7 16.172 7 17.114 7 19v2"/><path stroke-linecap="round" d="M7 8h5"/><path d="M3 9c0-2.828 0-4.243.879-5.121C4.757 3 6.172 3 9 3h7.172c.408 0 .613 0 .796.076c.184.076.329.22.618.51l2.828 2.828c.29.29.434.434.51.618c.076.183.076.388.076.796V15c0 2.828 0 4.243-.879 5.121C19.243 21 17.828 21 15 21H9c-2.828 0-4.243 0-5.121-.879C3 19.243 3 17.828 3 15z"/>
-             </g>
-             </svg>
+              <Rocket className="w-4 h-4" />
               {isSubmitting ? 'Creating...' : 'Launch Project'}
-            </button>
+            </Button>
           </div>
         </div>
         <div className="h-px bg-gray-200 mt-5" />
@@ -207,12 +261,20 @@ const CreateProjectView = ({ onBack }) => {
               </div>
               <div>
                 <label className={labelClass}>Category</label>
-                <select name="category" value={formData.category} onChange={handleChange} className={selectClass}>
-                  <option value="Client delivery">Client delivery</option>
-                  <option value="Internal">Internal</option>
-                  <option value="Research">Research</option>
-                  <option value="Support">Support</option>
-                </select>
+                <Select
+                  value={formData.category}
+                  onValueChange={(value) => handleChange({ target: { name: 'category', value } })}
+                >
+                  <SelectTrigger className={selectTriggerClass}>
+                    <SelectValue placeholder="Select category" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="Client delivery">Client delivery</SelectItem>
+                    <SelectItem value="Internal">Internal</SelectItem>
+                    <SelectItem value="Research">Research</SelectItem>
+                    <SelectItem value="Support">Support</SelectItem>
+                  </SelectContent>
+                </Select>
               </div>
             </div>
 
@@ -248,26 +310,42 @@ const CreateProjectView = ({ onBack }) => {
 
               <div className="mb-5">
                 <label className={labelClass}>Project Lead</label>
-                <select name="projectLead" value={formData.projectLead} onChange={handleChange} disabled={usersLoading} className={selectClass}>
-                  <option value="">{usersLoading ? 'Loading users...' : 'Select a lead'}</option>
-                  {Array.isArray(users) && users.map((user) => {
-                    const userId = user._id || user.id;
-                    const userName = `${user.name?.first || ''} ${user.name?.last || ''}`.trim() || user.authentication?.userName || 'Unknown';
-                    return (
-                      <option key={userId} value={userId}>{userName}</option>
-                    );
-                  })}
-                </select>
+                <Select
+                  value={formData.projectLead}
+                  onValueChange={(value) => handleChange({ target: { name: 'projectLead', value } })}
+                  disabled={usersLoading}
+                >
+                  <SelectTrigger className={selectTriggerClass}>
+                    <SelectValue placeholder={usersLoading ? 'Loading users...' : 'Select a lead'} />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {Array.isArray(users) && users.map((user) => {
+                      const userId = user._id || user.id;
+                      const userName = `${user.name?.first || ''} ${user.name?.last || ''}`.trim() || user.authentication?.userName || 'Unknown';
+                      return (
+                        <SelectItem key={userId} value={userId}>{userName}</SelectItem>
+                      );
+                    })}
+                  </SelectContent>
+                </Select>
               </div>
 
               <div>
                 <label className={labelClass}>Current Status</label>
-                <select name="status" value={formData.status} onChange={handleChange} className={selectClass}>
-                  <option value="ACTIVE">Active</option>
-                  <option value="ON HOLD">On Hold</option>
-                  <option value="DRAFT">Draft</option>
-                  <option value="COMPLETED">Completed</option>
-                </select>
+                <Select
+                  value={formData.status}
+                  onValueChange={(value) => handleChange({ target: { name: 'status', value } })}
+                >
+                  <SelectTrigger className={selectTriggerClass}>
+                    <SelectValue placeholder="Select status" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="ACTIVE">Active</SelectItem>
+                    <SelectItem value="ON HOLD">On Hold</SelectItem>
+                    <SelectItem value="DRAFT">Draft</SelectItem>
+                    <SelectItem value="COMPLETED">Completed</SelectItem>
+                  </SelectContent>
+                </Select>
               </div>
             </div>
 
@@ -286,12 +364,20 @@ const CreateProjectView = ({ onBack }) => {
 
               <div className="mb-5">
                 <label className={labelClass}>Launch Date</label>
-                <input type="date" name="startDate" value={formData.startDate} onChange={handleChange} className={inputClass} />
+                <DatePickerField
+                  value={formData.startDate}
+                  onChange={(value) => handleChange({ target: { name: 'startDate', value } })}
+                  placeholder="Pick launch date"
+                />
               </div>
 
               <div>
                 <label className={labelClass}>Estimated End Date</label>
-                <input type="date" name="endDate" value={formData.endDate} onChange={handleChange} className={inputClass} />
+                <DatePickerField
+                  value={formData.endDate}
+                  onChange={(value) => handleChange({ target: { name: 'endDate', value } })}
+                  placeholder="Pick end date"
+                />
               </div>
             </div>
           </div>
@@ -498,12 +584,20 @@ const UpdateProjectView = ({ project, onBack }) => {
               </div>
               <div>
                 <label className={labelClass}>Category</label>
-                <select name="category" value={formData.category} onChange={handleChange} className={selectClass}>
-                  <option value="Client delivery">Client delivery</option>
-                  <option value="Internal">Internal</option>
-                  <option value="Research">Research</option>
-                  <option value="Support">Support</option>
-                </select>
+                <Select
+                  value={formData.category}
+                  onValueChange={(value) => handleChange({ target: { name: 'category', value } })}
+                >
+                  <SelectTrigger className={selectTriggerClass}>
+                    <SelectValue placeholder="Select category" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="Client delivery">Client delivery</SelectItem>
+                    <SelectItem value="Internal">Internal</SelectItem>
+                    <SelectItem value="Research">Research</SelectItem>
+                    <SelectItem value="Support">Support</SelectItem>
+                  </SelectContent>
+                </Select>
               </div>
             </div>
 
@@ -539,26 +633,42 @@ const UpdateProjectView = ({ project, onBack }) => {
 
               <div className="mb-5">
                 <label className={labelClass}>Project Lead</label>
-                <select name="projectLead" value={formData.projectLead} onChange={handleChange} disabled={usersLoading} className={selectClass}>
-                  <option value="">{usersLoading ? 'Loading users...' : 'Select a lead'}</option>
-                  {Array.isArray(users) && users.map((user) => {
-                    const userId = user._id || user.id;
-                    const userName = `${user.name?.first || ''} ${user.name?.last || ''}`.trim() || user.authentication?.userName || 'Unknown';
-                    return (
-                      <option key={userId} value={userId}>{userName}</option>
-                    );
-                  })}
-                </select>
+                <Select
+                  value={formData.projectLead}
+                  onValueChange={(value) => handleChange({ target: { name: 'projectLead', value } })}
+                  disabled={usersLoading}
+                >
+                  <SelectTrigger className={selectTriggerClass}>
+                    <SelectValue placeholder={usersLoading ? 'Loading users...' : 'Select a lead'} />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {Array.isArray(users) && users.map((user) => {
+                      const userId = user._id || user.id;
+                      const userName = `${user.name?.first || ''} ${user.name?.last || ''}`.trim() || user.authentication?.userName || 'Unknown';
+                      return (
+                        <SelectItem key={userId} value={userId}>{userName}</SelectItem>
+                      );
+                    })}
+                  </SelectContent>
+                </Select>
               </div>
 
               <div>
                 <label className={labelClass}>Current Status</label>
-                <select name="status" value={formData.status} onChange={handleChange} className={selectClass}>
-                  <option value="ACTIVE">Active</option>
-                  <option value="ON HOLD">On Hold</option>
-                  <option value="DRAFT">Draft</option>
-                  <option value="COMPLETED">Completed</option>
-                </select>
+                <Select
+                  value={formData.status}
+                  onValueChange={(value) => handleChange({ target: { name: 'status', value } })}
+                >
+                  <SelectTrigger className={selectTriggerClass}>
+                    <SelectValue placeholder="Select status" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="ACTIVE">Active</SelectItem>
+                    <SelectItem value="ON HOLD">On Hold</SelectItem>
+                    <SelectItem value="DRAFT">Draft</SelectItem>
+                    <SelectItem value="COMPLETED">Completed</SelectItem>
+                  </SelectContent>
+                </Select>
               </div>
             </div>
 
@@ -628,15 +738,13 @@ const ProjectMaster = ({ onOpenProject = () => {} }) => {
           <h1 className="text-2xl font-bold text-gray-900">Project Master</h1>
           <p className="text-sm text-gray-500 mt-1">Manage all internal and client-facing projects</p>
         </div>
-        <button
+        <Button
           onClick={() => setShowCreateProject(true)}
-          className="flex items-center gap-2 px-6 py-2.5 bg-blue-600 text-white rounded-2xl text-sm font-medium hover:bg-blue-700 transition-colors cursor-pointer"
+          className="!bg-[#5449D6] text-white border-transparent hover:!bg-[#5449D6] hover:text-white hover:brightness-110 focus-visible:ring-[#5449D6]/30"
         >
-          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
-          </svg>
+          <Plus className="w-4 h-4" />
           Create Project
-        </button>
+        </Button>
       </div>
 
       {/* Table Card */}

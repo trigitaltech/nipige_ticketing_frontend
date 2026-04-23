@@ -23,6 +23,12 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import EstimateTimePicker from '../components/shared/EstimateTimePicker';
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from '@/components/ui/tooltip';
 
 const statusConfig = {
   OPEN:        { label: 'Open',        bg: 'bg-[#F7ECF7]',   text: 'text-[#ab4aba]',   dot: 'bg-[#ab4aba]',   solid: 'bg-[#ab4aba] text-white' },
@@ -844,9 +850,35 @@ const TicketDetailsPage = ({ ticket, onBack, onUpdate }) => {
                       <svg width="10" height="10" viewBox="0 0 24 24" fill="currentColor"><polygon points="6 4 20 12 6 20 6 4"/></svg>
                     )}
                   </button>
-                  <span className={`text-[13px] font-bold tabular-nums ${timerRunning ? 'text-red-600' : currentTrackedMs > 0 ? 'text-slate-800' : 'text-slate-400'}`}>
-                    {currentTrackedMs > 0 || timerRunning ? formatDuration(currentTrackedMs) : '0h'}
-                  </span>
+                  {timerRunning ? (
+                    <span className="text-[13px] font-bold tabular-nums text-red-600">
+                      {formatDuration(currentTrackedMs)}
+                    </span>
+                  ) : (
+                    <TooltipProvider delayDuration={200}>
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <span className="inline-flex">
+                            <EstimateTimePicker
+                              valueMs={trackedTimeMs}
+                              onChange={(ms) => setTrackedTimeMs(ms)}
+                              placeholder="0h"
+                              label="Track time"
+                              trigger={
+                                <button
+                                  type="button"
+                                  className={`text-[13px] font-bold tabular-nums px-1.5 py-0.5 rounded hover:bg-slate-100 transition-colors cursor-pointer ${currentTrackedMs > 0 ? 'text-slate-800' : 'text-slate-400'}`}
+                                >
+                                  {currentTrackedMs > 0 ? formatDuration(currentTrackedMs) : '0h'}
+                                </button>
+                              }
+                            />
+                          </span>
+                        </TooltipTrigger>
+                        <TooltipContent side="top">Click to set manually</TooltipContent>
+                      </Tooltip>
+                    </TooltipProvider>
+                  )}
                   {currentTrackedMs > 0 && !timerRunning && (
                     <button
                       type="button"

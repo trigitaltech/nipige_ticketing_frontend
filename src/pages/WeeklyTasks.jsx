@@ -1,11 +1,20 @@
-import { useState, useCallback } from 'react';
-import { useSelector } from 'react-redux';
+import { useState, useCallback, useEffect } from 'react';
+import { useSelector, useDispatch } from 'react-redux';
 import { toast } from 'react-toastify';
 import { saveWeeklyTaskAPI } from '../services/weeklyTaskApi';
+import { fetchProjects } from '../redux/projectSlice';
+import { Save, Loader2 } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 import '../assets/Styles/WeeklyTasks.css';
 
 const STATUS_OPTIONS = [
-  { value: '', label: 'Select Status' },
   { value: 'On Going', label: 'On Going' },
   { value: 'Completed', label: 'Completed' },
   { value: 'Not Started', label: 'Not Started' },
@@ -39,6 +48,18 @@ const isSameDay = (d1, d2) =>
   d1.getMonth() === d2.getMonth() &&
   d1.getDate() === d2.getDate();
 
+const TIME_FORMAT_REGEX = /^\s*(\d+\s*[hH])?\s*(\d+\s*[mM])?\s*$/;
+
+const isValidTime = (val) => {
+  if (!val) return true;
+  const trimmed = val.trim();
+  if (!trimmed) return true;
+  if (!/[hHmM]/.test(trimmed)) return false;
+  return TIME_FORMAT_REGEX.test(trimmed);
+};
+
+const sanitizeTimeInput = (val) => val.replace(/[^\dhHmM\s]/g, '');
+
 const getStatusClass = (status) => {
   switch (status) {
     case 'On Going': return 'status-ongoing';
@@ -58,10 +79,16 @@ const createEmptyWeekData = () => {
 };
 
 const WeeklyTasks = () => {
+  const dispatch = useDispatch();
   const { user } = useSelector((state) => state.auth);
+  const { projects } = useSelector((state) => state.projects);
   const [currentDate, setCurrentDate] = useState(new Date());
   const [weekData, setWeekData] = useState(createEmptyWeekData());
   const [saving, setSaving] = useState(false);
+
+  useEffect(() => {
+    dispatch(fetchProjects());
+  }, [dispatch]);
 
   const weekDates = getWeekDates(currentDate);
   const today = new Date();
@@ -105,6 +132,12 @@ const WeeklyTasks = () => {
       return;
     }
 
+    const hasInvalidTime = entries.some((e) => !isValidTime(e.time));
+    if (hasInvalidTime) {
+      toast.error('Invalid time format. Use e.g. "2h 30m", "1H 15M", "5h", or "45m".');
+      return;
+    }
+
     setSaving(true);
     try {
       await saveWeeklyTaskAPI({
@@ -128,18 +161,28 @@ const WeeklyTasks = () => {
       <div className="weekly-tasks-header">
         <h2>Weekly Tasks</h2>
         <div className="week-navigation">
-          <button className="week-nav-btn" onClick={() => navigateWeek(-1)} title="Previous Week">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-              <polyline points="15 18 9 12 15 6" />
-            </svg>
-          </button>
+          <Button
+            variant="outline"
+            size="icon"
+            onClick={() => navigateWeek(-1)}
+            title="Previous Week"
+            aria-label="Previous Week"
+          >
+            <span className="week-nav-chevron">‹</span>
+          </Button>
           <span className="week-label">{weekStart} &mdash; {weekEnd}</span>
-          <button className="week-nav-btn" onClick={() => navigateWeek(1)} title="Next Week">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-              <polyline points="9 18 15 12 9 6" />
-            </svg>
-          </button>
-          <button className="week-today-btn" onClick={goToToday}>Today</button>
+          <Button
+            variant="outline"
+            size="icon"
+            onClick={() => navigateWeek(1)}
+            title="Next Week"
+            aria-label="Next Week"
+          >
+            <span className="week-nav-chevron">›</span>
+          </Button>
+          <Button variant="secondary" size="sm" onClick={goToToday}>
+            Today
+          </Button>
         </div>
       </div>
 
@@ -163,13 +206,31 @@ const WeeklyTasks = () => {
               <td className="row-label row-label-project">Project Name</td>
               {weekDates.map((_, i) => (
                 <td key={i} className="data-cell">
-                  <textarea
-                    className="cell-input"
-                    placeholder="Enter project names..."
-                    value={weekData[i]?.projectNames || ''}
-                    onChange={(e) => updateCell(i, 'projectNames', e.target.value)}
-                    rows={3}
-                  />
+                  <div className="project-select-wrapper">
+                    <Select
+                      value={weekData[i]?.projectNames || ''}
+                      onValueChange={(val) => updateCell(i, 'projectNames', val)}
+                    >
+                      <SelectTrigger className="project-select-trigger">
+                        <SelectValue placeholder="Project" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {Array.isArray(projects) && projects.length > 0 ? (
+                          projects.map((p) => {
+                            const id = p._id || p.id;
+                            const name = p.name || p.projectName || 'Untitled';
+                            return (
+                              <SelectItem key={id} value={name}>
+                                {name}
+                              </SelectItem>
+                            );
+                          })
+                        ) : (
+                          <div className="project-select-empty">No projects</div>
+                        )}
+                      </SelectContent>
+                    </Select>
+                  </div>
                 </td>
               ))}
             </tr>
@@ -193,17 +254,22 @@ const WeeklyTasks = () => {
             {/* Row 4: Time */}
             <tr>
               <td className="row-label row-label-time">Time</td>
-              {weekDates.map((_, i) => (
-                <td key={i} className="data-cell">
-                  <input
-                    type="text"
-                    className="cell-input cell-input-time"
-                    placeholder="e.g. 2h"
-                    value={weekData[i]?.time || ''}
-                    onChange={(e) => updateCell(i, 'time', e.target.value)}
-                  />
-                </td>
-              ))}
+              {weekDates.map((_, i) => {
+                const timeValue = weekData[i]?.time || '';
+                const invalid = !isValidTime(timeValue);
+                return (
+                  <td key={i} className="data-cell">
+                    <input
+                      type="text"
+                      className={`cell-input cell-input-time ${invalid ? 'cell-input-invalid' : ''}`}
+                      placeholder="e.g. 2h 30m"
+                      value={timeValue}
+                      onChange={(e) => updateCell(i, 'time', sanitizeTimeInput(e.target.value))}
+                      title="Format: 2h 30m, 1H 15M, 5h, or 45m"
+                    />
+                  </td>
+                );
+              })}
             </tr>
 
             {/* Row 5: Project Status */}
@@ -212,15 +278,23 @@ const WeeklyTasks = () => {
               {weekDates.map((_, i) => (
                 <td key={i} className="data-cell">
                   <div className="status-select-wrapper">
-                    <select
-                      className={`status-select ${getStatusClass(weekData[i]?.status)}`}
+                    <Select
                       value={weekData[i]?.status || ''}
-                      onChange={(e) => updateCell(i, 'status', e.target.value)}
+                      onValueChange={(val) => updateCell(i, 'status', val)}
                     >
-                      {STATUS_OPTIONS.map(opt => (
-                        <option key={opt.value} value={opt.value}>{opt.label}</option>
-                      ))}
-                    </select>
+                      <SelectTrigger
+                        className={`status-select-trigger ${getStatusClass(weekData[i]?.status)}`}
+                      >
+                        <SelectValue placeholder="Status" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {STATUS_OPTIONS.map(opt => (
+                          <SelectItem key={opt.value} value={opt.value}>
+                            {opt.label}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
                   </div>
                 </td>
               ))}
@@ -231,25 +305,19 @@ const WeeklyTasks = () => {
 
       {/* Save Button */}
       <div className="weekly-save-bar">
-        <button className="weekly-save-btn" onClick={handleSave} disabled={saving}>
+        <Button
+          onClick={handleSave}
+          disabled={saving}
+          size="lg"
+          className="weekly-save-btn"
+        >
           {saving ? (
-            <>
-              <svg className="animate-spin" width="16" height="16" viewBox="0 0 24 24" fill="none">
-                <circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="3" strokeDasharray="31.416" strokeDashoffset="10" strokeLinecap="round" />
-              </svg>
-              Saving...
-            </>
+            <Loader2 className="weekly-save-icon animate-spin" />
           ) : (
-            <>
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                <path d="M19 21H5a2 2 0 01-2-2V5a2 2 0 012-2h11l5 5v11a2 2 0 01-2 2z" />
-                <polyline points="17 21 17 13 7 13 7 21" />
-                <polyline points="7 3 7 8 15 8" />
-              </svg>
-              Save Weekly Tasks
-            </>
+            <Save className="weekly-save-icon" />
           )}
-        </button>
+          {saving ? 'Saving...' : 'Save Weekly Tasks'}
+        </Button>
       </div>
     </div>
   );

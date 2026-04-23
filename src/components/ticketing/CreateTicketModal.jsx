@@ -86,7 +86,7 @@ const iconClock    = <svg width="14" height="14" viewBox="0 0 24 24" fill="none"
 
 const chipTriggerClass = 'w-full border-transparent bg-transparent text-slate-800 font-semibold text-[13px] hover:bg-slate-50 hover:border-slate-200 focus-visible:bg-white focus-visible:border-blue-400 focus-visible:ring-blue-100 transition-all shadow-none';
 
-const CreateTicketModal = ({ onClose, onCreate }) => {
+const CreateTicketModal = ({ onClose, onCreate, initialData }) => {
   const dispatch = useDispatch();
   const { categories, loading: categoriesLoading } = useSelector((state) => state.categories);
   const { users, loading: usersLoading } = useSelector((state) => state.users);
@@ -105,6 +105,8 @@ const CreateTicketModal = ({ onClose, onCreate }) => {
     startDate: '',
     endDate: '',
     timeEstimateMs: 0,
+    status: '',
+    ...(initialData || {}),
   });
 
   const [errors, setErrors] = useState({});
@@ -120,6 +122,21 @@ const CreateTicketModal = ({ onClose, onCreate }) => {
     dispatch(fetchUsers());
     dispatch(fetchProjects());
   }, [dispatch]);
+
+  // Hydrate scope/severity from a prefilled category once categories load
+  const categoryHydratedRef = useRef(false);
+  useEffect(() => {
+    if (categoryHydratedRef.current) return;
+    if (!formData.category || !Array.isArray(categories) || categories.length === 0) return;
+    const match = categories.find((c) => c._id === formData.category);
+    if (!match) return;
+    categoryHydratedRef.current = true;
+    setFormData((prev) => ({
+      ...prev,
+      severity: match.severity || prev.severity || 'Medium',
+      scope: match.scope || prev.scope || '',
+    }));
+  }, [categories, formData.category]);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
