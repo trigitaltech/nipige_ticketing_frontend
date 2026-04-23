@@ -68,7 +68,10 @@ const getAssigneeDisplay = (assignee) => {
   if (!assignee) return null;
   const name = assignee.name || assignee.username || assignee.email || '';
   if (!name) return null;
-  const initial = name.trim().charAt(0).toUpperCase() || '?';
+  const parts = name.trim().split(/\s+/).filter(Boolean);
+  const first = parts[0]?.charAt(0) || '';
+  const last = parts.length > 1 ? parts[parts.length - 1].charAt(0) : '';
+  const initial = (first + last).toUpperCase() || '?';
   return { name, initial, color: getAvatarColor(assignee._id || assignee.id || name) };
 };
 
