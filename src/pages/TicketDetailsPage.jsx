@@ -629,10 +629,20 @@ const TicketDetailsPage = ({ ticket, onBack, onUpdate }) => {
 
           {/* Body */}
           <div className="px-6 pt-5 pb-8 max-w-[960px] max-[640px]:px-4">
-            {/* Title (read-only) */}
-            <h1 className="w-full text-[28px] font-bold text-slate-900 px-2 -mx-2 py-1 mb-3 max-[640px]:text-[22px]">
-              {formData.subject || 'Untitled Ticket'}
-            </h1>
+            {/* Title (editable) */}
+            <input
+              type="text"
+              name="subject"
+              value={formData.subject}
+              onChange={handleChange}
+              placeholder="Untitled Ticket"
+              aria-label="Ticket title"
+              className={`w-full text-[28px] font-bold text-slate-900 px-2 -mx-2 py-1 mb-1 bg-transparent border border-transparent rounded-md outline-none hover:bg-slate-50 focus:bg-white focus:border-blue-400 focus:ring-2 focus:ring-blue-100 transition-all max-[640px]:text-[22px] ${errors.subject ? 'border-red-400 focus:border-red-500 focus:ring-red-100' : ''}`}
+            />
+            {errors.subject && (
+              <div className="text-red-500 text-xs px-2 -mx-2 mb-2">{errors.subject}</div>
+            )}
+            <div className="mb-3" />
 
             {/* Hero quick chips */}
             <div className="flex items-center flex-wrap gap-2 mb-6">

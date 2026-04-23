@@ -3,10 +3,68 @@
   display: flex;
   flex-direction: column;
   border-radius: 8px;
-  border: 1px solid #E8E8E8;
   overflow: hidden;
 }
 
+/* ── Group Section (each group is its own block) ── */
+.list-group-section {
+  margin-bottom: 16px;
+  border: 1px solid #E8E8E8;
+  border-radius: 8px;
+  overflow: hidden;
+  background: white;
+}
+
+.list-group-section:last-child {
+  margin-bottom: 0;
+}
+
+/* ── Group Header (badge row) ── */
+.list-group-header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 16px;
+  background: #FAFAFA;
+  cursor: pointer;
+  user-select: none;
+  border-bottom: 1px solid #EFEFEF;
+}
+
+.list-group-header:hover {
+  background: #F3F4F6;
+}
+
+.list-group-arrow {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #9CA3AF;
+  transition: transform 0.2s ease;
+}
+
+.list-group-arrow.collapsed {
+  transform: rotate(-90deg);
+}
+
+.list-group-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 3px 10px;
+  border-radius: 4px;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.5px;
+  white-space: nowrap;
+}
+
+.list-group-count {
+  font-size: 13px;
+  font-weight: 600;
+  color: #6B7280;
+}
+
+/* ── Table inside each group ── */
 .list-table {
   width: 100%;
   border-collapse: collapse;
@@ -20,13 +78,13 @@
 }
 
 .list-table thead tr {
-  height: 40px;
+  height: 36px;
 }
 
 .list-table thead th {
   text-align: left;
-  padding: 8px 12px;
-  font-size: 12px;
+  padding: 6px 12px;
+  font-size: 11px;
   font-weight: 600;
   color: #8A8A8A;
   text-transform: uppercase;
@@ -129,7 +187,7 @@
 }
 
 .status-dot.open {
-  background-color: #ab4aba;
+  background-color: #3B82F6;
 }
 
 .status-dot.in-progress {
@@ -182,7 +240,7 @@
   font-weight: 400;
 }
 
-/* Status Badge - Pill style with dot like reference */
+/* Status Badge - Pill style with dot */
 .status-badge {
   display: inline-flex;
   align-items: center;
@@ -202,12 +260,12 @@
 }
 
 .status-badge.status-open {
-  background: #F7ECF7;
-  color: #ab4aba;
+  background: #EFF6FF;
+  color: #2563EB;
 }
 
 .status-badge.status-open .badge-dot {
-  background: #ab4aba;
+  background: #2563EB;
 }
 
 .status-badge.status-in-progress {
@@ -436,42 +494,6 @@
   background: #B91C1C;
 }
 
-/* Group Header */
-.list-group-header {
-  background: #F7F8FA;
-  cursor: default;
-}
-
-.list-group-header:hover {
-  background: #F7F8FA;
-}
-
-.list-group-header td {
-  padding: 8px 12px;
-  font-size: 13px;
-  font-weight: 600;
-  color: #374151;
-  border-bottom: 1px solid #E8E8E8;
-}
-
-.group-label {
-  margin-right: 8px;
-}
-
-.group-count {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  min-width: 20px;
-  height: 20px;
-  padding: 0 6px;
-  border-radius: 10px;
-  background: #E5E7EB;
-  color: #6B7280;
-  font-size: 11px;
-  font-weight: 600;
-}
-
 /* Empty State */
 .empty-list {
   padding: 48px 20px;
@@ -480,82 +502,13 @@
   font-size: 14px;
 }
 
-/* Pagination */
-.pagination {
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  gap: 6px;
-  padding: 12px;
-  border-top: 1px solid #F2F2F2;
-}
-
-.pagination-btn {
-  padding: 5px 10px;
-  background: white;
-  border: 1px solid #E5E7EB;
-  border-radius: 6px;
-  cursor: pointer;
-  font-size: 13px;
-  font-weight: 600;
-  color: #6B7280;
-  transition: all 0.15s ease;
-}
-
-.pagination-btn:hover:not(:disabled) {
-  background: #F3F4F6;
-  color: #1F2937;
-}
-
-.pagination-btn:disabled {
-  opacity: 0.3;
-  cursor: not-allowed;
-}
-
-.pagination-numbers {
-  display: flex;
-  gap: 4px;
-  align-items: center;
-}
-
-.pagination-number {
-  padding: 4px 10px;
-  background: white;
-  border: 1px solid #E5E7EB;
-  border-radius: 6px;
-  cursor: pointer;
-  font-size: 13px;
-  font-weight: 500;
-  color: #6B7280;
-  transition: all 0.15s ease;
-  min-width: 32px;
-  text-align: center;
-}
-
-.pagination-number:hover {
-  background: #F3F4F6;
-  color: #1F2937;
-}
-
-.pagination-number.active {
-  background: #0052CC;
-  color: white;
-  border-color: #0052CC;
-}
-
-.pagination-ellipsis {
-  padding: 4px 6px;
-  color: #9CA3AF;
-  font-size: 13px;
-}
-
 /* Footer */
 .list-view-footer {
   padding: 8px 16px;
   text-align: center;
   font-size: 12px;
   color: #9CA3AF;
-  border-top: 1px solid #F2F2F2;
+  margin-top: 8px;
 }
 
 /* Responsive adjustments */
