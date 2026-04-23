@@ -2,11 +2,14 @@ import { useState, useMemo } from 'react';
 import '../../assets/Styles/ListView.css';
 import deleteIcon from '../../assets/icons/delete.png';
 import DeleteConfirmModal from '../shared/DeleteConfirmModal';
+import { Skeleton } from '@/components/ui/skeleton';
+import usePersistentState from '../../hooks/usePersistentState';
 
 const statusBadgeColors = {
   OPEN: { bg: '#EFF6FF', color: '#2563EB', dot: '#3B82F6' },
   IN_PROGRESS: { bg: '#FFF7ED', color: '#D97706', dot: '#F59E0B' },
   RESOLVED: { bg: '#F5F3FF', color: '#7C3AED', dot: '#8B5CF6' },
+  BACKLOG: { bg: '#F5EFEC', color: '#a18072', dot: '#a18072' },
   CLOSED: { bg: '#ECFDF5', color: '#059669', dot: '#10B981' },
 };
 
@@ -21,9 +24,10 @@ const groupPalette = [
   { bg: '#F0FDF4', color: '#16A34A' },
 ];
 
-const ListView = ({ tickets, onTicketClick, onDeleteTicket, groupBy = 'status', projects = [], categories = [] }) => {
+const ListView = ({ tickets, onTicketClick, onDeleteTicket, groupBy = 'status', projects = [], categories = [], loading = false }) => {
   const [deleteConfirm, setDeleteConfirm] = useState({ open: false, ticketId: null, ticketNo: '' });
-  const [collapsedGroups, setCollapsedGroups] = useState({});
+  const [collapsedGroups, setCollapsedGroups] = usePersistentState('listView.collapsedGroups', {});
+  const showInitialSkeleton = loading && (!tickets || tickets.length === 0);
 
   const toggleGroup = (groupName) => {
     setCollapsedGroups((prev) => ({ ...prev, [groupName]: !prev[groupName] }));
@@ -115,8 +119,8 @@ const ListView = ({ tickets, onTicketClick, onDeleteTicket, groupBy = 'status', 
       });
       return Array.from(groupMap.values());
     }
-    const statusOrder = ['OPEN', 'IN_PROGRESS', 'RESOLVED', 'CLOSED'];
-    const statusLabels = { OPEN: 'Open', IN_PROGRESS: 'In Progress', RESOLVED: 'Resolved', CLOSED: 'Closed' };
+    const statusOrder = ['OPEN', 'IN_PROGRESS', 'RESOLVED', 'BACKLOG', 'CLOSED'];
+    const statusLabels = { OPEN: 'Open', IN_PROGRESS: 'In Progress', RESOLVED: 'Resolved', BACKLOG: 'Backlog', CLOSED: 'Closed' };
     const groupMap = new Map();
     statusOrder.forEach((s) => groupMap.set(s, { id: s, name: statusLabels[s], tickets: [] }));
     tickets.forEach((ticket) => {
@@ -141,6 +145,7 @@ const ListView = ({ tickets, onTicketClick, onDeleteTicket, groupBy = 'status', 
       OPEN: 'status-open',
       IN_PROGRESS: 'status-in-progress',
       RESOLVED: 'status-resolved',
+      BACKLOG: 'status-backlog',
       CLOSED: 'status-closed',
     };
     return map[status] || 'status-default';
@@ -151,6 +156,7 @@ const ListView = ({ tickets, onTicketClick, onDeleteTicket, groupBy = 'status', 
       OPEN: 'open',
       IN_PROGRESS: 'in-progress',
       RESOLVED: 'resolved',
+      BACKLOG: 'backlog',
       CLOSED: 'closed',
     };
     return map[status] || 'open';
@@ -173,7 +179,49 @@ const ListView = ({ tickets, onTicketClick, onDeleteTicket, groupBy = 'status', 
 
   return (
     <div className="list-view-container">
-      {tickets.length === 0 ? (
+      {showInitialSkeleton ? (
+        Array.from({ length: 2 }).map((_, si) => (
+          <div key={`skeleton-group-${si}`} className="list-group-section">
+            <div className="list-group-header">
+              <span className="list-group-arrow">
+                <svg width="10" height="10" viewBox="0 0 10 10" fill="currentColor">
+                  <path d="M2 3.5L5 7L8 3.5H2Z" />
+                </svg>
+              </span>
+              <Skeleton className="h-5 w-24 rounded" />
+              <Skeleton className="h-3 w-6" />
+            </div>
+            <table className="list-table">
+              <thead>
+                <tr>
+                  <th className="col-ticket-id">Ticket</th>
+                  <th className="col-title">Subject</th>
+                  <th className="col-assigned">Assigned To</th>
+                  <th className="col-reported">Reported By</th>
+                  <th className="col-category">Category</th>
+                  <th className="col-status">Status</th>
+                  <th className="col-severity">Severity</th>
+                  <th className="col-action">Action</th>
+                </tr>
+              </thead>
+              <tbody>
+                {Array.from({ length: 4 }).map((_, ri) => (
+                  <tr key={`skeleton-row-${si}-${ri}`} className="list-row">
+                    <td><div className="ticket-id-cell"><Skeleton className="w-2 h-2 rounded-full" /><Skeleton className="h-3 w-10" /></div></td>
+                    <td><Skeleton className="h-3 w-40" /></td>
+                    <td><Skeleton className="h-3 w-20" /></td>
+                    <td><Skeleton className="h-3 w-20" /></td>
+                    <td><Skeleton className="h-3 w-16" /></td>
+                    <td><Skeleton className="h-5 w-20 rounded-full" /></td>
+                    <td><Skeleton className="h-5 w-16 rounded-full" /></td>
+                    <td><Skeleton className="h-4 w-4 mx-auto rounded" /></td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        ))
+      ) : tickets.length === 0 ? (
         <div className="empty-list">No tickets</div>
       ) : (
         groups.map((group, groupIndex) => {

@@ -1,3 +1,4 @@
+import { useLocation, useNavigate } from 'react-router-dom';
 import {
   Sidebar as ShadSidebar,
   SidebarContent,
@@ -16,6 +17,8 @@ import {
 const navItems = [
   {
     name: 'Dashboard',
+    path: '/',
+    match: (pathname) => pathname === '/' || pathname.startsWith('/tickets'),
     icon: (
       <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
         <path fill="none" stroke="currentColor" strokeWidth="2" d="M4 5a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v5a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V5Zm10 0a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2a1 1 0 0 1-1 1h-4a1 1 0 0 1-1-1V5ZM4 16a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v3a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1v-3Zm10-3a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v6a1 1 0 0 1-1 1h-4a1 1 0 0 1-1-1v-6Z" />
@@ -23,7 +26,21 @@ const navItems = [
     ),
   },
   {
+    name: 'Tasks',
+    path: '/tasks',
+    match: (pathname) => pathname.startsWith('/tasks'),
+    icon: (
+      <svg fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
+        <path strokeLinecap="round" strokeLinejoin="round" d="M9 5H7a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2h-2" />
+        <path strokeLinecap="round" strokeLinejoin="round" d="M9 5a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2v0a2 2 0 0 1-2 2h-2a2 2 0 0 1-2-2v0z" />
+        <path strokeLinecap="round" strokeLinejoin="round" d="m9 13 2 2 4-4" />
+      </svg>
+    ),
+  },
+  {
     name: 'Projects',
+    path: '/projects',
+    match: (pathname) => pathname.startsWith('/projects'),
     icon: (
       <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 680 642">
         <path fill="currentColor" d="M680 221v120c-95 35-213 55-340 55S95 376 0 341V221c0-22 18-40 40-40h165v-30c0-46 38-85 85-85h100c47 0 85 39 85 85v30h165c22 0 40 18 40 40zm-425-70v30h170v-30c0-19-16-35-35-35H290c-19 0-35 16-35 35zm35 183v20c0 6 4 10 10 10h80c6 0 10-4 10-10v-20c0-6-4-10-10-10h-80c-6 0-10 4-10 10zM0 602V384c96 33 213 52 340 52s244-19 340-52v218c0 22-18 40-40 40H40c-22 0-40-18-40-40zm390-103v-20c0-6-4-10-10-10h-80c-6 0-10 4-10 10v20c0 6 4 10 10 10h80c6 0 10-4 10-10z" />
@@ -32,6 +49,8 @@ const navItems = [
   },
   {
     name: 'Weekly Tasks',
+    path: '/weekly-tasks',
+    match: (pathname) => pathname.startsWith('/weekly-tasks'),
     icon: (
       <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
@@ -66,9 +85,11 @@ const itemIdleCls = 'text-white/75 cursor-pointer';
 const itemActiveCls = '!bg-white/15 !text-white font-semibold ring-1 ring-inset ring-white/20 shadow-[inset_0_1px_0_rgba(255,255,255,0.06)]';
 const itemDisabledCls = 'opacity-40 cursor-not-allowed text-white/60';
 
-const Sidebar = ({ onLogout, activeItem = 'Dashboard', onNavigate }) => {
+const Sidebar = ({ onLogout }) => {
   const { toggleSidebar, state } = useSidebar();
   const isCollapsed = state === 'collapsed';
+  const location = useLocation();
+  const navigate = useNavigate();
   return (
     <ShadSidebar
       collapsible="icon"
@@ -104,14 +125,14 @@ const Sidebar = ({ onLogout, activeItem = 'Dashboard', onNavigate }) => {
           <SidebarGroupContent>
             <SidebarMenu className="gap-1.5">
               {navItems.map((item) => {
-                const isActive = !item.disabled && item.name === activeItem;
+                const isActive = !item.disabled && typeof item.match === 'function' && item.match(location.pathname);
                 return (
                   <SidebarMenuItem key={item.name}>
                     <SidebarMenuButton
                       tooltip={item.name}
                       isActive={isActive}
                       disabled={item.disabled}
-                      onClick={() => !item.disabled && onNavigate?.(item.name)}
+                      onClick={() => !item.disabled && item.path && navigate(item.path)}
                       className={`${itemBaseCls} ${
                         isActive ? itemActiveCls : item.disabled ? itemDisabledCls : itemIdleCls
                       }`}

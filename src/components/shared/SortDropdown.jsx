@@ -14,6 +14,11 @@ const SortDropdown = ({ sortConfig, onSortChange, onClearSort }) => {
   const [isOpen, setIsOpen] = useState(false);
   const [clearClicked, setClearClicked] = useState(false);
 
+  const activeLabel = sortConfig?.field
+    ? SORT_OPTIONS.find((opt) => opt.field === sortConfig.field)?.label || sortConfig.field
+    : '';
+  const activeArrow = sortConfig?.direction === 'desc' ? '↓' : '↑';
+
   const handleClear = () => {
     setClearClicked(false);
     requestAnimationFrame(() => {
@@ -40,17 +45,28 @@ const SortDropdown = ({ sortConfig, onSortChange, onClearSort }) => {
   return (
     <div className="dropdown-wrapper">
       <button
-        className="dropdown-trigger rounded-xl shadow-sm"
+        type="button"
         onClick={() => setIsOpen(!isOpen)}
+        className="inline-flex items-center gap-1.5 h-8 px-3 rounded-lg text-[13px] font-medium transition-colors cursor-pointer"
         style={{
           border: isOpen || sortConfig.field ? '1px solid #3B82F6' : '1px solid #E5E7EB',
           backgroundColor: isOpen || sortConfig.field ? '#EFF6FF' : 'white',
-          color: isOpen || sortConfig.field ? '#3B82F6' : '#6B7280',
+          color: isOpen || sortConfig.field ? '#3B82F6' : '#475569',
         }}
       >
-        <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor">
-          <path d="M3 2v10.293l-1.646-1.647-.708.708L3.5 14.207l2.854-2.853-.708-.708L4 12.293V2H3zm5 0v1h7V2H8zm0 4v1h5V6H8zm0 4v1h3v-1H8z" />
-        </svg>
+        {sortConfig.field ? (
+          <>
+            <span className="font-semibold">{activeArrow}</span>
+            <span>{activeLabel}</span>
+          </>
+        ) : (
+          <>
+            <svg width="14" height="14" viewBox="0 0 16 16" fill="currentColor">
+              <path d="M3 2v10.293l-1.646-1.647-.708.708L3.5 14.207l2.854-2.853-.708-.708L4 12.293V2H3zm5 0v1h7V2H8zm0 4v1h5V6H8zm0 4v1h3v-1H8z" />
+            </svg>
+            <span>Sort</span>
+          </>
+        )}
       </button>
 
       {isOpen && (

@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
+import { useNavigate } from 'react-router-dom';
 import { format } from 'date-fns';
 import { Plus, ChevronLeft, Rocket, Calendar as CalendarIcon } from 'lucide-react';
 import { fetchProjects, createProject, updateProject, deleteProject } from '../redux/projectSlice';
@@ -711,8 +712,13 @@ const UpdateProjectView = ({ project, onBack }) => {
   );
 };
 
-const ProjectMaster = ({ onOpenProject = () => {} }) => {
+const ProjectMaster = () => {
   const dispatch = useDispatch();
+  const navigate = useNavigate();
+  const onOpenProject = (project) => {
+    const id = project?._id || project?.id;
+    if (id) navigate(`/projects/${id}`);
+  };
   const { projects, loading, error } = useSelector((state) => state.projects);
   const [showCreateProject, setShowCreateProject] = useState(false);
   const [editingProject, setEditingProject] = useState(null);

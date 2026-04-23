@@ -82,6 +82,7 @@ const FilterBar = ({ onFilterChange, onSortChange, categories, activePanel }) =>
                   <option value="OPEN">Open</option>
                   <option value="IN_PROGRESS">In Progress</option>
                   <option value="RESOLVED">Resolved</option>
+                  <option value="BACKLOG">Backlog</option>
                   <option value="CLOSED">Closed</option>
                 </select>
               </div>

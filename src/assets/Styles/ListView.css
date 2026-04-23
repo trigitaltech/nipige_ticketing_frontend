@@ -198,6 +198,10 @@
   background-color: #8B5CF6;
 }
 
+.status-dot.backlog {
+  background-color: #a18072;
+}
+
 .status-dot.closed {
   background-color: #10B981;
 }
@@ -284,6 +288,15 @@
 
 .status-badge.status-resolved .badge-dot {
   background: #7C3AED;
+}
+
+.status-badge.status-backlog {
+  background: #F5EFEC;
+  color: #a18072;
+}
+
+.status-badge.status-backlog .badge-dot {
+  background: #a18072;
 }
 
 .status-badge.status-closed {

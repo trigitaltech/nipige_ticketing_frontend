@@ -34,6 +34,7 @@ const statusConfig = {
   OPEN:        { label: 'Open',        bg: 'bg-[#F7ECF7]',   text: 'text-[#ab4aba]',   dot: 'bg-[#ab4aba]',   solid: 'bg-[#ab4aba] text-white' },
   IN_PROGRESS: { label: 'In Progress', bg: 'bg-indigo-100',  text: 'text-indigo-700',  dot: 'bg-indigo-500',  solid: 'bg-indigo-500 text-white' },
   RESOLVED:    { label: 'Resolved',    bg: 'bg-emerald-100', text: 'text-emerald-700', dot: 'bg-emerald-500', solid: 'bg-emerald-500 text-white' },
+  BACKLOG:     { label: 'Backlog',     bg: 'bg-[#F5EFEC]',   text: 'text-[#a18072]',   dot: 'bg-[#a18072]',   solid: 'bg-[#a18072] text-white' },
   CLOSED:      { label: 'Closed',      bg: 'bg-slate-200',   text: 'text-slate-600',   dot: 'bg-slate-400',   solid: 'bg-slate-500 text-white' },
 };
 
@@ -718,6 +719,7 @@ const TicketDetailsPage = ({ ticket, onBack, onUpdate }) => {
                     <SelectItem value="OPEN">Open</SelectItem>
                     <SelectItem value="IN_PROGRESS">In Progress</SelectItem>
                     <SelectItem value="RESOLVED">Resolved</SelectItem>
+                    <SelectItem value="BACKLOG">Backlog</SelectItem>
                     <SelectItem value="CLOSED">Closed</SelectItem>
                   </SelectContent>
                 </Select>
