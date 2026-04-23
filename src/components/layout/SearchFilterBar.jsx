@@ -46,7 +46,7 @@ const SearchFilterBar = ({
   };
 
   const tabBase =
-    'inline-flex items-center gap-1.5 h-8 px-3 text-[13px] font-medium border-b-2 transition-colors cursor-pointer';
+    'inline-flex items-center gap-1 h-8 px-2 text-[12px] font-medium border-b-2 transition-colors cursor-pointer';
   const tabIdle = 'border-transparent text-slate-500 hover:text-slate-800';
   const tabActive = 'border-[#5449D6] text-slate-900';
 
