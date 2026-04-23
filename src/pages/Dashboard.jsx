@@ -25,6 +25,7 @@ const Dashboard = ({ currentUser, onLogout }) => {
   const { projects } = useSelector((state) => state.projects);
 
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
+  const [createPrefill, setCreatePrefill] = useState(null);
   const [isUpdateModalOpen, setIsUpdateModalOpen] = useState(false);
   const [selectedTicket, setSelectedTicket] = useState(null);
   const [activeFilter, setActiveFilter] = useState('all'); // 'all' or 'my'
@@ -194,6 +195,10 @@ const Dashboard = ({ currentUser, onLogout }) => {
       attachments: Array.isArray(ticketData.attachments) ? ticketData.attachments : [],
     };
 
+    if (ticketData.status) {
+      newTicket.status = ticketData.status;
+    }
+
     if (ticketData.startDate) {
       newTicket.startDate = formatDateForAPI(ticketData.startDate);
     }
@@ -204,6 +209,7 @@ const Dashboard = ({ currentUser, onLogout }) => {
     await dispatch(createTicket(newTicket));
     dispatch(fetchTickets());
     setIsCreateModalOpen(false);
+    setCreatePrefill(null);
   };
 
   const handleUpdateTicket = async (updatedTicket) => {
@@ -370,6 +376,10 @@ const Dashboard = ({ currentUser, onLogout }) => {
                   onTicketClick={handleTicketClick}
                   onStatusChange={handleStatusChange}
                   onDeleteTicket={handleDeleteTicket}
+                  onAddTask={(prefill) => {
+                    setCreatePrefill(prefill);
+                    setIsCreateModalOpen(true);
+                  }}
                   groupBy={groupBy}
                   projects={projects || []}
                   categories={categories || []}
@@ -392,8 +402,12 @@ const Dashboard = ({ currentUser, onLogout }) => {
       {/* Modals */}
       {isCreateModalOpen && (
         <CreateTicketModal
-          onClose={() => setIsCreateModalOpen(false)}
+          onClose={() => {
+            setIsCreateModalOpen(false);
+            setCreatePrefill(null);
+          }}
           onCreate={handleCreateTicket}
+          initialData={createPrefill}
         />
       )}
 

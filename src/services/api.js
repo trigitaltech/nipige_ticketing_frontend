@@ -158,6 +158,10 @@ export const createTicketAPI = async (ticketData) => {
     createPayload.project = { id: projectId };
   }
 
+  if (ticketData.status) {
+    createPayload.status = ticketData.status;
+  }
+
   if (ticketData.reportedTo) {
     createPayload.reportedTo = ticketData.reportedTo;
   }
