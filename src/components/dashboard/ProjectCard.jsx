@@ -1,0 +1,95 @@
+import { ScrollArea } from '@/components/ui/scroll-area';
+
+const STATUS_CONFIG = {
+  OPEN:        { label: 'Open',        color: '#3b82f6' },
+  IN_PROGRESS: { label: 'In Progress', color: '#f59e0b' },
+  RESOLVED:    { label: 'Resolved',    color: '#10b981' },
+  BACKLOG:     { label: 'Backlog',     color: '#ef4444' },
+  CLOSED:      { label: 'Closed',      color: '#64748b' },
+};
+
+const RISK = {
+  high: 'bg-rose-50 text-rose-700 border-rose-200',
+  med:  'bg-amber-50 text-amber-700 border-amber-200',
+  low:  'bg-emerald-50 text-emerald-700 border-emerald-200',
+};
+
+const ProjectRow = ({ name, color, tasks, today }) => {
+  const total = Math.max(tasks.length, 1);
+  const done = tasks.filter(t => t.status === 'RESOLVED' || t.status === 'CLOSED').length;
+  const pct = Math.round((done / total) * 100);
+  const overdueCt = tasks.filter(t => {
+    if (t.status === 'RESOLVED' || t.status === 'CLOSED') return false;
+    return t.endDate && new Date(t.endDate) < today;
+  }).length;
+  const inProg = tasks.filter(t => t.status === 'IN_PROGRESS').length;
+  const segs = Object.entries(STATUS_CONFIG).map(([key, cfg]) => ({
+    label: cfg.label, color: cfg.color, value: tasks.filter(t => t.status === key).length,
+  }));
+  const riskLevel = overdueCt > 5 ? 'high' : overdueCt > 2 ? 'med' : 'low';
+  const riskLabel = { high: 'At risk', med: 'Monitor', low: 'On track' }[riskLevel];
+
+  return (
+    <div className="grid grid-cols-[minmax(0,1.6fr)_minmax(0,2fr)_72px_72px_90px] gap-3 items-center px-4 py-3 border-b border-slate-100 last:border-0 hover:bg-slate-50/60">
+      <div className="min-w-0">
+        <div className="flex items-center gap-2">
+          <span className="w-2.5 h-2.5 rounded-sm shrink-0" style={{ background: color }} />
+          <div className="font-semibold text-slate-800 text-[13px] truncate">{name}</div>
+        </div>
+        <div className="text-[10.5px] text-slate-400 mt-0.5 ml-[18px]">{tasks.length} tasks · {inProg} in progress</div>
+      </div>
+      <div>
+        <div className="flex h-2 rounded-full overflow-hidden bg-slate-100 mb-1">
+          {segs.filter(s => s.value > 0).map((s, i) => (
+            <div key={i} title={`${s.label}: ${s.value}`} style={{ width: `${(s.value / total) * 100}%`, background: s.color }} />
+          ))}
+        </div>
+        <div className="flex flex-wrap gap-x-2 gap-y-0 text-[10px] text-slate-500">
+          {segs.filter(s => s.value > 0).slice(0, 4).map((s, i) => (
+            <span key={i} className="inline-flex items-center gap-0.5">
+              <span className="w-1.5 h-1.5 rounded-sm" style={{ background: s.color }} /> {s.label} <b className="text-slate-700">{s.value}</b>
+            </span>
+          ))}
+        </div>
+      </div>
+      <div className="text-right tabular-nums">
+        <div className="text-[14px] font-bold text-slate-800">{pct}%</div>
+        <div className="text-[10px] text-slate-400">done</div>
+      </div>
+      <div className="text-right tabular-nums">
+        <div className={`text-[14px] font-bold ${overdueCt ? 'text-rose-600' : 'text-slate-300'}`}>{overdueCt}</div>
+        <div className="text-[10px] text-slate-400">overdue</div>
+      </div>
+      <div className="flex justify-end">
+        <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold border ${RISK[riskLevel]}`}>
+          <span className="w-1.5 h-1.5 rounded-full bg-current" /> {riskLabel}
+        </span>
+      </div>
+    </div>
+  );
+};
+
+const ProjectCard = ({ projectList, projectColor, today }) => (
+  <div className="col-span-7 bg-white border border-slate-200 rounded-xl overflow-hidden">
+    <div className="px-5 py-3.5 border-b border-slate-100">
+      <div className="text-[13px] font-semibold text-slate-800">All projects</div>
+      <div className="text-[11px] text-slate-400">{projectList.length} projects with tasks</div>
+    </div>
+    <div className="grid grid-cols-[minmax(0,1.6fr)_minmax(0,2fr)_72px_72px_90px] gap-3 px-4 py-2 text-[10px] uppercase tracking-wider text-slate-400 font-semibold bg-slate-50/60">
+      <div>Project</div>
+      <div>Status distribution</div>
+      <div className="text-right">Done</div>
+      <div className="text-right">Overdue</div>
+      <div className="text-right">Health</div>
+    </div>
+    <ScrollArea className="h-[440px]">
+      {projectList.length > 0 ? projectList.map((p, i) => (
+        <ProjectRow key={p.id} name={p.name || 'Unnamed'} color={projectColor(p.name, i)} tasks={p.tickets} today={today} />
+      )) : (
+        <div className="p-8 text-center text-slate-400 text-[13px]">No project data available.</div>
+      )}
+    </ScrollArea>
+  </div>
+);
+
+export default ProjectCard;

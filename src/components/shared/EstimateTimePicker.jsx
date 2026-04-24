@@ -99,7 +99,7 @@ const Stepper = ({ label, value, onChange, min = 0, max, step = 1 }) => {
   );
 };
 
-const EstimateTimePicker = ({ valueMs = 0, onChange, triggerClassName = '', placeholder = 'Set estimate', trigger, label = 'Time estimate' }) => {
+const EstimateTimePicker = ({ valueMs = 0, onChange, triggerClassName = '', placeholder = 'Set estimate', trigger, label = 'Time estimate', showIcon = true }) => {
   const [open, setOpen] = useState(false);
   const [hours, setHours] = useState(() => msToHM(valueMs).hours);
   const [minutes, setMinutes] = useState(() => msToHM(valueMs).minutes);
@@ -152,7 +152,7 @@ const EstimateTimePicker = ({ valueMs = 0, onChange, triggerClassName = '', plac
             type="button"
             className={`inline-flex items-center gap-2 px-2.5 py-1.5 rounded-md border border-transparent bg-transparent text-[13px] font-semibold text-slate-800 hover:bg-slate-50 hover:border-slate-200 focus:outline-none focus:bg-white focus:border-blue-400 focus:ring-2 focus:ring-blue-100 transition-all ${triggerClassName}`}
           >
-            <span className={hasValue ? 'text-slate-500' : 'text-slate-400'}>{clockIcon}</span>
+            {showIcon && <span className={hasValue ? 'text-slate-500' : 'text-slate-400'}>{clockIcon}</span>}
             <span className={`tabular-nums ${hasValue ? 'text-slate-800' : 'text-slate-400 font-medium'}`}>
               {hasValue ? display : placeholder}
             </span>
