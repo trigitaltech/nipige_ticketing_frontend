@@ -7,13 +7,13 @@ import KanbanBoard from '../components/ticketing/KanbanBoard';
 import ListView from '../components/ticketing/ListView';
 
 const EMPTY_FILTERS = {
-  status: '',
-  priority: null,
-  category: '',
-  project: '',
+  status: [],
+  priority: [],
+  category: [],
+  project: [],
   fromDate: '',
   toDate: '',
-  assignTo: '',
+  assignTo: [],
   orderId: '',
 };
 
@@ -65,19 +65,27 @@ const TasksPage = ({
       if (!fields.some((f) => (f || '').toLowerCase().includes(q))) return false;
     }
 
-    if (filters.status && ticket.status !== filters.status) return false;
-    if (filters.priority !== null && filters.priority !== '' && ticket.priority !== filters.priority) return false;
-    if (filters.category && (ticket.category?._id || ticket.category) !== filters.category) return false;
-    if (filters.project) {
-      const pid =
-        (typeof ticket.project === 'string'
-          ? ticket.project
-          : ticket.project?.id || ticket.project?._id || ticket.project?.projectId) ||
-        ticket.projectId ||
-        '';
-      if (String(pid) !== String(filters.project)) return false;
+    if (Array.isArray(filters.status) ? filters.status.length > 0 : filters.status) {
+      const statuses = Array.isArray(filters.status) ? filters.status : [filters.status];
+      if (!statuses.includes(ticket.status)) return false;
     }
-    if (filters.assignTo && (ticket.assignTo?.id || ticket.assignTo?._id) !== filters.assignTo) return false;
+    if (Array.isArray(filters.priority) ? filters.priority.length > 0 : (filters.priority !== null && filters.priority !== '')) {
+      const priorities = Array.isArray(filters.priority) ? filters.priority : [filters.priority];
+      if (!priorities.includes(ticket.priority)) return false;
+    }
+    if (Array.isArray(filters.category) ? filters.category.length > 0 : filters.category) {
+      const cats = Array.isArray(filters.category) ? filters.category : [filters.category];
+      if (!cats.includes(ticket.category?._id || ticket.category)) return false;
+    }
+    if (Array.isArray(filters.project) ? filters.project.length > 0 : filters.project) {
+      const projs = Array.isArray(filters.project) ? filters.project : [filters.project];
+      const pid = (typeof ticket.project === 'string' ? ticket.project : ticket.project?.id || ticket.project?._id || ticket.project?.projectId) || ticket.projectId || '';
+      if (!projs.some(p => String(p) === String(pid))) return false;
+    }
+    if (Array.isArray(filters.assignTo) ? filters.assignTo.length > 0 : filters.assignTo) {
+      const assignees = Array.isArray(filters.assignTo) ? filters.assignTo : [filters.assignTo];
+      if (!assignees.includes(ticket.assignTo?.id || ticket.assignTo?._id)) return false;
+    }
     if (filters.fromDate && new Date(ticket.createdAt || ticket.startDate) < new Date(filters.fromDate)) return false;
     if (filters.toDate) {
       const toDate = new Date(filters.toDate);
