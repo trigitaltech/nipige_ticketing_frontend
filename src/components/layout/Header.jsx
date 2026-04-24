@@ -13,7 +13,7 @@ const Header = ({
   const showSearch = typeof setSearchQuery === 'function';
 
   return (
-    <header className="bg-white px-6 py-2 grid grid-cols-3 items-center gap-4 border-b border-slate-100">
+    <header className="bg-gray-50 px-6 py-2 grid grid-cols-3 items-center gap-4">
       <div className="flex items-center gap-3 min-w-0">
         <h1 className="text-[18px] font-bold text-slate-900 truncate">
           TRIGITAL Task Management

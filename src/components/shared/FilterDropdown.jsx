@@ -94,7 +94,7 @@ const FilterDropdown = ({ filters, onFilterChange, onClearFilters, categories, p
       <button
         type="button"
         onClick={() => setIsOpen(!isOpen)}
-        className="inline-flex items-center gap-1.5 h-8 px-3 rounded-lg text-[13px] font-medium transition-colors cursor-pointer"
+        className="inline-flex items-center gap-1.5 h-7 px-2.5 rounded-lg text-[13px] font-medium transition-colors cursor-pointer"
         style={{
           border: isOpen || hasActiveFilters ? '1px solid #3B82F6' : '1px solid #E5E7EB',
           backgroundColor: isOpen || hasActiveFilters ? '#EFF6FF' : 'white',
