@@ -4,7 +4,7 @@ import { ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 import './App.css';
 import Login from './components/Login';
-import Dashboard from './pages/Dashboard';
+import AppLayout from './pages/AppLayout';
 import { logout } from './redux/authSlice';
 
 function App() {
@@ -22,7 +22,7 @@ function App() {
         <Login />
       ) : (
         <BrowserRouter>
-          <Dashboard currentUser={user} onLogout={handleLogout} />
+          <AppLayout currentUser={user} onLogout={handleLogout} />
         </BrowserRouter>
       )}
     </div>

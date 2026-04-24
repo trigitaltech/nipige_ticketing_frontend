@@ -867,31 +867,15 @@ const TicketDetailsPage = ({ ticket, onBack, onUpdate }) => {
                       {formatDuration(currentTrackedMs)}
                     </span>
                   ) : (
-                    <TooltipProvider delayDuration={200}>
-                      <Tooltip>
-                        <TooltipTrigger asChild>
-                          <span className="inline-flex">
-                            <EstimateTimePicker
-                              valueMs={trackedTimeMs}
-                              onChange={(ms) => setTrackedTimeMs(ms)}
-                              placeholder="0h"
-                              label="Track time"
-                              trigger={
-                                <button
-                                  type="button"
-                                  className={`text-[13px] font-bold tabular-nums px-1.5 py-0.5 rounded hover:bg-slate-100 transition-colors cursor-pointer ${currentTrackedMs > 0 ? 'text-slate-800' : 'text-slate-400'}`}
-                                >
-                                  {currentTrackedMs > 0 ? formatDuration(currentTrackedMs) : '0h'}
-                                </button>
-                              }
-                            />
-                          </span>
-                        </TooltipTrigger>
-                        <TooltipContent side="top">Click to set manually</TooltipContent>
-                      </Tooltip>
-                    </TooltipProvider>
+                    <EstimateTimePicker
+                      valueMs={trackedTimeMs}
+                      onChange={(ms) => setTrackedTimeMs(ms)}
+                      placeholder="Set track time"
+                      label="Track time"
+                      showIcon={false}
+                    />
                   )}
-                  {currentTrackedMs > 0 && !timerRunning && (
+                  {currentTrackedMs >= 60000 && !timerRunning && (
                     <button
                       type="button"
                       onClick={() => setTrackedTimeMs(0)}

@@ -81,7 +81,7 @@ const TicketCard = ({ ticket, onDragStart, onClick, onDelete }) => {
       onClick={() => onClick(ticket)}
     >
       {/* Header */}
-      <div className="flex justify-between items-center mb-3">
+      <div className="flex justify-between items-center mb-2">
         <span className="text-[11px] text-[#6B778C] font-semibold">#{ticketNo}</span>
         <div className="flex gap-1 items-center">
           {escalated && <span className="text-xs">⚠️</span>}
@@ -95,7 +95,7 @@ const TicketCard = ({ ticket, onDragStart, onClick, onDelete }) => {
       {/* Title */}
       <Tooltip>
         <TooltipTrigger asChild>
-          <h4 className="text-sm text-[#172B4D] font-semibold leading-snug mb-3 line-clamp-2 cursor-pointer">{subject}</h4>
+          <h4 className="text-sm text-[#172B4D] font-semibold leading-snug mb-2 line-clamp-2 cursor-pointer">{subject}</h4>
         </TooltipTrigger>
         <TooltipContent side="top" align="start" className="max-w-xs">
           {subject}
@@ -103,13 +103,13 @@ const TicketCard = ({ ticket, onDragStart, onClick, onDelete }) => {
       </Tooltip>
 
       {projectName && (
-        <div className="inline-flex max-w-full px-3.5 py-0.5 rounded-full bg-blue-50 text-[10px] font-bold tracking-wide text-blue-700 border-[1px] border-blue-100 mb-3">
+        <div className="inline-flex max-w-full px-3.5 py-0.5 rounded-full bg-blue-50 text-[10px] font-bold tracking-wide text-blue-700 border-[1px] border-blue-100 mb-2">
           <span className="truncate">{projectName}</span>
         </div>
       )}
 
       {/* Scope + Attachments */}
-      <div className="flex items-center gap-4 mb-3">
+      <div className="flex items-center gap-4 mb-2">
         {category && (
           <span className="flex items-center gap-1.5 text-[10px] text-gray-500 font-semibold uppercase tracking-wide">
             <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="#000000"><g fill="none" stroke="#6B778C" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" color="currentColor"><path d="M19.5 13V9.368c0-3.473 0-5.21-1.025-6.289S15.8 2 12.5 2h-3C6.2 2 4.55 2 3.525 3.08C2.5 4.157 2.5 5.894 2.5 9.367v5.264c0 3.473 0 5.21 1.025 6.289S6.2 22 9.5 22H11m2.5-2s1 0 2 2c0 0 3.177-5 6-6"/><path d="m7 2l.082.493c.2 1.197.3 1.796.72 2.152C8.22 5 8.827 5 10.041 5h1.917c1.213 0 1.82 0 2.24-.355c.42-.356.52-.955.719-2.152L15 2M7 16h4m-4-5h8"/></g></svg>
@@ -127,7 +127,7 @@ const TicketCard = ({ ticket, onDragStart, onClick, onDelete }) => {
       </div>
 
       {/* Footer */}
-      <div className="flex justify-between items-start pt-3.5 border-t border-[#EBECF0]">
+      <div className="flex justify-between items-start pt-2.5 border-t border-[#EBECF0]">
         <div className="flex items-center gap-2">
           <span
             className="w-8 h-8 rounded-full bg-[#0052CC] text-white flex items-center justify-center text-xs font-semibold uppercase shrink-0"
@@ -135,9 +135,14 @@ const TicketCard = ({ ticket, onDragStart, onClick, onDelete }) => {
           >
             {assignedTo.charAt(0).toUpperCase()}
           </span>
-          <div className="flex flex-col gap-0.5">
-            <span className="text-xs text-[#172B4D] font-semibold">{assignedTo}</span>
-            <span className="text-[10px] text-gray-500">Reporter: {reportedBy}</span>
+          <div className="flex flex-col gap-0.5 min-w-0">
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <span className="text-xs text-[#172B4D] font-semibold truncate max-w-[110px] cursor-default">{assignedTo}</span>
+              </TooltipTrigger>
+              <TooltipContent side="top">{assignedTo}</TooltipContent>
+            </Tooltip>
+            <span className="text-[10px] text-gray-500 truncate max-w-[110px]">Reporter: {reportedBy}</span>
           </div>
         </div>
         <div className="flex flex-col items-end gap-0.5">

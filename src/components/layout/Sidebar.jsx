@@ -18,7 +18,7 @@ const navItems = [
   {
     name: 'Dashboard',
     path: '/',
-    match: (pathname) => pathname === '/' || pathname.startsWith('/tickets'),
+    match: (pathname) => pathname === '/',
     icon: (
       <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
         <path fill="none" stroke="currentColor" strokeWidth="2" d="M4 5a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v5a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V5Zm10 0a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2a1 1 0 0 1-1 1h-4a1 1 0 0 1-1-1V5ZM4 16a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v3a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1v-3Zm10-3a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v6a1 1 0 0 1-1 1h-4a1 1 0 0 1-1-1v-6Z" />
@@ -28,7 +28,7 @@ const navItems = [
   {
     name: 'Tasks',
     path: '/tasks',
-    match: (pathname) => pathname.startsWith('/tasks'),
+    match: (pathname) => pathname.startsWith('/tasks') || pathname.startsWith('/tickets'),
     icon: (
       <svg fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
         <path strokeLinecap="round" strokeLinejoin="round" d="M9 5H7a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2h-2" />

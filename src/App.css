@@ -131,23 +131,31 @@
 
 @utility scroll-hover {
   scrollbar-width: thin;
-  scrollbar-color: rgb(203 213 225 / 0.7) transparent;
+  scrollbar-color: transparent transparent;
   scrollbar-gutter: stable;
+  transition: scrollbar-color 0.3s ease;
+
+  &:hover {
+    scrollbar-color: rgb(203 213 225 / 0.8) transparent;
+  }
 }
 @utility scroll-hover {
   &::-webkit-scrollbar {
-    width: 8px;
-    height: 8px;
+    width: 6px;
+    height: 6px;
   }
   &::-webkit-scrollbar-track {
     background: transparent;
   }
   &::-webkit-scrollbar-thumb {
-    background: rgb(203 213 225 / 0.7);
+    background: transparent;
     border-radius: 999px;
-    transition: background 0.2s ease;
+    transition: background 0.3s ease;
   }
-  &::-webkit-scrollbar-thumb:hover {
-    background: rgb(148 163 184 / 0.9);
+  &:hover::-webkit-scrollbar-thumb {
+    background: rgb(203 213 225 / 0.8);
+  }
+  &:hover::-webkit-scrollbar-thumb:hover {
+    background: rgb(148 163 184);
   }
 }

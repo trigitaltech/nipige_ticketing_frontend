@@ -350,7 +350,7 @@ const CreateTicketModal = ({ onClose, onCreate, initialData }) => {
                   disabled={usersLoading}
                 >
                   <SelectTrigger size="sm" className={`${chipTriggerClass} flex-1 min-w-0`}>
-                    <SelectValue placeholder={usersLoading ? 'Loading...' : 'Empty'} />
+                    <SelectValue placeholder={usersLoading ? 'Loading...' : 'Select assignee'} />
                   </SelectTrigger>
                   <SelectContent>
                     {Array.isArray(users) && users.map((user) => (
@@ -370,7 +370,7 @@ const CreateTicketModal = ({ onClose, onCreate, initialData }) => {
                 disabled={categoriesLoading}
               >
                 <SelectTrigger size="sm" className={chipTriggerClass}>
-                  <SelectValue placeholder={categoriesLoading ? 'Loading...' : 'Empty'} />
+                  <SelectValue placeholder={categoriesLoading ? 'Loading...' : 'Select category'} />
                 </SelectTrigger>
                 <SelectContent>
                   {Array.isArray(categories) && categories.map((cat) => (
@@ -390,7 +390,7 @@ const CreateTicketModal = ({ onClose, onCreate, initialData }) => {
                   disabled={usersLoading}
                 >
                   <SelectTrigger size="sm" className={`${chipTriggerClass} flex-1 min-w-0`}>
-                    <SelectValue placeholder={usersLoading ? 'Loading...' : 'Empty'} />
+                    <SelectValue placeholder={usersLoading ? 'Loading...' : 'Select reporter'} />
                   </SelectTrigger>
                   <SelectContent>
                     {Array.isArray(users) && users.map((user) => (
@@ -482,7 +482,7 @@ const CreateTicketModal = ({ onClose, onCreate, initialData }) => {
                 disabled={projectsLoading}
               >
                 <SelectTrigger size="sm" className={chipTriggerClass}>
-                  <SelectValue placeholder={projectsLoading ? 'Loading projects...' : 'Empty'} />
+                  <SelectValue placeholder={projectsLoading ? 'Loading projects...' : 'Select project'} />
                 </SelectTrigger>
                 <SelectContent>
                   {Array.isArray(projects) && projects.map((project) => {

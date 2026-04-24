@@ -308,7 +308,7 @@ const KanbanBoard = ({
 
   return (
     <TooltipProvider delayDuration={200}>
-    <div className="flex gap-3 h-full overflow-x-auto pb-1 px-1">
+    <div className="flex gap-3 h-full overflow-x-auto scroll-hover pb-2 px-1">
       {columns.map((column, index) => {
         const config = statusConfig[column.id];
         const color = groupBy === 'status'
@@ -358,7 +358,7 @@ const KanbanBoard = ({
         return (
           <div
             key={column.id}
-            className="group/col shrink-0 w-[320px] flex flex-col rounded-lg p-2"
+            className="group/col shrink-0 w-[320px] flex flex-col rounded-lg p-2 pr-0"
             style={{ backgroundColor: columnBg }}
             onDragOver={groupBy === 'status' ? handleDragOver : undefined}
             onDrop={groupBy === 'status' ? (e) => handleDrop(e, column.id) : undefined}
@@ -439,7 +439,7 @@ const KanbanBoard = ({
             </div>
 
             {/* Column Content */}
-            <div className="flex-1 space-y-3 overflow-y-auto scroll-hover px-1">
+            <div className="flex-1 space-y-3 overflow-y-auto scroll-hover pl-1 pr-0">
               {showInitialSkeleton ? (
                 Array.from({ length: 3 }).map((_, i) => (
                   <TicketCardSkeleton key={`skeleton-${column.id}-${i}`} />
