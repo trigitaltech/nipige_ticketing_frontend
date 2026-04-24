@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
+import { createPortal } from 'react-dom';
 import { useDispatch, useSelector } from 'react-redux';
 import { fetchCategories } from '../redux/categorySlice';
 import { fetchUsers } from '../redux/userSlice';
@@ -31,11 +32,11 @@ import {
 } from '@/components/ui/tooltip';
 
 const statusConfig = {
-  OPEN:        { label: 'Open',        bg: 'bg-[#F7ECF7]',   text: 'text-[#ab4aba]',   dot: 'bg-[#ab4aba]',   solid: 'bg-[#ab4aba] text-white' },
-  IN_PROGRESS: { label: 'In Progress', bg: 'bg-indigo-100',  text: 'text-indigo-700',  dot: 'bg-indigo-500',  solid: 'bg-indigo-500 text-white' },
-  RESOLVED:    { label: 'Resolved',    bg: 'bg-emerald-100', text: 'text-emerald-700', dot: 'bg-emerald-500', solid: 'bg-emerald-500 text-white' },
+  OPEN:        { label: 'Open',        bg: 'bg-[#EEF5FF]',   text: 'text-[#0880EA]',   dot: 'bg-[#0880EA]',   solid: 'bg-[#0880EA] text-white' },
+  IN_PROGRESS: { label: 'In Progress', bg: 'bg-[#FFF9EC]',   text: 'text-[#f59e0b]',   dot: 'bg-[#f59e0b]',   solid: 'bg-[#f59e0b] text-white' },
+  RESOLVED:    { label: 'Resolved',    bg: 'bg-[#EDFAF4]',   text: 'text-[#299764]',   dot: 'bg-[#299764]',   solid: 'bg-[#299764] text-white' },
   BACKLOG:     { label: 'Backlog',     bg: 'bg-[#F5EFEC]',   text: 'text-[#a18072]',   dot: 'bg-[#a18072]',   solid: 'bg-[#a18072] text-white' },
-  CLOSED:      { label: 'Closed',      bg: 'bg-slate-200',   text: 'text-slate-600',   dot: 'bg-slate-400',   solid: 'bg-slate-500 text-white' },
+  CLOSED:      { label: 'Closed',      bg: 'bg-[#F3F4F6]',   text: 'text-[#656F7D]',   dot: 'bg-[#656F7D]',   solid: 'bg-[#656F7D] text-white' },
 };
 
 const severityConfig = {
@@ -224,6 +225,9 @@ const TicketDetailsPage = ({ ticket, onBack, onUpdate }) => {
   const [viewingImage, setViewingImage] = useState(null);
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [activityTab, setActivityTab] = useState('all');
+  const [showFullDesc, setShowFullDesc] = useState(false);
+  const [editingDesc, setEditingDesc] = useState(false);
+  const [descModalOpen, setDescModalOpen] = useState(false);
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
   const [alertModal, setAlertModal] = useState({
@@ -925,19 +929,101 @@ const TicketDetailsPage = ({ ticket, onBack, onUpdate }) => {
             </div>
 
             {/* Description */}
-            <div className="mb-7">
+            <div className="mb-7 group/descsection">
               <div className="flex items-center gap-2 mb-2 text-slate-500">
                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="9" y1="13" x2="15" y2="13"/><line x1="9" y1="17" x2="15" y2="17"/></svg>
                 <span className="text-[12px] font-bold uppercase tracking-wide">Description</span>
+                <button
+                  type="button"
+                  onClick={() => setDescModalOpen(true)}
+                  className="ml-auto w-6 h-6 rounded flex items-center justify-center text-slate-400 hover:text-slate-600 hover:bg-slate-100 cursor-pointer transition-colors opacity-0 group-hover/descsection:opacity-100"
+                  title="Full screen"
+                >
+                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <polyline points="15 3 21 3 21 9" /><polyline points="9 21 3 21 3 15" />
+                    <line x1="21" y1="3" x2="14" y2="10" /><line x1="3" y1="21" x2="10" y2="14" />
+                  </svg>
+                </button>
               </div>
-              <textarea
-                name="description"
-                value={formData.description}
-                onChange={handleChange}
-                placeholder="Add a description..."
-                className={`${inputClass} resize-y min-h-[100px] border-transparent bg-slate-50/60 hover:bg-slate-50 focus:bg-white focus:border-blue-500`}
-              />
+              {editingDesc ? (
+                <div>
+                  <textarea
+                    name="description"
+                    value={formData.description}
+                    onChange={handleChange}
+                    autoFocus
+                    placeholder="Add a description..."
+                    className={`${inputClass} resize-y min-h-[100px] border-transparent bg-slate-50/60 hover:bg-slate-50 focus:bg-white focus:border-blue-500`}
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setEditingDesc(false)}
+                    className="mt-1 text-[12px] text-slate-400 hover:text-slate-600 cursor-pointer"
+                  >
+                    Done
+                  </button>
+                </div>
+              ) : (
+                <div
+                  className="border border-slate-200 rounded-lg bg-slate-50/60 hover:bg-slate-50 cursor-text transition-colors"
+                  onClick={() => setEditingDesc(true)}
+                >
+                  {formData.description ? (
+                    <>
+                      <p className={`px-3 pt-3 text-[13px] text-slate-700 whitespace-pre-wrap leading-relaxed ${!showFullDesc ? 'line-clamp-[8]' : ''}`}>
+                        {formData.description}
+                      </p>
+                      {formData.description.split('\n').length > 8 || formData.description.length > 480 ? (
+                        <button
+                          type="button"
+                          onClick={(e) => { e.stopPropagation(); setShowFullDesc(v => !v); }}
+                          className="w-full py-2 text-[12px] text-slate-500 hover:text-slate-700 flex items-center justify-center gap-1 cursor-pointer mt-2"
+                        >
+                          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className={`transition-transform ${showFullDesc ? 'rotate-180' : ''}`}>
+                            <polyline points="6 9 12 15 18 9" />
+                          </svg>
+                          {showFullDesc ? 'Show less' : 'Show more'}
+                        </button>
+                      ) : <div className="pb-2" />}
+                    </>
+                  ) : (
+                    <p className="px-3 py-3 text-[13px] text-slate-400 italic">Add a description...</p>
+                  )}
+                </div>
+              )}
             </div>
+
+            {/* Description dialog */}
+            {descModalOpen && createPortal(
+              <div className="fixed inset-0 z-[9999] flex flex-col bg-white">
+                <div className="flex items-center justify-between px-5 py-3 border-b border-slate-100 shrink-0">
+                  <button
+                    type="button"
+                    onClick={() => setDescModalOpen(false)}
+                    className="inline-flex items-center gap-1.5 text-[13px] font-medium text-slate-500 hover:text-slate-800 cursor-pointer transition-colors"
+                  >
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                      <polyline points="15 18 9 12 15 6" />
+                    </svg>
+                    Back to task
+                  </button>
+                  <button type="button" onClick={() => setDescModalOpen(false)} className="text-slate-400 hover:text-slate-600 cursor-pointer">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                      <line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" />
+                    </svg>
+                  </button>
+                </div>
+                <div className="flex-1 overflow-y-auto">
+                  <div className="max-w-3xl mx-auto px-0 py-8">
+                    <h2 className="text-[22px] font-bold text-slate-900 mb-6">{formData.subject || ticket.subject || ''}</h2>
+                    <p className="text-[14px] text-slate-700 whitespace-pre-wrap leading-7">
+                      {formData.description || <span className="text-slate-400 italic">No description provided.</span>}
+                    </p>
+                  </div>
+                </div>
+              </div>,
+              document.body
+            )}
 
             {/* Attachments */}
             <div className="mb-7">

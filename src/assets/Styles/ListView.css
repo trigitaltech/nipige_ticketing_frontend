@@ -185,15 +185,15 @@
 }
 
 .status-dot.open {
-  background-color: #3B82F6;
+  background-color: #0880EA;
 }
 
 .status-dot.in-progress {
-  background-color: #F59E0B;
+  background-color: #f59e0b;
 }
 
 .status-dot.resolved {
-  background-color: #8B5CF6;
+  background-color: #299764;
 }
 
 .status-dot.backlog {
@@ -201,7 +201,7 @@
 }
 
 .status-dot.closed {
-  background-color: #10B981;
+  background-color: #656F7D;
 }
 
 .id-text {
@@ -276,30 +276,30 @@
 }
 
 .status-badge.status-open {
-  background: #EFF6FF;
-  color: #2563EB;
+  background: #EEF5FF;
+  color: #0880EA;
 }
 
 .status-badge.status-open .badge-dot {
-  background: #2563EB;
+  background: #0880EA;
 }
 
 .status-badge.status-in-progress {
-  background: #FFF7ED;
-  color: #D97706;
+  background: #FFF4EE;
+  color: #f59e0b;
 }
 
 .status-badge.status-in-progress .badge-dot {
-  background: #D97706;
+  background: #f59e0b;
 }
 
 .status-badge.status-resolved {
-  background: #F5F3FF;
-  color: #7C3AED;
+  background: #EDFAF4;
+  color: #299764;
 }
 
 .status-badge.status-resolved .badge-dot {
-  background: #7C3AED;
+  background: #299764;
 }
 
 .status-badge.status-backlog {
@@ -312,12 +312,12 @@
 }
 
 .status-badge.status-closed {
-  background: #ECFDF5;
-  color: #059669;
+  background: #F3F4F6;
+  color: #656F7D;
 }
 
 .status-badge.status-closed .badge-dot {
-  background: #059669;
+  background: #656F7D;
 }
 
 .status-badge.status-default {

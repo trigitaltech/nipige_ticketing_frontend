@@ -6,11 +6,11 @@ import { Skeleton } from '@/components/ui/skeleton';
 import usePersistentState from '../../hooks/usePersistentState';
 
 const statusBadgeColors = {
-  OPEN: { bg: '#EFF6FF', color: '#2563EB', dot: '#3B82F6' },
-  IN_PROGRESS: { bg: '#FFF7ED', color: '#D97706', dot: '#F59E0B' },
-  RESOLVED: { bg: '#F5F3FF', color: '#7C3AED', dot: '#8B5CF6' },
+  OPEN: { bg: '#EEF5FF', color: '#0880EA', dot: '#0880EA' },
+  IN_PROGRESS: { bg: '#FFF4EE', color: '#f59e0b', dot: '#f59e0b' },
+  RESOLVED: { bg: '#EDFAF4', color: '#299764', dot: '#299764' },
   BACKLOG: { bg: '#F5EFEC', color: '#a18072', dot: '#a18072' },
-  CLOSED: { bg: '#ECFDF5', color: '#059669', dot: '#10B981' },
+  CLOSED: { bg: '#F3F4F6', color: '#656F7D', dot: '#656F7D' },
 };
 
 const groupPalette = [

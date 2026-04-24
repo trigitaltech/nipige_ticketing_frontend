@@ -75,7 +75,7 @@ const TicketCard = ({ ticket, onDragStart, onClick, onDelete }) => {
 
   return (
     <div
-      className="bg-white border-[1.5px] border-gray-100 rounded-xl p-5 cursor-pointer transition-all duration-150 hover:border-gray-200 active:scale-[0.98]"
+      className="bg-white border-[1.5px] border-gray-100 rounded-xl p-3 cursor-pointer transition-all duration-150 hover:border-gray-200 active:scale-[0.98]"
       draggable
       onDragStart={(e) => onDragStart(e, ticketId)}
       onClick={() => onClick(ticket)}

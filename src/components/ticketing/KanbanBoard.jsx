@@ -32,8 +32,8 @@ const StatusIconBacklog = () => (
 );
 
 const statusConfig = {
-  OPEN:        { title: 'Open',        Icon: StatusIconTodo,       color: '#ab4aba' },
-  IN_PROGRESS: { title: 'In Progress', Icon: StatusIconInProgress, color: 'rgb(8, 128, 234)' },
+  OPEN:        { title: 'Open',        Icon: StatusIconTodo,       color: 'rgb(8, 128, 234)' },
+  IN_PROGRESS: { title: 'In Progress', Icon: StatusIconInProgress, color: '#f59e0b' },
   RESOLVED:    { title: 'Complete',    Icon: StatusIconComplete,   color: 'rgb(41, 151, 100)' },
   BACKLOG:     { title: 'Backlog',     Icon: StatusIconBacklog,    color: '#a18072' },
   CLOSED:      { title: 'Closed',      Icon: StatusIconClosed,     color: '#656F7D' },

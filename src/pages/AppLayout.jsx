@@ -37,7 +37,7 @@ const TicketDetailsRoute = ({ tickets, loading, onUpdate }) => {
     );
   }
 
-  return <TicketDetailsPage ticket={ticket} onBack={() => navigate('/')} onUpdate={onUpdate} />;
+  return <TicketDetailsPage ticket={ticket} onBack={() => navigate(-1)} onUpdate={onUpdate} />;
 };
 
 const ProjectDetailsRoute = () => {
