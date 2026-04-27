@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { ScrollArea } from '@/components/ui/scroll-area';
 
 const STATUS_CONFIG = {
@@ -69,27 +70,53 @@ const ProjectRow = ({ name, color, tasks, today }) => {
   );
 };
 
-const ProjectCard = ({ projectList, projectColor, today }) => (
-  <div className="col-span-7 bg-white border border-slate-200 rounded-xl overflow-hidden">
-    <div className="px-5 py-3.5 border-b border-slate-100">
-      <div className="text-[13px] font-semibold text-slate-800">All projects</div>
-      <div className="text-[11px] text-slate-400">{projectList.length} projects with tasks</div>
+const ProjectCard = ({ projectList, projectColor, today }) => {
+  const [search, setSearch] = useState('');
+
+  const filtered = search.trim()
+    ? projectList.filter(p => (p.name || '').toLowerCase().includes(search.toLowerCase()))
+    : projectList;
+
+  return (
+    <div className="col-span-7 bg-white border border-slate-200 rounded-xl overflow-hidden">
+      <div className="px-5 py-3.5 border-b border-slate-100">
+        <div className="flex items-center justify-between mb-2">
+          <div>
+            <div className="text-[13px] font-semibold text-slate-800">All projects</div>
+            <div className="text-[11px] text-slate-400">{projectList.length} projects with tasks</div>
+          </div>
+        </div>
+        <div className="relative">
+          <svg className="absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-400" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/>
+          </svg>
+          <input
+            type="text"
+            value={search}
+            onChange={e => setSearch(e.target.value)}
+            placeholder="Search projects…"
+            className="w-full pl-8 pr-3 py-1.5 text-[12px] border border-slate-200 rounded-lg bg-slate-50 outline-none focus:border-[#3B2FB1] focus:ring-1 focus:ring-[#3B2FB1]/20 placeholder:text-slate-400"
+          />
+        </div>
+      </div>
+      <div className="grid grid-cols-[minmax(0,1.6fr)_minmax(0,2fr)_72px_72px_90px] gap-3 px-4 py-2 text-[10px] uppercase tracking-wider text-slate-400 font-semibold bg-slate-50/60">
+        <div>Project</div>
+        <div>Status distribution</div>
+        <div className="text-right">Done</div>
+        <div className="text-right">Overdue</div>
+        <div className="text-right">Health</div>
+      </div>
+      <ScrollArea className="h-[400px]">
+        {filtered.length > 0 ? filtered.map((p, i) => (
+          <ProjectRow key={p.id} name={p.name || 'Unnamed'} color={projectColor(p.name, i)} tasks={p.tickets} today={today} />
+        )) : (
+          <div className="p-8 text-center text-slate-400 text-[13px]">
+            {search ? 'No projects match your search.' : 'No project data available.'}
+          </div>
+        )}
+      </ScrollArea>
     </div>
-    <div className="grid grid-cols-[minmax(0,1.6fr)_minmax(0,2fr)_72px_72px_90px] gap-3 px-4 py-2 text-[10px] uppercase tracking-wider text-slate-400 font-semibold bg-slate-50/60">
-      <div>Project</div>
-      <div>Status distribution</div>
-      <div className="text-right">Done</div>
-      <div className="text-right">Overdue</div>
-      <div className="text-right">Health</div>
-    </div>
-    <ScrollArea className="h-[440px]">
-      {projectList.length > 0 ? projectList.map((p, i) => (
-        <ProjectRow key={p.id} name={p.name || 'Unnamed'} color={projectColor(p.name, i)} tasks={p.tickets} today={today} />
-      )) : (
-        <div className="p-8 text-center text-slate-400 text-[13px]">No project data available.</div>
-      )}
-    </ScrollArea>
-  </div>
-);
+  );
+};
 
 export default ProjectCard;

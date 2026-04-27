@@ -157,9 +157,15 @@ const AppLayout = ({ currentUser, onLogout }) => {
 
   const commonProps = { avatarLabel, userEmail, fullName, onLogout };
 
-  const withHeader = (node) => (
+  const withHeader = (node, headerProps = {}) => (
     <>
-      <Header avatarLabel={avatarLabel} userEmail={userEmail} onCreateTicket={() => {}} onLogout={onLogout} />
+      <Header
+        avatarLabel={avatarLabel}
+        userEmail={userEmail}
+        onCreateTicket={() => {}}
+        onLogout={onLogout}
+        {...headerProps}
+      />
       <div className="flex-1 overflow-auto">{node}</div>
     </>
   );
@@ -204,9 +210,12 @@ const AppLayout = ({ currentUser, onLogout }) => {
               <TicketDetailsRoute tickets={tickets || []} loading={loading} onUpdate={handleUpdateTicket} />
             }
           />
-          <Route path="/projects" element={withHeader(<ProjectMaster />)} />
-          <Route path="/projects/:projectId" element={withHeader(<ProjectDetailsRoute />)} />
-          <Route path="/weekly-tasks" element={withHeader(<WeeklyTasks />)} />
+          <Route path="/projects" element={withHeader(<ProjectMaster />, { showCreateButton: false })} />
+          <Route path="/projects/:projectId" element={withHeader(<ProjectDetailsRoute />, { showCreateButton: false })} />
+          <Route
+            path="/weekly-tasks"
+            element={withHeader(<WeeklyTasks onOpenCreateModal={handleOpenCreateModal} />, { showCreateButton: false })}
+          />
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
       </SidebarInset>

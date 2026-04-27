@@ -190,7 +190,34 @@ export const createTicketAPI = async (ticketData) => {
 
 export const getTicketsAPI = async () => {
   const response = await nipige.get('/servicerequest/ticket/list');
-  
+  return response.data;
+};
+
+export const getAssignedTicketsAPI = async (userId) => {
+  const response = await nipige.get('/servicerequest/ticket/list', { params: { assignTo: userId } });
+  return response.data;
+};
+
+const TENANT_ID = '6986dd7c98cebc34cb85c197';
+
+export const getAnalyticReportAPI = async ({ fromDate, toDate, statuses, projectNames, assigntoId } = {}) => {
+  const today = new Date().toISOString().split('T')[0];
+  const variables = {
+    tenant: TENANT_ID,
+    fromDate: fromDate || today,
+    toDate: toDate || today,
+  };
+  if (statuses?.length)      variables.status       = statuses;
+  if (projectNames?.length)  variables.project      = projectNames;
+  if (assigntoId)            variables.assignto_id  = assigntoId;
+
+  const response = await nipige.post('/dashboard/analytic-report/filters', {
+    items: [
+      { key: 'taskmgt-total-task',        variables },
+      { key: 'taskmgt-status-breakdown',  variables },
+      { key: 'taskmgt-status-priority',   variables },
+    ],
+  });
   return response.data;
 };
 
