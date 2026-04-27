@@ -243,6 +243,9 @@ const DashboardOverview = ({ tickets = [], loading = false }) => {
   const [apiStats, setApiStats] = useState(null);
   const [apiStatusBreakdown, setApiStatusBreakdown] = useState(null);
   const [apiPriority, setApiPriority] = useState(null);
+  const [apiCompletionTrend, setApiCompletionTrend] = useState(null);
+  const [apiProjectReport, setApiProjectReport] = useState(null);
+  const [apiMemberReport, setApiMemberReport] = useState(null);
 
   // Build dropdown options from ticket data
   const { projectOptions, memberOptions } = useMemo(() => {
@@ -288,7 +291,7 @@ const DashboardOverview = ({ tickets = [], loading = false }) => {
     const fromDate = new Date(toDate);
     const rangeDays = filters.dateRange === '7d' ? 7 : filters.dateRange === '30d' ? 30 : filters.dateRange === '90d' ? 90 : null;
     if (rangeDays) fromDate.setDate(toDate.getDate() - rangeDays);
-    else fromDate.setFullYear(2000);
+    else fromDate.setFullYear(2025);
 
     const fmt = (d) => d.toISOString().split('T')[0];
 
@@ -297,8 +300,8 @@ const DashboardOverview = ({ tickets = [], loading = false }) => {
       .map(id => projectOptions.find(p => p.id === id)?.label)
       .filter(Boolean);
 
-    // API accepts a single assignto_id; use first selected member
     const assigntoId = filters.memberIds[0] ?? null;
+    const memberIds = filters.memberIds.length ? filters.memberIds : null;
 
     getAnalyticReportAPI({
       fromDate: fmt(fromDate),
@@ -306,6 +309,7 @@ const DashboardOverview = ({ tickets = [], loading = false }) => {
       statuses: filters.statuses,
       projectNames,
       assigntoId,
+      memberIds,
     })
       .then(res => {
         const raw = res?.data?.['taskmgt-total-task'];
@@ -314,6 +318,12 @@ const DashboardOverview = ({ tickets = [], loading = false }) => {
         if (Array.isArray(breakdown)) setApiStatusBreakdown(breakdown);
         const priority = res?.data?.['taskmgt-status-priority'];
         if (Array.isArray(priority) && priority[0]) setApiPriority(priority[0]);
+        const completion = res?.data?.['taskmgt-complition-report'];
+        if (Array.isArray(completion)) setApiCompletionTrend(completion);
+        const projectReport = res?.data?.['taskmgt-project-report'];
+        if (Array.isArray(projectReport)) setApiProjectReport(projectReport);
+        const memberReport = res?.data?.['taskmgt-member-report'];
+        if (Array.isArray(memberReport)) setApiMemberReport(memberReport);
       })
       .catch(() => {});
   // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -478,7 +488,28 @@ const DashboardOverview = ({ tickets = [], loading = false }) => {
       : p.keys.reduce((a, k) => a + (stats.severityCounts[k] || 0), 0),
   }));
 
-  const trendTotal = stats.trend.reduce((a, p) => a + p.value, 0);
+  const trendPoints = useMemo(() => {
+    if (!apiCompletionTrend) return stats.trend;
+    const days = 30;
+    const end = new Date();
+    end.setHours(0, 0, 0, 0);
+    const points = Array.from({ length: days }, (_, i) => {
+      const d = new Date(end);
+      d.setDate(end.getDate() - (days - 1 - i));
+      return { d, value: 0, label: `${d.getMonth() + 1}/${d.getDate()}` };
+    });
+    apiCompletionTrend.forEach(item => {
+      const date = new Date(item.completed_date);
+      date.setHours(0, 0, 0, 0);
+      const idx = points.findIndex(p => p.d.getTime() === date.getTime());
+      if (idx >= 0) points[idx].value = Number(item.completed_tasks);
+    });
+    return points;
+  }, [apiCompletionTrend, stats.trend]);
+
+  const trendTotal = apiCompletionTrend
+    ? apiCompletionTrend.reduce((a, item) => a + Number(item.completed_tasks), 0)
+    : stats.trend.reduce((a, p) => a + p.value, 0);
 
   if (loading && tickets.length === 0) return <OverviewSkeleton />;
 
@@ -598,14 +629,14 @@ const DashboardOverview = ({ tickets = [], loading = false }) => {
               <div className="text-[10.5px] text-emerald-600 font-semibold mt-1">resolved this period</div>
             </div>
           </div>
-          <TrendChart points={stats.trend} height={200} />
+          <TrendChart points={trendPoints} height={200} />
         </div>
       </div>
 
       {/* Projects + Members */}
       <div className="grid grid-cols-12 gap-4">
-        <ProjectCard projectList={stats.projectList} projectColor={projectColor} today={today} />
-        <WorkloadCard memberList={stats.memberList} today={today} />
+        <ProjectCard projectList={stats.projectList} projectColor={projectColor} today={today} apiProjects={apiProjectReport} />
+        <WorkloadCard memberList={stats.memberList} today={today} apiMembers={apiMemberReport} />
       </div>
 
       {/* Task lists */}

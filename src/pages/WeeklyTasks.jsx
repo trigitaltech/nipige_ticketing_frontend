@@ -366,7 +366,7 @@ const UserCombobox = ({ users, selectedUserId, onSelect }) => {
         ref={triggerRef}
         type="button"
         onClick={handleOpen}
-        className="h-8 flex items-center justify-between px-2 bg-[#FAFBFC] border border-[#DFE1E6] rounded-[3px] text-[13px] cursor-pointer gap-1.5 overflow-hidden min-w-[130px]"
+        className="h-8 flex items-center justify-between px-2 bg-[#FAFBFC] border border-[#DFE1E6] rounded-lg text-[13px] cursor-pointer gap-1.5 overflow-hidden min-w-[130px]"
       >
         {selectedName ? (
           <div className="flex items-center gap-1.5 overflow-hidden flex-1">
@@ -642,22 +642,22 @@ const WeeklyTasks = ({ onOpenCreateModal }) => {
 
       {/* Header */}
       <div className="flex items-center justify-between px-5 pt-[14px] pb-3 border-b border-slate-200 shrink-0 bg-white">
-        <div className="flex items-center gap-[5px]">
-          <h2 className="text-[19px] font-bold text-slate-900">{formatWeekRange(weekDates)}</h2>
+        <div className="flex items-center gap-2">
           <button
-            className="h-[28px] min-w-[28px] border border-slate-200 rounded-lg bg-white inline-flex items-center justify-center text-slate-500 cursor-pointer text-[13px] font-medium px-2 transition-colors hover:bg-slate-100"
+            className="h-[28px] w-[28px] border border-slate-200 rounded-lg bg-white inline-flex items-center justify-center text-slate-500 cursor-pointer transition-colors hover:bg-slate-100"
             onClick={() => navigateWeek(-1)}
           >
-            <ChevronLeft size={15} />
+            <ChevronLeft size={16} />
           </button>
+          <h2 className="text-[15px] font-bold text-slate-800 px-1">{formatWeekRange(weekDates)}</h2>
           <button
-            className="h-[28px] min-w-[28px] border border-slate-200 rounded-lg bg-white inline-flex items-center justify-center text-slate-500 cursor-pointer text-[13px] font-medium px-2 transition-colors hover:bg-slate-100"
+            className="h-[28px] w-[28px] border border-slate-200 rounded-lg bg-white inline-flex items-center justify-center text-slate-500 cursor-pointer transition-colors hover:bg-slate-100"
             onClick={() => navigateWeek(1)}
           >
-            <ChevronRight size={15} />
+            <ChevronRight size={16} />
           </button>
           <button
-            className="h-[28px] min-w-[28px] border border-slate-200 rounded-lg bg-white inline-flex items-center justify-center text-slate-500 cursor-pointer text-[13px] font-medium px-3.5 transition-colors hover:bg-slate-100"
+            className="h-[28px] border border-slate-200 rounded-lg bg-white inline-flex items-center justify-center text-slate-500 cursor-pointer text-[13px] font-medium px-4 transition-colors hover:bg-slate-100"
             onClick={() => setCurrentDate(new Date())}
           >
             Today

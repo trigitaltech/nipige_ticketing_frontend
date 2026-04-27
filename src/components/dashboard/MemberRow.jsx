@@ -58,4 +58,38 @@ const MemberRow = ({ id, name, tickets, today }) => {
   );
 };
 
+export const ApiMemberRow = ({ row }) => {
+  const total = Math.max(Number(row.total_tasks), 1);
+  const segs = [
+    { label: 'Open',        color: STATUS_CONFIG.OPEN.color,        value: Number(row.open_tasks) },
+    { label: 'In Progress', color: STATUS_CONFIG.IN_PROGRESS.color,  value: Number(row.in_progress_tasks) },
+    { label: 'Resolved',    color: STATUS_CONFIG.RESOLVED.color,     value: Number(row.resolved_tasks) },
+    { label: 'Backlog',     color: STATUS_CONFIG.BACKLOG.color,      value: Number(row.backlog_tasks) },
+    { label: 'Closed',      color: STATUS_CONFIG.CLOSED.color,       value: Number(row.closed_tasks) },
+  ].filter(s => s.value > 0);
+  const overdue = Number(row.overdue_tasks);
+
+  return (
+    <div className="py-2 border-b border-slate-100 last:border-0">
+      <div className="flex items-center gap-2 mb-1.5">
+        <MemberAvatar name={row.assignto_name} id={row.assignto_id} />
+        <div className="flex-1 min-w-0">
+          <div className="flex items-baseline justify-between">
+            <div className="text-[12.5px] font-semibold text-slate-800 truncate">{row.assignto_name}</div>
+            <div className="flex items-center gap-2 text-[11px] shrink-0">
+              <span className="text-slate-400 tabular-nums">{row.total_tasks}</span>
+              {overdue > 0 && <span className="text-rose-600 font-semibold">{overdue} overdue</span>}
+            </div>
+          </div>
+        </div>
+      </div>
+      <div className="ml-[34px] flex h-2 rounded-full overflow-hidden bg-slate-100">
+        {segs.map((s, i) => (
+          <div key={i} title={`${s.label}: ${s.value}`} style={{ width: `${(s.value / total) * 100}%`, background: s.color }} />
+        ))}
+      </div>
+    </div>
+  );
+};
+
 export default MemberRow;

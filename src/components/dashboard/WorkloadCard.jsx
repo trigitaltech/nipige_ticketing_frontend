@@ -1,13 +1,21 @@
 import { useState } from 'react';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import MemberRow from './MemberRow';
+import MemberRow, { ApiMemberRow } from './MemberRow';
 
-const WorkloadCard = ({ memberList, today }) => {
+const WorkloadCard = ({ memberList, today, apiMembers }) => {
   const [search, setSearch] = useState('');
 
-  const filtered = search.trim()
-    ? memberList.filter(m => m.name.toLowerCase().includes(search.toLowerCase()))
-    : memberList;
+  const useApi = Array.isArray(apiMembers) && apiMembers.length > 0;
+
+  const filtered = useApi
+    ? (search.trim()
+        ? apiMembers.filter(m => m.assignto_name?.toLowerCase().includes(search.toLowerCase()))
+        : apiMembers)
+    : (search.trim()
+        ? memberList.filter(m => m.name.toLowerCase().includes(search.toLowerCase()))
+        : memberList);
+
+  const count = useApi ? apiMembers.length : memberList.length;
 
   return (
     <div className="col-span-5 bg-white border border-slate-200 rounded-xl overflow-hidden flex flex-col">
@@ -15,7 +23,7 @@ const WorkloadCard = ({ memberList, today }) => {
         <div className="flex items-center justify-between mb-2">
           <div>
             <div className="text-[13px] font-semibold text-slate-800">Workload by member</div>
-            <div className="text-[11px] text-slate-400">{memberList.length} members</div>
+            <div className="text-[11px] text-slate-400">{count} members</div>
           </div>
         </div>
         <div className="relative">
@@ -32,9 +40,13 @@ const WorkloadCard = ({ memberList, today }) => {
         </div>
       </div>
       <ScrollArea className="px-4 py-1 h-[400px]">
-        {filtered.length > 0 ? filtered.map(({ id, name, tickets }) => (
-          <MemberRow key={id} id={id} name={name} tickets={tickets} today={today} />
-        )) : (
+        {filtered.length > 0 ? (
+          useApi
+            ? filtered.map(row => <ApiMemberRow key={row.assignto_id} row={row} />)
+            : filtered.map(({ id, name, tickets }) => (
+                <MemberRow key={id} id={id} name={name} tickets={tickets} today={today} />
+              ))
+        ) : (
           <div className="p-8 text-center text-slate-400 text-[13px]">
             {search ? 'No members match your search.' : 'No assignee data.'}
           </div>

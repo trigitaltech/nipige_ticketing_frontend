@@ -200,22 +200,26 @@ export const getAssignedTicketsAPI = async (userId) => {
 
 const TENANT_ID = '6986dd7c98cebc34cb85c197';
 
-export const getAnalyticReportAPI = async ({ fromDate, toDate, statuses, projectNames, assigntoId } = {}) => {
+export const getAnalyticReportAPI = async ({ fromDate, toDate, statuses, projectNames, assigntoId, memberIds } = {}) => {
   const today = new Date().toISOString().split('T')[0];
   const variables = {
     tenant: TENANT_ID,
     fromDate: fromDate || today,
     toDate: toDate || today,
   };
-  if (statuses?.length)      variables.status       = statuses;
-  if (projectNames?.length)  variables.project      = projectNames;
-  if (assigntoId)            variables.assignto_id  = assigntoId;
+  if (statuses?.length)      variables.status      = statuses;
+  if (projectNames?.length)  variables.project     = projectNames;
+  if (memberIds?.length)     variables.assignto_id = memberIds;
+  else if (assigntoId)       variables.assignto_id = [assigntoId];
 
   const response = await nipige.post('/dashboard/analytic-report/filters', {
     items: [
       { key: 'taskmgt-total-task',        variables },
       { key: 'taskmgt-status-breakdown',  variables },
       { key: 'taskmgt-status-priority',   variables },
+      { key: 'taskmgt-complition-report', variables: { ...variables, status: ['CLOSED'] } },
+      { key: 'taskmgt-project-report',    variables },
+      { key: 'taskmgt-member-report',     variables },
     ],
   });
   return response.data;
