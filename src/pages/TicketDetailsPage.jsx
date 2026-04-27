@@ -30,6 +30,7 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from '@/components/ui/tooltip';
+import { getAvatarColor, getInitials } from '../utils/avatar';
 
 const statusConfig = {
   OPEN:        { label: 'Open',        bg: 'bg-[#EEF5FF]',   text: 'text-[#0880EA]',   dot: 'bg-[#0880EA]',   solid: 'bg-[#0880EA] text-white' },
@@ -44,26 +45,6 @@ const severityConfig = {
   Medium:   { label: 'Medium',   bg: 'bg-amber-50',  text: 'text-amber-700',  ring: 'ring-amber-200',  flag: 'text-amber-500',  fill: 'bg-amber-500' },
   High:     { label: 'High',     bg: 'bg-orange-50', text: 'text-orange-700', ring: 'ring-orange-200', flag: 'text-orange-500', fill: 'bg-orange-500' },
   Critical: { label: 'Critical', bg: 'bg-red-50',    text: 'text-red-700',    ring: 'ring-red-200',    flag: 'text-red-500',    fill: 'bg-red-500' },
-};
-
-const avatarPalette = [
-  'bg-rose-500', 'bg-orange-500', 'bg-amber-500', 'bg-lime-500', 'bg-emerald-500',
-  'bg-teal-500', 'bg-sky-500', 'bg-indigo-500', 'bg-violet-500', 'bg-fuchsia-500',
-];
-
-const getInitials = (name) => {
-  if (!name) return '?';
-  const parts = String(name).trim().split(/\s+/).filter(Boolean);
-  if (parts.length === 0) return '?';
-  if (parts.length === 1) return parts[0].slice(0, 2).toUpperCase();
-  return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
-};
-
-const getAvatarColor = (name) => {
-  const str = String(name || '');
-  let hash = 0;
-  for (let i = 0; i < str.length; i++) hash = (hash * 31 + str.charCodeAt(i)) >>> 0;
-  return avatarPalette[hash % avatarPalette.length];
 };
 
 const Avatar = ({ name, email, size = 'md', ring = false }) => {
@@ -81,7 +62,11 @@ const Avatar = ({ name, email, size = 'md', ring = false }) => {
     );
   }
   return (
-    <div className={`${sizeCls} rounded-full ${getAvatarColor(label)} text-white flex items-center justify-center font-bold shrink-0 ${ringCls}`} title={label}>
+    <div
+      className={`${sizeCls} rounded-full text-white flex items-center justify-center font-bold shrink-0 ${ringCls}`}
+      style={{ backgroundColor: getAvatarColor(label) }}
+      title={label}
+    >
       {getInitials(label)}
     </div>
   );

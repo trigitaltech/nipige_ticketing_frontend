@@ -1,5 +1,6 @@
 import deleteIcon from '../../assets/icons/delete.png';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
+import { getAssigneeDisplay, getAvatarColor, getInitials } from '../../utils/avatar';
 
 const severityConfig = {
   Critical: { bg: 'bg-red-50', text: 'text-red-600', dot: 'bg-red-600' },
@@ -41,6 +42,9 @@ const TicketCard = ({ ticket, onDragStart, onClick, onDelete }) => {
   const priority = ticket.priority || 0;
   const assignedTo = ticket.assignTo?.name || ticket.assignedTo || 'Unassigned';
   const assignedEmail = ticket.assignTo?.email || '';
+  const assignee = getAssigneeDisplay(ticket.assignTo);
+  const avatarColor = assignee?.color ?? getAvatarColor(assignedTo);
+  const avatarInitial = assignee?.initial ?? getInitials(assignedTo);
   const reportedBy = ticket.reportedBy?.name || 'Unknown';
   const createdAt = ticket.createdAt;
   const escalated = ticket.escalated;
@@ -130,10 +134,11 @@ const TicketCard = ({ ticket, onDragStart, onClick, onDelete }) => {
       <div className="flex justify-between items-start pt-2.5 border-t border-[#EBECF0]">
         <div className="flex items-center gap-2">
           <span
-            className="w-8 h-8 rounded-full bg-[#0052CC] text-white flex items-center justify-center text-xs font-semibold uppercase shrink-0"
-            title={assignedEmail}
+            className="w-8 h-8 rounded-full text-white flex items-center justify-center text-xs font-semibold uppercase shrink-0"
+            style={{ backgroundColor: avatarColor }}
+            title={assignedEmail || assignedTo}
           >
-            {assignedTo.charAt(0).toUpperCase()}
+            {avatarInitial}
           </span>
           <div className="flex flex-col gap-0.5 min-w-0">
             <Tooltip>

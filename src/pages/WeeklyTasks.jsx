@@ -13,6 +13,7 @@ import {
 import {
   Tooltip, TooltipContent, TooltipProvider, TooltipTrigger,
 } from '@/components/ui/tooltip';
+import { getAvatarColor, getInitials } from '../utils/avatar';
 
 const HOUR_HEIGHT = 40;
 const HOURS = Array.from({ length: 24 }, (_, i) => i);
@@ -291,21 +292,6 @@ const getUserName = (u) =>
   `${u?.name?.first || ''} ${u?.name?.last || ''}`.trim() ||
   u?.authentication?.email || 'Unknown';
 
-const avatarColors = [
-  '#5449D6', '#0880EA', '#f59e0b', '#299764', '#e11d48',
-  '#7c3aed', '#0891b2', '#c2410c', '#15803d', '#9333ea',
-];
-const getAvatarColor = (str) => {
-  let hash = 0;
-  for (let i = 0; i < (str || '').length; i++) hash = str.charCodeAt(i) + ((hash << 5) - hash);
-  return avatarColors[Math.abs(hash) % avatarColors.length];
-};
-const getInitials = (label) => {
-  if (!label) return '?';
-  const parts = label.trim().split(/\s+/);
-  if (parts.length >= 2) return (parts[0][0] + parts[1][0]).toUpperCase();
-  return label.slice(0, 2).toUpperCase();
-};
 const UserAvatar = ({ name, size = 22 }) => (
   <span
     className="shrink-0 rounded-full flex items-center justify-center text-white font-semibold"

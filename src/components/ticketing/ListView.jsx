@@ -4,6 +4,7 @@ import deleteIcon from '../../assets/icons/delete.png';
 import DeleteConfirmModal from '../shared/DeleteConfirmModal';
 import { Skeleton } from '@/components/ui/skeleton';
 import usePersistentState from '../../hooks/usePersistentState';
+import { getAssigneeDisplay } from '../../utils/avatar';
 
 const statusBadgeColors = {
   OPEN: { bg: '#EEF5FF', color: '#0880EA', dot: '#0880EA' },
@@ -23,19 +24,6 @@ const groupPalette = [
   { bg: '#FFFBEB', color: '#CA8A04' },
   { bg: '#F0FDF4', color: '#16A34A' },
 ];
-
-const avatarPalette = [
-  '#6366F1', '#8B5CF6', '#EC4899', '#F43F5E', '#EF4444',
-  '#F97316', '#F59E0B', '#10B981', '#14B8A6', '#06B6D4',
-  '#0EA5E9', '#3B82F6', '#7C3AED', '#DB2777', '#059669',
-];
-
-const getAvatarColor = (key) => {
-  const str = String(key || '');
-  let hash = 0;
-  for (let i = 0; i < str.length; i++) hash = (hash * 31 + str.charCodeAt(i)) | 0;
-  return avatarPalette[Math.abs(hash) % avatarPalette.length];
-};
 
 const formatListDate = (value) => {
   if (!value) return '-';
@@ -65,17 +53,6 @@ const formatDurationMs = (ms) => {
   if (h && m) return `${h}h ${m}m`;
   if (h) return `${h}h`;
   return `${m}m`;
-};
-
-const getAssigneeDisplay = (assignee) => {
-  if (!assignee) return null;
-  const name = assignee.name || assignee.username || assignee.email || '';
-  if (!name) return null;
-  const parts = name.trim().split(/\s+/).filter(Boolean);
-  const first = parts[0]?.charAt(0) || '';
-  const last = parts.length > 1 ? parts[parts.length - 1].charAt(0) : '';
-  const initial = (first + last).toUpperCase() || '?';
-  return { name, initial, color: getAvatarColor(assignee._id || assignee.id || name) };
 };
 
 const getClosedDate = (ticket) => {
