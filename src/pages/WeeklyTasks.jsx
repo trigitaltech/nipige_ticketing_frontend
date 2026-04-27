@@ -14,7 +14,7 @@ import {
   Tooltip, TooltipContent, TooltipProvider, TooltipTrigger,
 } from '@/components/ui/tooltip';
 
-const HOUR_HEIGHT = 64;
+const HOUR_HEIGHT = 40;
 const HOURS = Array.from({ length: 24 }, (_, i) => i);
 const DAY_NAMES = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
@@ -458,7 +458,7 @@ const WeeklyTasks = ({ onOpenCreateModal }) => {
   const today = new Date();
 
   useEffect(() => {
-    if (gridRef.current) gridRef.current.scrollTop = 8 * HOUR_HEIGHT;
+    if (gridRef.current) gridRef.current.scrollTop = 9 * HOUR_HEIGHT;
   }, []);
 
   useEffect(() => { dispatch(fetchProjects()); }, [dispatch]);
