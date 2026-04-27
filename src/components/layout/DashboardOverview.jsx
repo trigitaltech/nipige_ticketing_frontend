@@ -1,10 +1,12 @@
-import { useMemo, useState, useRef, useEffect } from 'react';
+import { useMemo, useState, useEffect } from 'react';
 import { useSelector } from 'react-redux';
 import { Skeleton } from '@/components/ui/skeleton';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import TaskCard from '../dashboard/TaskCard';
 import ProjectCard from '../dashboard/ProjectCard';
 import WorkloadCard from '../dashboard/WorkloadCard';
+import { getAnalyticReportAPI } from '../../services/api';
+import MultiSelectDropdown from '../shared/MultiSelectDropdown';
 
 const STATUS_CONFIG = {
   OPEN:        { label: 'Open',        color: '#3b82f6' },
@@ -15,9 +17,10 @@ const STATUS_CONFIG = {
 };
 
 const SEVERITY_PRIORITY = [
-  { label: 'High/Critical', color: '#e11d48', keys: ['Critical', 'High'] },
-  { label: 'Medium',        color: '#f59e0b', keys: ['Medium'] },
-  { label: 'Low',           color: '#10b981', keys: ['Low'] },
+  { label: 'Critical', color: '#9f1239', keys: ['Critical'] },
+  { label: 'High',     color: '#e11d48', keys: ['High'] },
+  { label: 'Medium',   color: '#f59e0b', keys: ['Medium'] },
+  { label: 'Low',      color: '#10b981', keys: ['Low'] },
 ];
 
 const BRAND = '#3B2FB1';
@@ -158,94 +161,6 @@ function TrendChart({ points, height = 170, color = BRAND }) {
   );
 }
 
-// ---------- MultiSelect dropdown ----------
-function MultiSelect({ label, icon, options, selected, onChange, width = 200 }) {
-  const [open, setOpen] = useState(false);
-  const ref = useRef(null);
-  useEffect(() => {
-    const h = (e) => { if (ref.current && !ref.current.contains(e.target)) setOpen(false); };
-    document.addEventListener('mousedown', h);
-    return () => document.removeEventListener('mousedown', h);
-  }, []);
-
-  const all = selected.length === 0;
-  const labelText = all
-    ? `All ${label.toLowerCase()}`
-    : selected.length === 1
-      ? (options.find(o => o.id === selected[0])?.shortLabel || options.find(o => o.id === selected[0])?.label || selected[0])
-      : `${selected.length} ${label.toLowerCase()}`;
-
-  const toggle = (id) => {
-    if (selected.includes(id)) {
-      const next = selected.filter(s => s !== id);
-      onChange(next);
-    } else {
-      onChange([...selected, id]);
-    }
-  };
-
-  const iconMap = {
-    folder: <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2Z"/></svg>,
-    users:  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/></svg>,
-    filter: <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M22 3H2l8 9.46V19l4 2v-8.54L22 3z"/></svg>,
-    flag:   <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1Z"/><path d="M4 22V15"/></svg>,
-    chevron:<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m6 9 6 6 6-6"/></svg>,
-  };
-
-  return (
-    <div className="relative" ref={ref} style={{ minWidth: width }}>
-      <button
-        type="button"
-        onClick={() => setOpen(o => !o)}
-        className={`w-full inline-flex items-center gap-2 px-3 h-9 border rounded-lg text-[12.5px] font-medium bg-white transition-all ${open ? 'border-[#3B2FB1] ring-2 ring-[#3B2FB1]/15 shadow-sm' : 'border-slate-200 hover:border-slate-300'}`}
-      >
-        {icon && <span className="text-slate-400">{iconMap[icon]}</span>}
-        <span className="text-slate-400 text-[10.5px] uppercase tracking-wider font-semibold shrink-0">{label}</span>
-        <span className={`truncate flex-1 text-left ${all ? 'text-slate-400' : 'text-slate-700 font-semibold'}`}>{labelText}</span>
-        {!all && (
-          <span
-            className="shrink-0 w-4 h-4 rounded-full bg-[#3B2FB1] text-white text-[9px] font-bold flex items-center justify-center"
-          >{selected.length}</span>
-        )}
-        <span className={`text-slate-400 shrink-0 transition-transform ${open ? 'rotate-180' : ''}`}>{iconMap.chevron}</span>
-      </button>
-
-      {open && (
-        <div className="absolute z-50 top-full mt-1.5 left-0 w-full min-w-[180px] bg-white border border-slate-200 rounded-xl shadow-xl overflow-hidden">
-          <div className="max-h-64 overflow-y-auto py-1">
-            <button
-              type="button"
-              onClick={() => onChange([])}
-              className="w-full text-left px-3 py-1.5 text-[12.5px] hover:bg-slate-50 text-[#3B2FB1] font-semibold"
-            >
-              All ({options.length})
-            </button>
-            <div className="border-t border-slate-100 my-0.5" />
-            {options.map(o => {
-              const checked = all || selected.includes(o.id);
-              return (
-                <button
-                  type="button"
-                  key={o.id}
-                  onClick={() => toggle(o.id)}
-                  className="w-full flex items-center gap-2 px-3 py-1.5 text-[12.5px] hover:bg-slate-50 text-left"
-                >
-                  <span className={`w-4 h-4 rounded border flex items-center justify-center shrink-0 transition-colors ${checked ? 'bg-[#3B2FB1] border-[#3B2FB1]' : 'border-slate-300 bg-white'}`}>
-                    {checked && <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><path d="M20 6 9 17l-5-5"/></svg>}
-                  </span>
-                  {o.dot && <span className="w-2 h-2 rounded-sm shrink-0" style={{ background: o.dot }} />}
-                  <span className="truncate flex-1 text-slate-700">{o.label}</span>
-                  {o.sub && <span className="text-[10.5px] text-slate-400 shrink-0">{o.sub}</span>}
-                </button>
-              );
-            })}
-          </div>
-        </div>
-      )}
-    </div>
-  );
-}
-
 // ---------- Segmented control ----------
 function Segmented({ options, value, onChange }) {
   return (
@@ -271,10 +186,10 @@ function FilterBar({ filters, setFilters, projectOptions, memberOptions }) {
   const severityOptions = SEVERITY_PRIORITY.map(p => ({ id: p.label, label: p.label, dot: p.color }));
   return (
     <div className="bg-white border border-slate-200 rounded-xl px-4 py-3 flex flex-wrap items-center gap-2">
-      <MultiSelect label="Project"  icon="folder" options={projectOptions} selected={projectIds} onChange={v => setFilters(f => ({ ...f, projectIds: v }))}  width={190} />
-      <MultiSelect label="Member"   icon="users"  options={memberOptions}  selected={memberIds}  onChange={v => setFilters(f => ({ ...f, memberIds: v }))}   width={190} />
-      <MultiSelect label="Status"   icon="filter" options={statusOptions}   selected={statuses}   onChange={v => setFilters(f => ({ ...f, statuses: v }))}    width={170} />
-      <MultiSelect label="Severity" icon="flag"   options={severityOptions} selected={severities} onChange={v => setFilters(f => ({ ...f, severities: v }))}  width={170} />
+      <MultiSelectDropdown label="Project"  icon="folder" options={projectOptions} selected={projectIds} onChange={v => setFilters(f => ({ ...f, projectIds: v }))}  width={190} searchable />
+      <MultiSelectDropdown label="Member"   icon="users"  options={memberOptions}  selected={memberIds}  onChange={v => setFilters(f => ({ ...f, memberIds: v }))}   width={190} searchable />
+      <MultiSelectDropdown label="Status"   icon="filter" options={statusOptions}   selected={statuses}   onChange={v => setFilters(f => ({ ...f, statuses: v }))}    width={170} />
+      <MultiSelectDropdown label="Severity" icon="flag"   options={severityOptions} selected={severities} onChange={v => setFilters(f => ({ ...f, severities: v }))}  width={170} />
       <div className="ml-auto">
         <Segmented
           value={dateRange}
@@ -322,8 +237,12 @@ const DEFAULT_FILTERS = { statuses: [], severities: [], dateRange: '30d', projec
 
 const DashboardOverview = ({ tickets = [], loading = false }) => {
   const { projects } = useSelector((state) => state.projects);
+  const { users } = useSelector((state) => state.users);
   const today = useMemo(() => new Date(), []);
   const [filters, setFilters] = useState(DEFAULT_FILTERS);
+  const [apiStats, setApiStats] = useState(null);
+  const [apiStatusBreakdown, setApiStatusBreakdown] = useState(null);
+  const [apiPriority, setApiPriority] = useState(null);
 
   // Build dropdown options from ticket data
   const { projectOptions, memberOptions } = useMemo(() => {
@@ -353,9 +272,52 @@ const DashboardOverview = ({ tickets = [], loading = false }) => {
       projectOptions: Object.entries(projMap).map(([id, name], i) => ({
         id, label: name || id, dot: projectColor(name, i),
       })),
-      memberOptions: Object.entries(memMap).map(([id, name]) => ({ id, label: name })),
+      memberOptions: (Array.isArray(users) && users.length > 0
+        ? users.map(u => ({
+            id: u._id || u.id,
+            label: `${u.name?.first || ''} ${u.name?.last || ''}`.trim() || u.authentication?.userName || 'Unknown',
+          }))
+        : Object.entries(memMap).map(([id, name]) => ({ id, label: name }))
+      ).sort((a, b) => a.label.localeCompare(b.label)),
     };
-  }, [tickets, projects]);
+  }, [tickets, projects, users]);
+
+  // Fetch KPI tiles from API whenever any filter changes
+  useEffect(() => {
+    const toDate = new Date();
+    const fromDate = new Date(toDate);
+    const rangeDays = filters.dateRange === '7d' ? 7 : filters.dateRange === '30d' ? 30 : filters.dateRange === '90d' ? 90 : null;
+    if (rangeDays) fromDate.setDate(toDate.getDate() - rangeDays);
+    else fromDate.setFullYear(2000);
+
+    const fmt = (d) => d.toISOString().split('T')[0];
+
+    // Map selected project IDs → names for the API
+    const projectNames = filters.projectIds
+      .map(id => projectOptions.find(p => p.id === id)?.label)
+      .filter(Boolean);
+
+    // API accepts a single assignto_id; use first selected member
+    const assigntoId = filters.memberIds[0] ?? null;
+
+    getAnalyticReportAPI({
+      fromDate: fmt(fromDate),
+      toDate: fmt(toDate),
+      statuses: filters.statuses,
+      projectNames,
+      assigntoId,
+    })
+      .then(res => {
+        const raw = res?.data?.['taskmgt-total-task'];
+        if (raw) setApiStats(raw);
+        const breakdown = res?.data?.['taskmgt-status-breakdown'];
+        if (Array.isArray(breakdown)) setApiStatusBreakdown(breakdown);
+        const priority = res?.data?.['taskmgt-status-priority'];
+        if (Array.isArray(priority) && priority[0]) setApiPriority(priority[0]);
+      })
+      .catch(() => {});
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [filters.dateRange, filters.statuses, filters.projectIds, filters.memberIds, projectOptions]);
 
   // Apply filters to tickets
   const filteredTickets = useMemo(() => {
@@ -382,11 +344,12 @@ const DashboardOverview = ({ tickets = [], loading = false }) => {
 
   const stats = useMemo(() => {
     const statusCounts = Object.fromEntries(Object.keys(STATUS_CONFIG).map(k => [k, 0]));
-    const severityCounts = { High: 0, Medium: 0, Low: 0 };
+    const severityCounts = { Critical: 0, High: 0, Medium: 0, Low: 0 };
     filteredTickets.forEach(t => {
       if (statusCounts[t?.status] !== undefined) statusCounts[t.status]++;
       const sev = t?.severity;
-      if (sev === 'Critical' || sev === 'High') severityCounts.High++;
+      if (sev === 'Critical') severityCounts.Critical++;
+      else if (sev === 'High') severityCounts.High++;
       else if (sev === 'Medium') severityCounts.Medium++;
       else if (sev === 'Low') severityCounts.Low++;
     });
@@ -461,35 +424,58 @@ const DashboardOverview = ({ tickets = [], loading = false }) => {
       .filter(p => p.id !== 'unassigned' && p.tickets.length > 0)
       .sort((a, b) => b.tickets.length - a.tickets.length);
 
-    // By member
-    const memberMap = {};
-    filteredTickets.forEach(t => {
-      const a = t.assignTo;
-      if (!a) return;
-      const id = a._id || a.id || a.email || 'unknown';
-      const name = a.name || a.username || a.email || 'Unknown';
-      if (!memberMap[id]) memberMap[id] = { id, name, tickets: [] };
-      memberMap[id].tickets.push(t);
-    });
-    const memberList = Object.values(memberMap)
-      .sort((a, b) => b.tickets.length - a.tickets.length)
-      .slice(0, 10);
+    // By member — use full users list; fall back to ticket assignees if users not loaded
+    const memberList = Array.isArray(users) && users.length > 0
+      ? users.map(u => {
+          const id = u._id || u.id;
+          const name = `${u.name?.first || ''} ${u.name?.last || ''}`.trim() || u.authentication?.userName || 'Unknown';
+          const tickets = filteredTickets.filter(t => {
+            const a = t.assignTo;
+            return (a?._id || a?.id || a?.email) === id;
+          });
+          return { id, name, tickets };
+        }).sort((a, b) => b.tickets.length - a.tickets.length)
+      : (() => {
+          const memberMap = {};
+          filteredTickets.forEach(t => {
+            const a = t.assignTo;
+            if (!a) return;
+            const id = a._id || a.id || a.email || 'unknown';
+            const name = a.name || a.username || a.email || 'Unknown';
+            if (!memberMap[id]) memberMap[id] = { id, name, tickets: [] };
+            memberMap[id].tickets.push(t);
+          });
+          return Object.values(memberMap).sort((a, b) => b.tickets.length - a.tickets.length);
+        })();
 
     return {
       statusCounts, severityCounts, totalDone, totalOpen,
       pctComplete, overdueTickets, dueSoon, recentlyDone,
       avgCompletionDays, trend, projectList, memberList,
     };
-  }, [filteredTickets, projects, today]);
+  }, [filteredTickets, projects, users, today]);
 
-  const statusSegments = Object.entries(STATUS_CONFIG)
-    .map(([key, cfg]) => ({ label: cfg.label, color: cfg.color, value: stats.statusCounts[key] }))
-    .filter(s => s.value > 0);
+  const statusSegments = apiStatusBreakdown
+    ? apiStatusBreakdown
+        .map(item => {
+          const cfg = STATUS_CONFIG[item.status];
+          return cfg ? { label: cfg.label, color: cfg.color, value: Number(item.total) } : null;
+        })
+        .filter(s => s && s.value > 0)
+    : Object.entries(STATUS_CONFIG)
+        .map(([key, cfg]) => ({ label: cfg.label, color: cfg.color, value: stats.statusCounts[key] }))
+        .filter(s => s.value > 0);
+
+  const statusTotal = apiStatusBreakdown
+    ? apiStatusBreakdown.reduce((sum, item) => sum + Number(item.total), 0)
+    : filteredTickets.length;
 
   const severityRows = SEVERITY_PRIORITY.map(p => ({
     label: p.label,
     color: p.color,
-    value: p.keys.reduce((a, k) => a + (stats.severityCounts[k] || 0), 0),
+    value: apiPriority
+      ? Number(apiPriority[p.label.toLowerCase()] ?? 0)
+      : p.keys.reduce((a, k) => a + (stats.severityCounts[k] || 0), 0),
   }));
 
   const trendTotal = stats.trend.reduce((a, p) => a + p.value, 0);
@@ -510,11 +496,43 @@ const DashboardOverview = ({ tickets = [], loading = false }) => {
 
       {/* KPI tiles */}
       <div className="grid grid-cols-5 gap-4">
-        <StatTile label="Total tasks"     value={filteredTickets.length}   sub="in current view"         icon="grid"   tint={BRAND} />
-        <StatTile label="Completion rate" value={`${stats.pctComplete}%`}  sub={`${stats.totalDone} resolved`} icon="check"  tint="#10b981" />
-        <StatTile label="Open tasks"      value={stats.totalOpen}          sub="still in progress"       icon="clock"  tint="#f59e0b" />
-        <StatTile label="Overdue"         value={stats.overdueTickets.length} sub="past due date"        icon="alert"  tint="#ef4444" />
-        <StatTile label="Avg completion"  value={stats.avgCompletionDays !== null ? `${stats.avgCompletionDays}d` : '—'} sub="created → resolved" icon="trend" tint="#6366F1" />
+        <StatTile
+          label="Total tasks"
+          value={apiStats ? apiStats.total_tasks : filteredTickets.length}
+          sub="in current view"
+          icon="grid"
+          tint={BRAND}
+        />
+        <StatTile
+          label="Completion rate"
+          value={apiStats
+            ? `${Math.round((Number(apiStats.completed_tasks) / Math.max(1, Number(apiStats.total_tasks))) * 100)}%`
+            : `${stats.pctComplete}%`}
+          sub={apiStats ? `${apiStats.completed_tasks} completed` : `${stats.totalDone} resolved`}
+          icon="check"
+          tint="#10b981"
+        />
+        <StatTile
+          label="Open tasks"
+          value={apiStats ? apiStats.open_tasks : stats.totalOpen}
+          sub="still in progress"
+          icon="clock"
+          tint="#f59e0b"
+        />
+        <StatTile
+          label="Overdue"
+          value={apiStats ? apiStats.overdue_tasks : stats.overdueTickets.length}
+          sub="past due date"
+          icon="alert"
+          tint="#ef4444"
+        />
+        <StatTile
+          label="Avg completion"
+          value={apiStats ? `${apiStats.avg_completion_days}d` : (stats.avgCompletionDays !== null ? `${stats.avgCompletionDays}d` : '—')}
+          sub="created → resolved"
+          icon="trend"
+          tint="#6366F1"
+        />
       </div>
 
       {/* Charts row */}
@@ -523,9 +541,9 @@ const DashboardOverview = ({ tickets = [], loading = false }) => {
         {/* Status donut */}
         <div className="col-span-3 bg-white border border-slate-200 rounded-xl p-5">
           <div className="text-[13px] font-semibold text-slate-800 mb-0.5">Status breakdown</div>
-          <div className="text-[11px] text-slate-400 mb-3">All {filteredTickets.length} tasks</div>
+          <div className="text-[11px] text-slate-400 mb-3">All {statusTotal} tasks</div>
           <div className="flex justify-center mb-4">
-            <DonutChart segments={statusSegments} centerLabel="Total" centerValue={filteredTickets.length} size={150} thickness={20} />
+            <DonutChart segments={statusSegments} centerLabel="Total" centerValue={statusTotal} size={150} thickness={20} />
           </div>
           <div className="grid grid-cols-2 gap-x-3 gap-y-1.5">
             {statusSegments.map(s => (
@@ -550,19 +568,19 @@ const DashboardOverview = ({ tickets = [], loading = false }) => {
                 <span className="inline-flex items-center gap-1.5 text-rose-600 font-medium">
                   <Icon name="alert" size={13} /> Overdue
                 </span>
-                <span className="font-bold text-slate-800">{stats.overdueTickets.length}</span>
+                <span className="font-bold text-slate-800">{apiPriority ? Number(apiPriority.overdue) : stats.overdueTickets.length}</span>
               </div>
               <div className="flex items-center justify-between text-[12px]">
                 <span className="inline-flex items-center gap-1.5 text-amber-600 font-medium">
                   <Icon name="clock" size={13} /> Due this week
                 </span>
-                <span className="font-bold text-slate-800">{stats.dueSoon.length}</span>
+                <span className="font-bold text-slate-800">{apiPriority ? Number(apiPriority.due_this_week) : stats.dueSoon.length}</span>
               </div>
               <div className="flex items-center justify-between text-[12px]">
                 <span className="inline-flex items-center gap-1.5 text-slate-500 font-medium">
                   <Icon name="folder" size={13} /> Active projects
                 </span>
-                <span className="font-bold text-slate-800">{stats.projectList.length}</span>
+                <span className="font-bold text-slate-800">{apiPriority ? Number(apiPriority.active_projects) : stats.projectList.length}</span>
               </div>
             </div>
           </div>

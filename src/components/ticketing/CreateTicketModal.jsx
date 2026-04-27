@@ -224,11 +224,11 @@ const CreateTicketModal = ({ onClose, onCreate, initialData }) => {
 
   const validate = () => {
     const newErrors = {};
-    if (!formData.project) {
-      newErrors.project = 'Project is required';
+    if (!formData.assignTo) {
+      newErrors.assignTo = 'Assignee is required';
     }
-    if (!formData.category) {
-      newErrors.category = 'Category is required';
+    if (!formData.reportedTo) {
+      newErrors.reportedTo = 'Reported to is required';
     }
     if (!formData.subject.trim()) {
       newErrors.subject = 'Title is required';
@@ -341,7 +341,7 @@ const CreateTicketModal = ({ onClose, onCreate, initialData }) => {
               />
             </PropertyRow>
 
-            <PropertyRow icon={iconUser} label="Assignee">
+            <PropertyRow icon={iconUser} label={<span>Assignee <span className="text-red-500">*</span></span>}>
               <div className="flex items-center gap-2">
                 <Avatar name={formData.assignTo?.name} email={formData.assignTo?.email} />
                 <Select
@@ -361,9 +361,10 @@ const CreateTicketModal = ({ onClose, onCreate, initialData }) => {
                   </SelectContent>
                 </Select>
               </div>
+              {errors.assignTo && <span className="block text-red-500 text-xs mt-1 px-2">{errors.assignTo}</span>}
             </PropertyRow>
 
-            <PropertyRow icon={iconTag} label={<span>Category <span className="text-red-500">*</span></span>}>
+            <PropertyRow icon={iconTag} label="Category">
               <Select
                 value={formData.category || undefined}
                 onValueChange={(value) => handleCategoryChange({ target: { value } })}
@@ -381,7 +382,7 @@ const CreateTicketModal = ({ onClose, onCreate, initialData }) => {
               {errors.category && <span className="block text-red-500 text-xs mt-1 px-2">{errors.category}</span>}
             </PropertyRow>
 
-            <PropertyRow icon={iconUser} label="Reported To">
+            <PropertyRow icon={iconUser} label={<span>Reported To <span className="text-red-500">*</span></span>}>
               <div className="flex items-center gap-2">
                 <Avatar name={formData.reportedTo?.name} email={formData.reportedTo?.email} />
                 <Select
@@ -401,6 +402,7 @@ const CreateTicketModal = ({ onClose, onCreate, initialData }) => {
                   </SelectContent>
                 </Select>
               </div>
+              {errors.reportedTo && <span className="block text-red-500 text-xs mt-1 px-2">{errors.reportedTo}</span>}
             </PropertyRow>
 
             <PropertyRow icon={iconGlobe} label="Scope">
@@ -475,7 +477,7 @@ const CreateTicketModal = ({ onClose, onCreate, initialData }) => {
               />
             </PropertyRow>
 
-            <PropertyRow icon={iconFolder} label={<span>Project <span className="text-red-500">*</span></span>}>
+            <PropertyRow icon={iconFolder} label="Project">
               <Select
                 value={formData.project || undefined}
                 onValueChange={(value) => handleProjectChange({ target: { value } })}
