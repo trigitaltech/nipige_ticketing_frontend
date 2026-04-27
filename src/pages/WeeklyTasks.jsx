@@ -173,7 +173,7 @@ const TicketEventCard = ({ ticket, onOpen, onStatusChange }) => {
               )}
             </span>
           </TooltipTrigger>
-          <TooltipContent side="top">Mark as complete</TooltipContent>
+          <TooltipContent side="top">{isDone ? 'Completed' : 'Mark as complete'}</TooltipContent>
         </Tooltip>
       </TooltipProvider>
       <div className="flex-1 min-w-0">
