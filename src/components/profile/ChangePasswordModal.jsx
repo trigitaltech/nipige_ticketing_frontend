@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { Spinner } from '@/components/ui/spinner';
 import { toast } from 'react-toastify';
 import { changePasswordAPI } from '../../services/api';
 import '../../assets/Styles/Modal.css';
@@ -95,7 +96,8 @@ const ChangePasswordModal = ({ onClose }) => {
 
           <div className="modal-footer-small">
             <button type="button" className="cancel-btn" onClick={onClose}>Cancel</button>
-            <button type="submit" className="submit-btn" disabled={loading}>
+            <button type="submit" className="submit-btn inline-flex items-center gap-2" disabled={loading}>
+              {loading && <Spinner className="size-4" />}
               {loading ? 'Changing...' : 'Change Password'}
             </button>
           </div>

@@ -1,5 +1,5 @@
 import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
-import { getWeeklyTasksAPI, saveWeeklyTaskAPI, updateWeeklyTaskAPI } from '../services/weeklyTaskApi';
+import { getWeeklyTasksAPI, saveWeeklyTaskAPI, updateWeeklyTaskAPI, getWeeklyTicketsAPI } from '../services/weeklyTaskApi';
 
 export const fetchWeeklyTasks = createAsyncThunk(
   'weeklyTasks/fetchWeeklyTasks',
@@ -37,6 +37,18 @@ export const updateWeeklyTask = createAsyncThunk(
   }
 );
 
+export const fetchWeeklyTickets = createAsyncThunk(
+  'weeklyTasks/fetchWeeklyTickets',
+  async (params, { rejectWithValue }) => {
+    try {
+      const response = await getWeeklyTicketsAPI(params);
+      return response.data || [];
+    } catch (error) {
+      return rejectWithValue(error.response?.data?.message || 'Failed to fetch tickets');
+    }
+  }
+);
+
 const weeklyTaskSlice = createSlice({
   name: 'weeklyTasks',
   initialState: {
@@ -45,11 +57,18 @@ const weeklyTaskSlice = createSlice({
     saving: false,
     error: null,
     success: null,
+    weeklyTickets: [],
+    weeklyTicketsLoading: false,
   },
   reducers: {
     clearWeeklyTaskError: (state) => { state.error = null; },
     clearWeeklyTaskSuccess: (state) => { state.success = null; },
     setWeeklyTasks: (state, action) => { state.tasks = action.payload; },
+    updateWeeklyTicketStatusOptimistic: (state, action) => {
+      const { ticketId, newStatus } = action.payload;
+      const ticket = state.weeklyTickets.find(t => (t._id || t.id) === ticketId);
+      if (ticket) ticket.status = newStatus;
+    },
   },
   extraReducers: (builder) => {
     builder
@@ -61,9 +80,12 @@ const weeklyTaskSlice = createSlice({
       .addCase(saveWeeklyTask.rejected, (state, action) => { state.saving = false; state.error = action.payload; })
       .addCase(updateWeeklyTask.pending, (state) => { state.saving = true; state.error = null; })
       .addCase(updateWeeklyTask.fulfilled, (state) => { state.saving = false; state.success = 'Weekly task updated successfully'; })
-      .addCase(updateWeeklyTask.rejected, (state, action) => { state.saving = false; state.error = action.payload; });
+      .addCase(updateWeeklyTask.rejected, (state, action) => { state.saving = false; state.error = action.payload; })
+      .addCase(fetchWeeklyTickets.pending, (state) => { state.weeklyTicketsLoading = true; })
+      .addCase(fetchWeeklyTickets.fulfilled, (state, action) => { state.weeklyTicketsLoading = false; state.weeklyTickets = action.payload; })
+      .addCase(fetchWeeklyTickets.rejected, (state) => { state.weeklyTicketsLoading = false; });
   },
 });
 
-export const { clearWeeklyTaskError, clearWeeklyTaskSuccess, setWeeklyTasks } = weeklyTaskSlice.actions;
+export const { clearWeeklyTaskError, clearWeeklyTaskSuccess, setWeeklyTasks, updateWeeklyTicketStatusOptimistic } = weeklyTaskSlice.actions;
 export default weeklyTaskSlice.reducer;

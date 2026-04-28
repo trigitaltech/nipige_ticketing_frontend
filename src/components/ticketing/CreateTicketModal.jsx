@@ -7,6 +7,7 @@ import { uploadImage } from '../../services/api';
 import { fileToBase64 } from '../../function/function';
 import '../../assets/Styles/Modal.css';
 import { Button } from '@/components/ui/button';
+import { Spinner } from '@/components/ui/spinner';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import {
@@ -557,6 +558,7 @@ const CreateTicketModal = ({ onClose, onCreate, initialData }) => {
               disabled={isUploading}
               className="!bg-[#5449D6] text-white border-transparent hover:!bg-[#5449D6] hover:text-white hover:brightness-110 focus-visible:ring-[#5449D6]/30"
             >
+              {isUploading && <Spinner className="size-4" />}
               {isUploading ? 'Uploading...' : 'Create Task'}
             </Button>
           </div>

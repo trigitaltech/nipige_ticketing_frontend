@@ -1,440 +1,50 @@
-import { useState, useCallback, useEffect, useRef, useMemo } from 'react';
+import { useState, useCallback, useEffect, useRef } from 'react';
 import { useSelector, useDispatch } from 'react-redux';
 import { useNavigate } from 'react-router-dom';
-import { fetchWeeklyTasks } from '../redux/weeklyTaskSlice';
-import { updateTicket, updateTicketStatusOptimistic } from '../redux/ticketSlice';
+import { fetchWeeklyTasks, fetchWeeklyTickets, updateWeeklyTicketStatusOptimistic } from '../redux/weeklyTaskSlice';
+import { updateTicket } from '../redux/ticketSlice';
 import { fetchProjects } from '../redux/projectSlice';
 import { fetchUsers } from '../redux/userSlice';
-import { Loader2, ChevronLeft, ChevronRight, Plus, X, ChevronDown } from 'lucide-react';
-import { createPortal } from 'react-dom';
-import {
-  Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
-} from '@/components/ui/select';
+import { Loader2, ChevronLeft, ChevronRight, Plus } from 'lucide-react';
 import {
   Tooltip, TooltipContent, TooltipProvider, TooltipTrigger,
 } from '@/components/ui/tooltip';
-import { getAvatarColor, getInitials } from '../utils/avatar';
+import usePersistentState from '../hooks/usePersistentState';
 
-const HOUR_HEIGHT = 40;
-const HOURS = Array.from({ length: 24 }, (_, i) => i);
-const DAY_NAMES = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
-const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+import { HOUR_HEIGHT, HOURS, FULL_DAY_NAMES, MONTHS, FULL_MONTHS, STATUS_CHIP } from '../components/weeklyTask/constants';
+import {
+  isSameDay, getWeekDates, formatWeekRange, toDateTimeLocalValue,
+  formatHourLabel, yToMins, minsToLabel, isAllDayTicket, createEmptyWeekData,
+} from '../components/weeklyTask/utils';
+import DayModal from '../components/weeklyTask/DayModal';
+import UserCombobox from '../components/weeklyTask/UserCombobox';
+import ViewSwitcherDropdown from '../components/weeklyTask/ViewSwitcherDropdown';
+import MonthView from '../components/weeklyTask/MonthView';
+import MonthTicketChip from '../components/weeklyTask/MonthTicketChip';
+import TicketEventCard from '../components/weeklyTask/TicketEventCard';
 
-const STATUS_OPTIONS = [
-  { value: 'On Going',    label: 'On Going' },
-  { value: 'Completed',   label: 'Completed' },
-  { value: 'Not Started', label: 'Not Started' },
-  { value: 'On Hold',     label: 'On Hold' },
-];
-
-const sanitizeTimeInput = (val) => val.replace(/[^\dhHmM\s]/g, '');
-
-const STATUS_CHIP = {
-  'On Going':    { bg: '#fef9c3', color: '#854d0e', border: '#fde68a' },
-  'Completed':   { bg: '#d1fae5', color: '#065f46', border: '#a7f3d0' },
-  'Not Started': { bg: '#f1f5f9', color: '#475569', border: '#e2e8f0' },
-  'On Hold':     { bg: '#fce7f3', color: '#9f1239', border: '#fda4af' },
-};
-
-const isTicketAssignedToUser = (ticket, user) => {
-  const ticketAssigneeId = ticket?.assignTo?._id || ticket?.assignTo?.id || '';
-  const userId = user?._id || '';
-  const ticketAssigneeEmail = ticket?.assignTo?.email || ticket?.assignTo?.authentication?.email || '';
-  const userEmail = user?.authentication?.email || '';
-
-  return Boolean(
-    (ticketAssigneeId && userId && String(ticketAssigneeId) === String(userId)) ||
-    (ticketAssigneeEmail && userEmail && ticketAssigneeEmail === userEmail)
-  );
-};
-
-const isSameDay = (d1, d2) =>
-  d1.getFullYear() === d2.getFullYear() &&
-  d1.getMonth() === d2.getMonth() &&
-  d1.getDate() === d2.getDate();
-
-const getWeekDates = (base) => {
-  const date = new Date(base);
-  const day = date.getDay();
-  const mon = new Date(date);
-  mon.setDate(date.getDate() - ((day + 6) % 7));
-  return Array.from({ length: 7 }, (_, i) => {
-    const d = new Date(mon);
-    d.setDate(mon.getDate() + i);
-    return d;
-  });
-};
-
-const formatWeekRange = (dates) => {
-  const s = dates[0], e = dates[6];
-  if (s.getFullYear() === e.getFullYear()) {
-    if (s.getMonth() === e.getMonth())
-      return `${MONTHS[s.getMonth()]} ${s.getDate()} – ${e.getDate()}, ${s.getFullYear()}`;
-    return `${MONTHS[s.getMonth()]} ${s.getDate()} – ${MONTHS[e.getMonth()]} ${e.getDate()}, ${s.getFullYear()}`;
-  }
-  return `${MONTHS[s.getMonth()]} ${s.getDate()}, ${s.getFullYear()} – ${MONTHS[e.getMonth()]} ${e.getDate()}, ${e.getFullYear()}`;
-};
-
-const fmt12 = (date) => {
-  const h = date.getHours(), m = date.getMinutes();
-  const ampm = h >= 12 ? 'PM' : 'AM';
-  return `${h % 12 || 12}:${String(m).padStart(2, '0')} ${ampm}`;
-};
-
-const pad2 = (value) => String(value).padStart(2, '0');
-const toDateTimeLocalValue = (baseDate, mins) => {
-  const date = new Date(baseDate);
-  date.setHours(Math.floor(mins / 60), mins % 60, 0, 0);
-  return `${date.getFullYear()}-${pad2(date.getMonth() + 1)}-${pad2(date.getDate())}T${pad2(date.getHours())}:${pad2(date.getMinutes())}`;
-};
-
-const formatHourLabel = (h) => {
-  if (h === 0) return '';
-  if (h < 12) return `${h} AM`;
-  if (h === 12) return '12 PM';
-  return `${h - 12} PM`;
-};
-
-const yToMins = (y) => {
-  const raw = (y / HOUR_HEIGHT) * 60;
-  return Math.max(0, Math.min(Math.round(raw / 15) * 15, 24 * 60 - 1));
-};
-
-const minsToLabel = (totalMins) => {
-  const clamped = Math.max(0, Math.min(totalMins, 24 * 60 - 1));
-  const h = Math.floor(clamped / 60);
-  const m = clamped % 60;
-  const ampm = h >= 12 ? 'PM' : 'AM';
-  return `${h % 12 || 12}:${String(m).padStart(2, '0')} ${ampm}`;
-};
-
-const parseEstimateHours = (str) => {
-  if (!str) return 1;
-  const h = str.match(/(\d+)\s*h/i);
-  const m = str.match(/(\d+)\s*m/i);
-  const total = (h ? Number(h[1]) : 0) + (m ? Number(m[1]) : 0) / 60;
-  return total > 0 ? total : 1;
-};
-
-const isAllDayTicket = (ticket) => {
-  if (!ticket?.startDate || !ticket?.endDate) return false;
-  const start = new Date(ticket.startDate);
-  const end = new Date(ticket.endDate);
-  if (Number.isNaN(start.getTime()) || Number.isNaN(end.getTime())) return false;
-  return (end - start) > 8 * 3_600_000;
-};
-
-const createEmptyWeekData = () =>
-  Object.fromEntries(Array.from({ length: 7 }, (_, i) => [i, { projectNames: '', workDescription: '', time: '', status: '' }]));
-
-// ─── Event card ──────────────────────────────────────────────────────────────
-const TicketEventCard = ({ ticket, onOpen, onStatusChange }) => {
-  const isDone = ticket.status === 'RESOLVED' || ticket.status === 'CLOSED';
-  const start = new Date(ticket.startDate);
-  const top = (start.getHours() + start.getMinutes() / 60) * HOUR_HEIGHT;
-
-  let heightPx;
-  if (ticket.endDate) {
-    const end = new Date(ticket.endDate);
-    const hrs = Math.max((end - start) / 3_600_000, 0.5);
-    heightPx = hrs * HOUR_HEIGHT;
-  } else {
-    heightPx = parseEstimateHours(ticket.estimateTime) * HOUR_HEIGHT;
-  }
-  heightPx = Math.max(heightPx, 28);
-
-  const timeStr = ticket.endDate
-    ? `${fmt12(start)} – ${fmt12(new Date(ticket.endDate))}`
-    : fmt12(start);
-  const isShort = heightPx <= 44;
-
-  return (
-    <button
-      type="button"
-      data-wt-event=""
-      className={`absolute left-[3px] right-[3px] w-[calc(100%-6px)] rounded-lg py-[5px] px-[7px] overflow-hidden border-0 flex items-start gap-[5px] cursor-pointer transition-[filter] text-left appearance-none hover:brightness-95 focus-visible:outline-2 focus-visible:outline-[#3B2FB1] focus-visible:outline-offset-1 ${isDone ? 'bg-teal-100 text-teal-900' : 'bg-pink-100 text-pink-900'}`}
-      style={{ top: `${top}px`, height: `${heightPx}px` }}
-      title={ticket.subject}
-      onClick={() => onOpen(ticket)}
-    >
-      <TooltipProvider>
-        <Tooltip>
-          <TooltipTrigger asChild>
-            <span
-              role="button"
-              tabIndex={0}
-              className={`w-[13px] h-[13px] rounded-[3px] border-[1.5px] shrink-0 mt-px flex items-center justify-center ${isDone ? 'bg-teal-500 border-teal-500 text-white opacity-100' : 'border-current opacity-60'}`}
-              onClick={(e) => { e.stopPropagation(); onStatusChange(ticket); }}
-              onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.stopPropagation(); onStatusChange(ticket); } }}
-            >
-              {isDone && (
-                <svg width="8" height="8" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3.5" strokeLinecap="round" strokeLinejoin="round">
-                  <path d="M20 6 9 17l-5-5" />
-                </svg>
-              )}
-            </span>
-          </TooltipTrigger>
-          <TooltipContent side="top">{isDone ? 'Completed' : 'Mark as complete'}</TooltipContent>
-        </Tooltip>
-      </TooltipProvider>
-      <div className="flex-1 min-w-0">
-        {isShort ? (
-          <span className={`text-[11.5px] font-semibold whitespace-nowrap overflow-hidden text-ellipsis block${isDone ? ' line-through opacity-60' : ''}`}>
-            {ticket.subject}
-            <span className={`font-normal text-[10.5px]${isDone ? ' opacity-[0.65]' : ' opacity-[0.65]'}`}> {timeStr}</span>
-          </span>
-        ) : (
-          <>
-            <div className={`text-xs font-semibold whitespace-nowrap overflow-hidden text-ellipsis${isDone ? ' line-through opacity-60' : ''}`}>{ticket.subject}</div>
-            <div className={`text-[10.5px] opacity-75 mt-0.5 whitespace-nowrap${isDone ? ' line-through opacity-60' : ''}`}>{timeStr}</div>
-          </>
-        )}
-      </div>
-    </button>
-  );
-};
-
-// ─── Day edit modal ───────────────────────────────────────────────────────────
-const DayModal = ({ dayIndex, date, data, projects, initialTime, onSave, onClose }) => {
-  const [form, setForm] = useState({ ...data, time: initialTime || data.time });
-  const set = (k, v) => setForm(f => ({ ...f, [k]: v }));
-
-  return (
-    <div
-      className="fixed inset-0 bg-slate-900/[0.32] flex items-center justify-center z-[200]"
-      onClick={onClose}
-    >
-      <div
-        className="bg-white rounded-[14px] w-[400px] max-w-[92vw] shadow-[0_20px_60px_rgba(0,0,0,0.15)] overflow-hidden"
-        onClick={e => e.stopPropagation()}
-      >
-        <div className="flex items-center justify-between py-[15px] px-[18px] border-b border-slate-100">
-          <span className="text-sm font-bold text-slate-900">
-            {DAY_NAMES[date.getDay()]}, {MONTHS[date.getMonth()]} {date.getDate()}
-          </span>
-          <button
-            className="w-7 h-7 rounded-md border-0 bg-slate-100 flex items-center justify-center cursor-pointer text-slate-500 hover:bg-slate-200 transition-colors"
-            onClick={onClose}
-          >
-            <X size={15} />
-          </button>
-        </div>
-
-        <div className="py-4 px-[18px] flex flex-col gap-2.5">
-          <div>
-            <label className="block text-[11px] font-bold text-slate-500 uppercase tracking-[0.06em] mb-1">Project</label>
-            <Select value={form.projectNames} onValueChange={v => set('projectNames', v)}>
-              <SelectTrigger className="h-9 text-[13px] w-full"><SelectValue placeholder="Select project" /></SelectTrigger>
-              <SelectContent>
-                {Array.isArray(projects) && projects.map(p => {
-                  const name = p.name || 'Untitled';
-                  return <SelectItem key={p._id || p.id} value={name}>{name}</SelectItem>;
-                })}
-              </SelectContent>
-            </Select>
-          </div>
-
-          <div>
-            <label className="block text-[11px] font-bold text-slate-500 uppercase tracking-[0.06em] mb-1">Work Description</label>
-            <textarea
-              className="w-full border border-slate-200 rounded-lg py-2 px-2.5 text-[13px] resize-y outline-none text-slate-700 bg-slate-50 focus:border-[#3B2FB1] focus:shadow-[0_0_0_2px_rgba(59,47,177,0.12)]"
-              placeholder="Describe work done..."
-              value={form.workDescription}
-              onChange={e => set('workDescription', e.target.value)}
-              rows={3}
-            />
-          </div>
-
-          <div className="flex gap-2.5">
-            <div className="flex-1 flex flex-col">
-              <label className="block text-[11px] font-bold text-slate-500 uppercase tracking-[0.06em] mb-1">Time</label>
-              <input
-                className="w-full h-9 border border-slate-200 rounded-lg px-2.5 text-[13px] outline-none text-slate-700 bg-slate-50 focus:border-[#3B2FB1] focus:shadow-[0_0_0_2px_rgba(59,47,177,0.12)]"
-                placeholder="e.g. 2h 30m"
-                value={form.time}
-                onChange={e => set('time', sanitizeTimeInput(e.target.value))}
-              />
-            </div>
-            <div className="flex-1 flex flex-col">
-              <label className="block text-[11px] font-bold text-slate-500 uppercase tracking-[0.06em] mb-1">Status</label>
-              <Select value={form.status} onValueChange={v => set('status', v)}>
-                <SelectTrigger className="h-9 text-[13px] w-full"><SelectValue placeholder="Status" /></SelectTrigger>
-                <SelectContent>
-                  {STATUS_OPTIONS.map(o => <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>)}
-                </SelectContent>
-              </Select>
-            </div>
-          </div>
-        </div>
-
-        <div className="flex justify-end gap-2 py-3 px-[18px] border-t border-slate-100">
-          <button
-            className="h-[34px] px-4 rounded-lg text-[13px] font-semibold cursor-pointer inline-flex items-center transition-colors bg-slate-100 text-slate-500 border border-slate-200 hover:bg-slate-200"
-            onClick={onClose}
-          >
-            Cancel
-          </button>
-          <button
-            className="h-[34px] px-4 rounded-lg text-[13px] font-semibold cursor-pointer border-0 inline-flex items-center transition-colors bg-[#3B2FB1] text-white hover:bg-[#2d2490]"
-            onClick={() => onSave(dayIndex, form)}
-          >
-            Save
-          </button>
-        </div>
-      </div>
-    </div>
-  );
-};
-
-// ─── User single-select dropdown (matches FilterDropdown style) ───────────────
-const getUserName = (u) =>
-  u?.authentication?.userName ||
-  `${u?.name?.first || ''} ${u?.name?.last || ''}`.trim() ||
-  u?.authentication?.email || 'Unknown';
-
-const UserAvatar = ({ name, size = 22 }) => (
-  <span
-    className="shrink-0 rounded-full flex items-center justify-center text-white font-semibold"
-    style={{ width: size, height: size, fontSize: size * 0.4, background: getAvatarColor(name) }}
-  >
-    {getInitials(name)}
-  </span>
-);
-
-const UserCombobox = ({ users, selectedUserId, onSelect }) => {
-  const [open, setOpen] = useState(false);
-  const [search, setSearch] = useState('');
-  const [dropdownStyle, setDropdownStyle] = useState({});
-  const triggerRef = useRef(null);
-  const dropdownRef = useRef(null);
-
-  const selectedUser = Array.isArray(users) && users.find(u => String(u._id) === selectedUserId);
-  const selectedName = selectedUser ? getUserName(selectedUser) : null;
-
-  const filtered = Array.isArray(users)
-    ? users.filter(u => getUserName(u).toLowerCase().includes(search.toLowerCase()))
-    : [];
-
-  useEffect(() => {
-    const handler = (e) => {
-      if (
-        triggerRef.current && !triggerRef.current.contains(e.target) &&
-        dropdownRef.current && !dropdownRef.current.contains(e.target)
-      ) {
-        setOpen(false);
-        setSearch('');
-      }
-    };
-    document.addEventListener('mousedown', handler);
-    return () => document.removeEventListener('mousedown', handler);
-  }, []);
-
-  const handleOpen = () => {
-    if (!open && triggerRef.current) {
-      const rect = triggerRef.current.getBoundingClientRect();
-      const dropdownWidth = Math.max(rect.width, 230);
-      const dropdownHeight = 300;
-      const spaceBelow = window.innerHeight - rect.bottom;
-      const left = Math.min(rect.left, window.innerWidth - dropdownWidth - 8);
-      if (spaceBelow < dropdownHeight && rect.top > dropdownHeight) {
-        setDropdownStyle({ top: rect.top - dropdownHeight - 4, left, width: dropdownWidth });
-      } else {
-        setDropdownStyle({ top: rect.bottom + 4, left, width: dropdownWidth });
-      }
-    }
-    setOpen(o => !o);
-    if (open) setSearch('');
-  };
-
-  return (
-    <div className="relative">
-      <button
-        ref={triggerRef}
-        type="button"
-        onClick={handleOpen}
-        className="h-8 flex items-center justify-between px-2 bg-[#FAFBFC] border border-[#DFE1E6] rounded-lg text-[13px] cursor-pointer gap-1.5 overflow-hidden min-w-[130px]"
-      >
-        {selectedName ? (
-          <div className="flex items-center gap-1.5 overflow-hidden flex-1">
-            <UserAvatar name={selectedName} size={20} />
-            <span className="text-[#5449D6] font-medium truncate">{selectedName}</span>
-          </div>
-        ) : (
-          <span className="text-slate-400 flex-1">All</span>
-        )}
-        <ChevronDown size={14} className="shrink-0 text-slate-400" />
-      </button>
-
-      {open && createPortal(
-        <div
-          ref={dropdownRef}
-          className="fixed bg-white border border-slate-200 rounded-xl shadow-2xl z-[9999] overflow-hidden"
-          style={dropdownStyle}
-        >
-          <div className="px-3 pt-3 pb-2">
-            <div className="flex items-center gap-2 px-2.5 py-1.5 bg-slate-50 border border-slate-200 rounded-lg">
-              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#94a3b8" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                <circle cx="11" cy="11" r="8" /><line x1="21" y1="21" x2="16.65" y2="16.65" />
-              </svg>
-              <input
-                type="text"
-                value={search}
-                onChange={e => setSearch(e.target.value)}
-                placeholder="Search user…"
-                className="flex-1 text-[13px] bg-transparent outline-none text-slate-700 placeholder-slate-400"
-                autoFocus
-              />
-            </div>
-          </div>
-          <div className="max-h-[220px] overflow-y-auto pb-1.5">
-            {filtered.length === 0 ? (
-              <div className="px-4 py-3 text-[13px] text-slate-400 text-center">No results found</div>
-            ) : (
-              filtered.map(u => {
-                const id = String(u._id);
-                const isSelected = id === selectedUserId;
-                return (
-                  <button
-                    key={id}
-                    type="button"
-                    onClick={() => { onSelect(id); setOpen(false); setSearch(''); }}
-                    className="w-full flex items-center gap-2.5 px-3 py-2 text-[13px] cursor-pointer transition-colors hover:bg-slate-50"
-                  >
-                    <UserAvatar name={getUserName(u)} size={28} />
-                    <span className="flex-1 text-left truncate font-medium text-slate-700">{getUserName(u)}</span>
-                    {isSelected && (
-                      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#5449D6" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                        <polyline points="20 6 9 17 4 12" />
-                      </svg>
-                    )}
-                  </button>
-                );
-              })
-            )}
-          </div>
-        </div>,
-        document.body
-      )}
-    </div>
-  );
-};
-
-// ─── Main component ───────────────────────────────────────────────────────────
 const WeeklyTasks = ({ onOpenCreateModal }) => {
   const dispatch = useDispatch();
   const navigate = useNavigate();
   const { user } = useSelector(s => s.auth);
   const { projects } = useSelector(s => s.projects);
-  const { tickets } = useSelector(s => s.tickets);
-  const { tasks: weeklyTasks, loading: fetchingTasks } = useSelector(s => s.weeklyTasks);
+  const { tasks: weeklyTasks, loading: fetchingTasks, weeklyTickets } = useSelector(s => s.weeklyTasks);
   const { users } = useSelector(s => s.users);
 
   const [currentDate, setCurrentDate] = useState(new Date());
   const [weekData, setWeekData] = useState(createEmptyWeekData());
-  const [selectedUserId, setSelectedUserId] = useState(null);
+  const [selectedUserId, setSelectedUserId] = usePersistentState('weeklyTasks.selectedUserId', null);
 
   const [editingDay, setEditingDay] = useState(null);
   const [drag, setDrag] = useState(null);
+  const [showClosed, setShowClosed] = usePersistentState('weeklyTasks.showClosed', false);
+  const [viewMode, setViewMode] = usePersistentState('weeklyTasks.viewMode', 'week');
+  const [now, setNow] = useState(new Date());
+
+  useEffect(() => {
+    const id = setInterval(() => setNow(new Date()), 60_000);
+    return () => clearInterval(id);
+  }, []);
 
   const gridRef = useRef(null);
   const dragRef = useRef(null);
@@ -442,6 +52,12 @@ const WeeklyTasks = ({ onOpenCreateModal }) => {
   const currentUser = user?.response?.user || user;
   const weekDates = getWeekDates(currentDate);
   const today = new Date();
+  const displayDates = viewMode === 'day' ? [currentDate] : weekDates;
+  const dateRangeLabel = viewMode === 'day'
+    ? `${FULL_DAY_NAMES[currentDate.getDay()]}, ${FULL_MONTHS[currentDate.getMonth()]} ${currentDate.getDate()}`
+    : viewMode === 'month'
+      ? `${FULL_MONTHS[currentDate.getMonth()]} ${currentDate.getFullYear()}`
+      : formatWeekRange(weekDates);
 
   useEffect(() => {
     if (gridRef.current) gridRef.current.scrollTop = 9 * HOUR_HEIGHT;
@@ -455,18 +71,6 @@ const WeeklyTasks = ({ onOpenCreateModal }) => {
       setSelectedUserId(String(currentUser._id));
   }, [currentUser, selectedUserId]);
 
-  const selectedUser = useMemo(() => {
-    if (!selectedUserId) return currentUser;
-    return (Array.isArray(users) && users.find(u => String(u._id) === selectedUserId)) || currentUser;
-  }, [users, selectedUserId, currentUser]);
-
-  const assignedTickets = useMemo(
-    () => Array.isArray(tickets)
-      ? tickets.filter(ticket => isTicketAssignedToUser(ticket, selectedUser))
-      : [],
-    [tickets, selectedUser]
-  );
-
   useEffect(() => {
     if (!selectedUserId) return;
     setWeekData(createEmptyWeekData());
@@ -479,11 +83,15 @@ const WeeklyTasks = ({ onOpenCreateModal }) => {
   }, [dispatch, currentDate, selectedUserId]);
 
   useEffect(() => {
+    if (!selectedUserId) return;
+    dispatch(fetchWeeklyTickets({ assignTo: selectedUserId }));
+  }, [dispatch, selectedUserId]);
+
+  useEffect(() => {
     const nd = createEmptyWeekData();
-    let found = null;
     if (Array.isArray(weeklyTasks) && weeklyTasks.length > 0) {
       const ws = weekDates[0].toISOString().split('T')[0];
-      found = weeklyTasks.find(t =>
+      const found = weeklyTasks.find(t =>
         t.weekStartDate && new Date(t.weekStartDate).toISOString().split('T')[0] === ws
       ) ?? weeklyTasks[0];
       if (found?.entries) {
@@ -493,20 +101,9 @@ const WeeklyTasks = ({ onOpenCreateModal }) => {
         });
       }
     }
-    weekDates.forEach((date, i) => {
-      const d = nd[i];
-      if (!d.projectNames && !d.workDescription && !d.time && !d.status) {
-        const t = assignedTickets.find(t =>
-          t.startDate &&
-          isSameDay(new Date(t.startDate), date) &&
-          isAllDayTicket(t)
-        );
-        if (t) nd[i] = { projectNames: t.project?.name || '', workDescription: t.subject || '', time: t.estimateTime || '', status: '' };
-      }
-    });
     setWeekData(nd);
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [weeklyTasks, assignedTickets]);
+  }, [weeklyTasks, weeklyTickets]);
 
   // ── Drag logic ──────────────────────────────────────────────────────────────
   const getGridY = useCallback((clientY) => {
@@ -531,7 +128,7 @@ const WeeklyTasks = ({ onOpenCreateModal }) => {
   const handleDragCreate = useCallback((dayIndex, startMins, endMins) => {
     if (typeof onOpenCreateModal !== 'function') return;
 
-    const baseDate = weekDates[dayIndex];
+    const baseDate = displayDates[dayIndex];
     if (!baseDate) return;
 
     onOpenCreateModal({
@@ -546,7 +143,7 @@ const WeeklyTasks = ({ onOpenCreateModal }) => {
         phone: currentUser?.authentication?.phone,
       } : null,
     });
-  }, [currentUser, onOpenCreateModal, weekDates]);
+  }, [currentUser, onOpenCreateModal, displayDates]);
 
   useEffect(() => {
     const onMove = (e) => {
@@ -596,7 +193,24 @@ const WeeklyTasks = ({ onOpenCreateModal }) => {
   // ────────────────────────────────────────────────────────────────────────────
 
   const navigateWeek = useCallback((dir) => {
-    setCurrentDate(prev => { const d = new Date(prev); d.setDate(d.getDate() + dir * 7); return d; });
+    setCurrentDate(prev => {
+      const d = new Date(prev);
+      if (viewMode === 'day') d.setDate(d.getDate() + dir);
+      else if (viewMode === 'month') d.setMonth(d.getMonth() + dir);
+      else d.setDate(d.getDate() + dir * 7);
+      return d;
+    });
+  }, [viewMode]);
+
+  useEffect(() => {
+    const handler = (e) => {
+      if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA' || e.target.isContentEditable) return;
+      if (e.key === 'd' || e.key === 'D') setViewMode('day');
+      else if (e.key === 'w' || e.key === 'W') setViewMode('week');
+      else if (e.key === 'm' || e.key === 'M') setViewMode('month');
+    };
+    window.addEventListener('keydown', handler);
+    return () => window.removeEventListener('keydown', handler);
   }, []);
 
   const handleDaySave = (idx, data) => {
@@ -604,52 +218,80 @@ const WeeklyTasks = ({ onOpenCreateModal }) => {
     setEditingDay(null);
   };
 
-  const handleModalClose = () => {
-    setEditingDay(null);
-  };
-
   const ticketsForDay = (date) =>
-    assignedTickets.filter(t => t.startDate && isSameDay(new Date(t.startDate), date));
+    (Array.isArray(weeklyTickets) ? weeklyTickets : []).filter(t =>
+      t.startDate &&
+      isSameDay(new Date(t.startDate), date) &&
+      !isAllDayTicket(t) &&
+      (showClosed || (t.status !== 'RESOLVED' && t.status !== 'CLOSED'))
+    );
+
+  const allDayTicketsForDay = (date) =>
+    (Array.isArray(weeklyTickets) ? weeklyTickets : []).filter(t =>
+      t.startDate &&
+      isSameDay(new Date(t.startDate), date) &&
+      isAllDayTicket(t) &&
+      (showClosed || (t.status !== 'RESOLVED' && t.status !== 'CLOSED'))
+    );
 
   const handleOpenTicket = useCallback((ticket) => {
     const id = ticket?._id || ticket?.id;
     if (id) navigate(`/tickets/${id}`, { state: { from: '/weekly-tasks' } });
   }, [navigate]);
 
-  const handleMarkComplete = useCallback((ticket) => {
+  const handleMarkComplete = useCallback((ticket, newStatus = 'RESOLVED') => {
     const ticketId = ticket._id || ticket.id;
-    if (!ticketId || ticket.status === 'RESOLVED' || ticket.status === 'CLOSED') return;
-    dispatch(updateTicketStatusOptimistic({ ticketId, newStatus: 'RESOLVED' }));
-    dispatch(updateTicket({ ticketId, ticketData: { ...ticket, status: 'RESOLVED' } }));
+    if (!ticketId) return;
+    dispatch(updateWeeklyTicketStatusOptimistic({ ticketId, newStatus }));
+    dispatch(updateTicket({ ticketId, ticketData: { ...ticket, status: newStatus } }));
   }, [dispatch]);
 
   return (
-    <div className="flex flex-col h-full bg-white overflow-hidden relative">
+    <div className="flex flex-col bg-white overflow-hidden relative border border-slate-200 rounded-xl mx-2 mb-2" style={{ height: 'calc(100% - 0.5rem)' }}>
 
       {/* Header */}
-      <div className="flex items-center justify-between px-5 pt-[14px] pb-3 border-b border-slate-200 shrink-0 bg-white">
-        <div className="flex items-center gap-2">
+      <div className="flex items-center justify-between px-4 py-2 border-b border-slate-200 shrink-0 bg-white">
+        <div className="flex items-center gap-1.5">
           <button
-            className="h-[28px] w-[28px] border border-slate-200 rounded-lg bg-white inline-flex items-center justify-center text-slate-500 cursor-pointer transition-colors hover:bg-slate-100"
-            onClick={() => navigateWeek(-1)}
-          >
-            <ChevronLeft size={16} />
-          </button>
-          <h2 className="text-[15px] font-bold text-slate-800 px-1">{formatWeekRange(weekDates)}</h2>
-          <button
-            className="h-[28px] w-[28px] border border-slate-200 rounded-lg bg-white inline-flex items-center justify-center text-slate-500 cursor-pointer transition-colors hover:bg-slate-100"
-            onClick={() => navigateWeek(1)}
-          >
-            <ChevronRight size={16} />
-          </button>
-          <button
-            className="h-[28px] border border-slate-200 rounded-lg bg-white inline-flex items-center justify-center text-slate-500 cursor-pointer text-[13px] font-medium px-4 transition-colors hover:bg-slate-100"
+            className="h-[22px] border border-slate-200 rounded-md bg-white inline-flex items-center justify-center text-slate-700 cursor-pointer text-[12px] font-medium px-3 transition-colors hover:bg-slate-50"
             onClick={() => setCurrentDate(new Date())}
           >
             Today
           </button>
+          <ViewSwitcherDropdown viewMode={viewMode} onChange={setViewMode} />
+          <div className="flex items-center">
+            <button
+              className="h-[22px] w-[22px] bg-white inline-flex items-center justify-center text-slate-500 cursor-pointer transition-colors hover:bg-slate-50 border-r border-slate-200"
+              onClick={() => navigateWeek(-1)}
+            >
+              <ChevronLeft size={15} />
+            </button>
+            <button
+              className="h-[22px] w-[22px] bg-white inline-flex items-center justify-center text-slate-500 cursor-pointer transition-colors hover:bg-slate-50"
+              onClick={() => navigateWeek(1)}
+            >
+              <ChevronRight size={15} />
+            </button>
+          </div>
+          <span className="text-[14px] font-semibold text-slate-800 ml-1">{dateRangeLabel}</span>
         </div>
         <div className="flex items-center gap-[5px]">
+          <TooltipProvider delayDuration={100}>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <button
+                  onClick={() => setShowClosed(v => !v)}
+                  className={`h-[22px] px-3 rounded-full inline-flex items-center gap-1.5 text-[12px] font-medium border cursor-pointer transition-colors ${showClosed ? 'bg-[#3B2FB1]/10 border-[#3B2FB1]/30 text-[#3B2FB1]' : 'bg-white border-slate-200 text-slate-500 hover:bg-slate-50'}`}
+                >
+                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                    <circle cx="12" cy="12" r="10"/><path d="m9 12 2 2 4-4"/>
+                  </svg>
+                  Closed
+                </button>
+              </TooltipTrigger>
+              <TooltipContent side="bottom">Show closed tasks</TooltipContent>
+            </Tooltip>
+          </TooltipProvider>
           <UserCombobox users={users} selectedUserId={selectedUserId} onSelect={setSelectedUserId} />
           <TooltipProvider>
             <Tooltip>
@@ -667,44 +309,70 @@ const WeeklyTasks = ({ onOpenCreateModal }) => {
         </div>
       </div>
 
-      {/* Calendar */}
-      <div className="flex-1 min-h-0 flex flex-col">
+      {/* Calendar body */}
+      <div className="flex flex-1 min-h-0">
 
-        {/* Day header row */}
-        <div className="grid grid-cols-[58px_repeat(7,1fr)] border-b border-slate-200 shrink-0 bg-white">
-          <div className="border-r border-slate-200 text-[10px] font-bold text-slate-400 tracking-[0.06em] flex items-center justify-center">IST</div>
-          {weekDates.map((date, i) => {
+      {viewMode === 'month' ? (
+        <MonthView
+          currentDate={currentDate}
+          weeklyTickets={weeklyTickets}
+          showClosed={showClosed}
+          onOpenTicket={handleOpenTicket}
+          onStatusChange={handleMarkComplete}
+        />
+      ) : (
+      <div className="flex-1 min-h-0 flex flex-col overflow-hidden">
+
+        {/* Day header row — week view only */}
+        {viewMode === 'week' && (
+        <div className="grid border-b border-slate-200 shrink-0 bg-white" style={{ gridTemplateColumns: `52px repeat(${displayDates.length}, 1fr)` }}>
+          <div className="border-r border-slate-200" />
+          {displayDates.map((date, i) => {
             const isToday = isSameDay(date, today);
             return (
-              <div key={i} className="flex flex-col items-center pt-[9px] pb-[7px] border-r border-slate-100 last:border-r-0">
-                <span className="text-[10px] font-bold text-slate-400 tracking-[0.09em] mb-[5px]">{DAY_NAMES[date.getDay()].toUpperCase()}</span>
-                <span className={`w-[30px] h-[30px] rounded-full flex items-center justify-center text-sm font-semibold${isToday ? ' bg-[#3B2FB1] text-white' : ' text-slate-700'}`}>
-                  {date.getDate()}
+              <div key={i} className="flex flex-col items-center pt-2 pb-2 border-r border-slate-100 last:border-r-0">
+                <span className={`text-[12px] font-medium mb-0.5 ${isToday ? 'text-indigo-600' : 'text-slate-500'}`}>
+                  {FULL_DAY_NAMES[date.getDay()]}
+                </span>
+                <span className={`text-[12px] font-medium ${isToday ? 'text-red-500' : 'text-slate-500'}`}>
+                  {date.getDate()} {MONTHS[date.getMonth()]}
                 </span>
               </div>
             );
           })}
         </div>
+        )}
 
         {/* All-day / work-log row */}
-        <div className="grid grid-cols-[58px_repeat(7,1fr)] border-b border-slate-200 min-h-[46px] shrink-0">
-          <div className="border-r border-slate-200 text-[10px] text-slate-400 flex items-center justify-center font-semibold tracking-[0.04em]">All-day</div>
-          {weekDates.map((_, i) => {
+        <div className="grid border-b border-slate-200 min-h-[36px] shrink-0" style={{ gridTemplateColumns: `52px repeat(${displayDates.length}, 1fr)` }}>
+          <div className="border-r border-slate-200 text-[10px] text-slate-400 flex items-center justify-center font-medium">All day</div>
+          {displayDates.map((date, i) => {
             const d = weekData[i];
             const has = d?.projectNames || d?.workDescription || d?.time || d?.status;
             const chip = STATUS_CHIP[d?.status] || STATUS_CHIP['Not Started'];
+            const allDayTix = allDayTicketsForDay(date);
+            const isEmpty = !has && allDayTix.length === 0;
             return (
-              <div key={i} className="border-r border-slate-100 py-[5px] px-1 flex items-center last:border-r-0">
-                {has ? (
+              <div key={i} className="border-r border-slate-100 py-[4px] px-1 flex flex-col gap-[3px] last:border-r-0 min-h-[36px] overflow-hidden min-w-0">
+                {allDayTix.map(ticket => (
+                  <MonthTicketChip
+                    key={ticket._id || ticket.id}
+                    ticket={ticket}
+                    onOpen={handleOpenTicket}
+                    onStatusChange={handleMarkComplete}
+                  />
+                ))}
+                {has && (
                   <button
                     className="w-full border border-transparent rounded-[6px] py-1 px-2 text-[11px] text-left cursor-pointer flex flex-col gap-px transition-[filter] hover:brightness-[0.94]"
                     style={{ background: chip.bg, color: chip.color, borderColor: chip.border }}
-                    onClick={() => setEditingDay(i)}
+                    onClick={() => d.ticketId ? handleOpenTicket({ _id: d.ticketId }) : setEditingDay(i)}
                   >
                     <span className="font-semibold whitespace-nowrap overflow-hidden text-ellipsis">{d.projectNames || d.workDescription || 'Work log'}</span>
                     {d.time && <span className="text-[10px] opacity-[0.72]">{d.time}</span>}
                   </button>
-                ) : (
+                )}
+                {isEmpty && (
                   <button
                     className="w-[22px] h-[22px] border-[1.5px] border-dashed border-slate-300 rounded-[5px] flex items-center justify-center text-slate-400 cursor-pointer bg-transparent m-auto transition-colors hover:border-[#3B2FB1] hover:text-[#3B2FB1]"
                     onClick={() => handleDragCreate(i, 540, 1080)}
@@ -722,29 +390,39 @@ const WeeklyTasks = ({ onOpenCreateModal }) => {
         <div className="flex-1 overflow-y-auto overflow-x-hidden" ref={gridRef}>
           <div className="relative" style={{ height: `${24 * HOUR_HEIGHT}px` }}>
 
-            {/* Hour lines + labels */}
             {HOURS.map(h => (
               <div key={h} className="absolute left-0 right-0 flex items-start pointer-events-none" style={{ top: `${h * HOUR_HEIGHT}px`, height: `${HOUR_HEIGHT}px` }}>
-                <span className="w-[58px] shrink-0 text-[10.5px] text-slate-400 text-right pr-[10px] -translate-y-[7px] whitespace-nowrap border-r border-slate-200 self-stretch">{formatHourLabel(h)}</span>
-                <div className="flex-1 h-px bg-slate-200" />
+                <span className="w-[52px] shrink-0 text-[10.5px] text-slate-400 text-right pr-[10px] -translate-y-[7px] whitespace-nowrap border-r border-slate-200 self-stretch">{formatHourLabel(h)}</span>
+                <div className="flex-1 h-px bg-slate-100" />
               </div>
             ))}
 
-            {/* Day columns with events */}
-            <div className="absolute inset-0 left-[58px] grid grid-cols-7">
-              {weekDates.map((date, i) => {
+            <div className="absolute inset-0 left-[52px] grid" style={{ gridTemplateColumns: `repeat(${displayDates.length}, 1fr)` }}>
+              {displayDates.map((date, i) => {
+                const isToday = isSameDay(date, today);
                 const isDraggingThisCol = drag?.dayIndex === i;
                 const dragTop    = drag ? Math.min(drag.startY, drag.endY) : 0;
                 const dragHeight = drag ? Math.abs(drag.endY - drag.startY) : 0;
                 const dragStartMins = drag ? yToMins(Math.min(drag.startY, drag.endY)) : 0;
                 const dragEndMins   = drag ? yToMins(Math.max(drag.startY, drag.endY)) : 0;
+                const nowTop = (now.getHours() + now.getMinutes() / 60) * HOUR_HEIGHT;
 
                 return (
                   <div
                     key={i}
-                    className={`relative border-r border-slate-100 cursor-crosshair select-none last:border-r-0${isSameDay(date, today) ? ' bg-[rgba(59,47,177,0.02)]' : ''}`}
+                    className="relative border-r border-slate-100 cursor-crosshair select-none last:border-r-0"
                     onMouseDown={e => handleColMouseDown(e, i)}
                   >
+                    {isToday && (
+                      <div
+                        className="absolute left-0 right-0 z-10 pointer-events-none flex items-center"
+                        style={{ top: nowTop }}
+                      >
+                        <div className="w-2 h-2 rounded-full bg-red-500 shrink-0 -ml-1" />
+                        <div className="flex-1 h-[1.5px] bg-red-500" />
+                      </div>
+                    )}
+
                     {ticketsForDay(date).map(ticket => (
                       <TicketEventCard
                         key={ticket._id || ticket.id}
@@ -754,10 +432,9 @@ const WeeklyTasks = ({ onOpenCreateModal }) => {
                       />
                     ))}
 
-                    {/* Drag selection overlay */}
                     {isDraggingThisCol && dragHeight > 4 && (
                       <div
-                        className="absolute left-0.5 right-0.5 bg-[rgba(59,47,177,0.12)] border-2 border-[#3B2FB1] rounded-[7px] pointer-events-none z-[6] overflow-hidden min-h-1"
+                        className="absolute left-0.5 right-0.5 bg-[rgba(59,47,177,0.12)] border border-[#3B2FB1]/40 rounded-[7px] pointer-events-none z-[6] overflow-hidden min-h-1"
                         style={{ top: dragTop, height: dragHeight }}
                       >
                         <span className="block text-[10px] font-bold text-[#3B2FB1] py-[3px] px-[6px] whitespace-nowrap">
@@ -773,8 +450,10 @@ const WeeklyTasks = ({ onOpenCreateModal }) => {
           </div>
         </div>
       </div>
+      )}
 
-      {/* Day edit modal */}
+      </div>{/* end Calendar body */}
+
       {editingDay !== null && (
         <DayModal
           dayIndex={editingDay}
@@ -783,11 +462,10 @@ const WeeklyTasks = ({ onOpenCreateModal }) => {
           projects={projects}
           initialTime=""
           onSave={handleDaySave}
-          onClose={handleModalClose}
+          onClose={() => setEditingDay(null)}
         />
       )}
 
-      {/* Loading overlay */}
       {fetchingTasks && (
         <div className="absolute inset-0 bg-white/[0.65] flex items-center justify-center z-[100] text-[#3B2FB1]">
           <Loader2 className="animate-spin" size={28} />
