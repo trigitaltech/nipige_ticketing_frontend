@@ -10,6 +10,7 @@ import { fileToBase64 } from '../function/function';
 import AlertModal from '../components/shared/AlertModal';
 import DeleteConfirmModal from '../components/shared/DeleteConfirmModal';
 import { Button } from '@/components/ui/button';
+import { Spinner } from '@/components/ui/spinner';
 import {
   Select,
   SelectContent,
@@ -207,6 +208,7 @@ const TicketDetailsPage = ({ ticket, onBack, onUpdate }) => {
   const [uploadedFiles, setUploadedFiles] = useState([]);
   const [uploadProgress, setUploadProgress] = useState(null);
   const [isUploading, setIsUploading] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const [viewingImage, setViewingImage] = useState(null);
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [activityTab, setActivityTab] = useState('all');
@@ -330,7 +332,7 @@ const TicketDetailsPage = ({ ticket, onBack, onUpdate }) => {
     if (errors[field]) setErrors(prev => ({ ...prev, [field]: '' }));
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     const newErrors = {};
     if (!formData.project) newErrors.project = 'Project is required';
@@ -350,8 +352,13 @@ const TicketDetailsPage = ({ ticket, onBack, onUpdate }) => {
     const mergedAttachments = [...existingUrls, ...uploadedFiles];
 
     const totalTrackedMs = trackedTimeMs + (timerStartAt ? Date.now() - timerStartAt : 0);
-    onUpdate({ ...ticket, ...formData, attachments: mergedAttachments, trackedTimeMs: totalTrackedMs });
-    try { localStorage.removeItem(timerStorageKey); } catch { /* ignore */ }
+    setIsSubmitting(true);
+    try {
+      await onUpdate({ ...ticket, ...formData, attachments: mergedAttachments, trackedTimeMs: totalTrackedMs });
+      localStorage.removeItem(timerStorageKey);
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   const handleFileUpload = async (e) => {
@@ -1105,9 +1112,10 @@ const TicketDetailsPage = ({ ticket, onBack, onUpdate }) => {
               </Button>
               <Button
                 type="submit"
-                disabled={!isDirty}
-                className="!bg-[#5449D6] text-white border-transparent hover:!bg-[#5449D6] hover:text-white hover:brightness-110 focus-visible:ring-[#5449D6]/30"
+                disabled={!isDirty || isSubmitting}
+                className="!bg-[#5449D6] text-white border-transparent hover:!bg-[#5449D6] hover:text-white hover:brightness-110 focus-visible:ring-[#5449D6]/30 inline-flex items-center gap-2"
               >
+                {isSubmitting && <Spinner className="size-4" />}
                 Save Changes
               </Button>
             </div>

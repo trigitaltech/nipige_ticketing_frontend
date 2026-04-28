@@ -48,3 +48,8 @@ export const updateWeeklyTaskAPI = async (taskId, taskData) => {
   const response = await nipige.put(`/servicerequest/weekly-task/update/${taskId}`, taskData);
   return response.data;
 };
+
+export const getWeeklyTicketsAPI = async (params) => {
+  const response = await nipige.get('/servicerequest/ticket/list', { params });
+  return response.data;
+};

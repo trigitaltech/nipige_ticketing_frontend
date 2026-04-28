@@ -131,7 +131,7 @@ const TasksPage = ({
         searchQuery={searchQuery}
         setSearchQuery={setSearchQuery}
       />
-      <div className="mx-3 mt-2 mb-2 border border-slate-200 rounded-xl flex-1 min-h-0 flex flex-col overflow-hidden">
+      <div className="mx-2 mb-2 border border-slate-200 rounded-xl flex-1 min-h-0 flex flex-col overflow-hidden">
         <div className="px-5 pt-2.5 pb-1.5">
           <h1 className="text-[16px] font-medium text-slate-900 truncate">
             {fullName ? `${fullName}'s Workspace` : 'Workspace'}

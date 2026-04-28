@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { Spinner } from '@/components/ui/spinner';
 import { useDispatch, useSelector } from 'react-redux';
 import { fetchCategories } from '../../redux/categorySlice';
 import { fetchUsers } from '../../redux/userSlice';
@@ -57,6 +58,7 @@ const UpdateTicketModal = ({ ticket, onClose, onUpdate }) => {
   const [worknoteHistory, setWorknoteHistory] = useState(ticket.worknoteHistory || []);
   const [errors, setErrors] = useState({});
   const [isPostingComment, setIsPostingComment] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const [alertModal, setAlertModal] = useState({
     isOpen: false,
     type: 'info',
@@ -184,6 +186,7 @@ const UpdateTicketModal = ({ ticket, onClose, onUpdate }) => {
       setErrors(newErrors);
       return;
     }
+    setIsSubmitting(true);
     onUpdate({
       ...ticket,
       ...formData,
@@ -501,7 +504,8 @@ const UpdateTicketModal = ({ ticket, onClose, onUpdate }) => {
                 <button type="button" className="cancel-btn" onClick={onClose}>
                   Cancel
                 </button>
-                <button type="submit" className="submit-btn">
+                <button type="submit" className="submit-btn inline-flex items-center gap-2" disabled={isSubmitting}>
+                  {isSubmitting && <Spinner className="size-4" />}
                   Update Ticket
                 </button>
               </div>

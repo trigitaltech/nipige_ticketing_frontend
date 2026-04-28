@@ -514,7 +514,7 @@ const DashboardOverview = ({ tickets = [], loading = false }) => {
   if (loading && tickets.length === 0) return <OverviewSkeleton />;
 
   return (
-    <ScrollArea className="flex-1 min-h-0">
+    <ScrollArea className="flex-1 min-h-0 mx-2 mb-2">
     <div className="px-5 pt-4 pb-4 space-y-4">
 
       {/* Filter bar */}
