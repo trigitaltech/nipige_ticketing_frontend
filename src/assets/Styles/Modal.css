@@ -35,7 +35,7 @@
 
 /* Larger + rounder create ticket modal */
 .modal-content-create {
-  max-width: 760px;
+  max-width: 960px;
   border-radius: 18px;
   overflow-y: auto;
   overflow-x: hidden;

@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import usePersistentState from '../hooks/usePersistentState';
 import { ScrollArea } from '@/components/ui/scroll-area';
+import { Button } from '@/components/ui/button';
 import Header from '../components/layout/Header';
 import SearchFilterBar from '../components/layout/SearchFilterBar';
 import KanbanBoard from '../components/ticketing/KanbanBoard';
@@ -130,12 +131,23 @@ const TasksPage = ({
         onLogout={onLogout}
         searchQuery={searchQuery}
         setSearchQuery={setSearchQuery}
+        showCreateButton={false}
       />
       <div className="mx-2 mb-2 border border-slate-200 rounded-xl flex-1 min-h-0 flex flex-col overflow-hidden">
-        <div className="px-5 pt-2.5 pb-1.5">
+        <div className="px-5 pt-2.5 pb-1.5 flex items-center justify-between">
           <h1 className="text-[16px] font-medium text-slate-900 truncate">
             {fullName ? `${fullName}'s Workspace` : 'Workspace'}
           </h1>
+          <Button
+            onClick={() => onOpenCreateModal(null)}
+            size="sm"
+            className="!bg-[#5449D6] text-white border-transparent hover:!bg-[#5449D6] hover:brightness-110 focus-visible:ring-[#5449D6]/30 rounded-lg h-8 px-3 text-[13px] shrink-0"
+          >
+            <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+            </svg>
+            Create Task
+          </Button>
         </div>
         <SearchFilterBar
           activeFilter={activeFilter}

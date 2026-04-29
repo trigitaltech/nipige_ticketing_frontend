@@ -3,6 +3,7 @@ import { useDispatch, useSelector } from 'react-redux';
 import { fetchCategories } from '../../redux/categorySlice';
 import { fetchUsers } from '../../redux/userSlice';
 import { fetchProjects } from '../../redux/projectSlice';
+import { getProjectMembersAPI } from '../../services/projectApi';
 import { uploadImage } from '../../services/api';
 import { fileToBase64 } from '../../function/function';
 import '../../assets/Styles/Modal.css';
@@ -60,7 +61,6 @@ const PropertyRow = ({ icon, label, children }) => (
   </div>
 );
 
-const iconStatus   = <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>;
 const iconUser     = <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>;
 const iconCalendar = <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>;
 const iconFlag     = <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M4 2v20h2v-8h12l-2-4 2-4H6V2H4z"/></svg>;
@@ -99,6 +99,8 @@ const CreateTicketModal = ({ onClose, onCreate, initialData }) => {
   const [uploadedFiles, setUploadedFiles] = useState([]);
   const [uploadProgress, setUploadProgress] = useState(null);
   const [isUploading, setIsUploading] = useState(false);
+  const [projectMembers, setProjectMembers] = useState([]);
+  const [projectMembersLoading, setProjectMembersLoading] = useState(false);
   const fileInputRef = useRef(null);
 
   const sevInfo = severityConfig[formData.severity] || severityConfig.Medium;
@@ -167,22 +169,41 @@ const CreateTicketModal = ({ onClose, onCreate, initialData }) => {
     }
   };
 
-  const handleProjectChange = (e) => {
+  const handleProjectChange = async (e) => {
     const { value } = e.target;
-    setFormData((prev) => ({
-      ...prev,
-      project: value,
-    }));
+    setFormData((prev) => ({ ...prev, project: value, assignTo: null, reportedTo: null }));
+    if (errors.project) setErrors((prev) => ({ ...prev, project: '' }));
 
-    if (errors.project) {
-      setErrors((prev) => ({ ...prev, project: '' }));
+    if (!value) { setProjectMembers([]); return; }
+    setProjectMembersLoading(true);
+    try {
+      const res = await getProjectMembersAPI(value);
+      const { owner, members = [] } = res?.data || {};
+      const all = [];
+      if (owner) all.push({ id: owner.id, name: owner.name, email: owner.email, phone: owner.phone });
+      members.forEach((m) => all.push({ id: m.id, name: m.name, email: m.email, phone: m.phone }));
+      setProjectMembers(all);
+    } catch {
+      setProjectMembers([]);
+    } finally {
+      setProjectMembersLoading(false);
     }
   };
 
   const handleUserChange = (e, field) => {
     const userId = e.target.value;
-    const selectedUser = users.find(user => user._id === userId);
 
+    // Try project members first (flat shape), then fall back to redux users
+    const member = projectMembers.find((m) => m.id === userId);
+    if (member) {
+      setFormData((prev) => ({
+        ...prev,
+        [field]: { id: member.id, name: member.name, email: member.email, phone: member.phone },
+      }));
+      return;
+    }
+
+    const selectedUser = users.find(user => user._id === userId);
     if (selectedUser) {
       const userObject = {
         id: selectedUser._id,
@@ -327,23 +348,50 @@ const CreateTicketModal = ({ onClose, onCreate, initialData }) => {
               />
             </PropertyRow>
 
+            <PropertyRow icon={iconFolder} label="Project">
+              <Select
+                value={formData.project || undefined}
+                onValueChange={(value) => handleProjectChange({ target: { value } })}
+                disabled={projectsLoading}
+              >
+                <SelectTrigger size="sm" className={chipTriggerClass}>
+                  <SelectValue placeholder={projectsLoading ? 'Loading projects...' : 'Select project'} />
+                </SelectTrigger>
+                <SelectContent>
+                  {Array.isArray(projects) && projects.map((project) => {
+                    const projectId = project._id || project.id;
+                    const projectName = project.name || project.projectName || 'Untitled Project';
+                    return (
+                      <SelectItem key={projectId} value={projectId}>{projectName}</SelectItem>
+                    );
+                  })}
+                </SelectContent>
+              </Select>
+              {errors.project && <span className="block text-red-500 text-xs mt-1 px-2">{errors.project}</span>}
+            </PropertyRow>
+
             <PropertyRow icon={iconUser} label={<span>Assignee <span className="text-red-500">*</span></span>}>
               <div className="flex items-center gap-2">
                 <Avatar name={formData.assignTo?.name} email={formData.assignTo?.email} />
                 <Select
                   value={formData.assignTo?.id || undefined}
                   onValueChange={(value) => handleUserChange({ target: { value } }, 'assignTo')}
-                  disabled={usersLoading}
+                  disabled={projectMembersLoading || (!formData.project && usersLoading)}
                 >
                   <SelectTrigger size="sm" className={`${chipTriggerClass} flex-1 min-w-0`}>
-                    <SelectValue placeholder={usersLoading ? 'Loading...' : 'Select assignee'} />
+                    <SelectValue placeholder={!formData.project ? 'Select a project first' : 'Select assignee'} />
                   </SelectTrigger>
                   <SelectContent>
-                    {Array.isArray(users) && users.map((user) => (
-                      <SelectItem key={user._id} value={user._id}>
-                        {`${user.name?.first || ''} ${user.name?.last || ''}`.trim() || user.authentication?.userName}
-                      </SelectItem>
-                    ))}
+                    {formData.project
+                      ? projectMembers.map((m) => (
+                          <SelectItem key={m.id} value={m.id}>{m.name}</SelectItem>
+                        ))
+                      : Array.isArray(users) && users.map((user) => (
+                          <SelectItem key={user._id} value={user._id}>
+                            {`${user.name?.first || ''} ${user.name?.last || ''}`.trim() || user.authentication?.userName}
+                          </SelectItem>
+                        ))
+                    }
                   </SelectContent>
                 </Select>
               </div>
@@ -374,17 +422,22 @@ const CreateTicketModal = ({ onClose, onCreate, initialData }) => {
                 <Select
                   value={formData.reportedTo?.id || undefined}
                   onValueChange={(value) => handleUserChange({ target: { value } }, 'reportedTo')}
-                  disabled={usersLoading}
+                  disabled={projectMembersLoading || (!formData.project && usersLoading)}
                 >
                   <SelectTrigger size="sm" className={`${chipTriggerClass} flex-1 min-w-0`}>
-                    <SelectValue placeholder={usersLoading ? 'Loading...' : 'Select reporter'} />
+                    <SelectValue placeholder={!formData.project ? 'Select a project first' : 'Select reporter'} />
                   </SelectTrigger>
                   <SelectContent>
-                    {Array.isArray(users) && users.map((user) => (
-                      <SelectItem key={user._id} value={user._id}>
-                        {`${user.name?.first || ''} ${user.name?.last || ''}`.trim() || user.authentication?.userName}
-                      </SelectItem>
-                    ))}
+                    {formData.project
+                      ? projectMembers.map((m) => (
+                          <SelectItem key={m.id} value={m.id}>{m.name}</SelectItem>
+                        ))
+                      : Array.isArray(users) && users.map((user) => (
+                          <SelectItem key={user._id} value={user._id}>
+                            {`${user.name?.first || ''} ${user.name?.last || ''}`.trim() || user.authentication?.userName}
+                          </SelectItem>
+                        ))
+                    }
                   </SelectContent>
                 </Select>
               </div>
@@ -463,27 +516,6 @@ const CreateTicketModal = ({ onClose, onCreate, initialData }) => {
               />
             </PropertyRow>
 
-            <PropertyRow icon={iconFolder} label="Project">
-              <Select
-                value={formData.project || undefined}
-                onValueChange={(value) => handleProjectChange({ target: { value } })}
-                disabled={projectsLoading}
-              >
-                <SelectTrigger size="sm" className={chipTriggerClass}>
-                  <SelectValue placeholder={projectsLoading ? 'Loading projects...' : 'Select project'} />
-                </SelectTrigger>
-                <SelectContent>
-                  {Array.isArray(projects) && projects.map((project) => {
-                    const projectId = project._id || project.id;
-                    const projectName = project.name || project.projectName || 'Untitled Project';
-                    return (
-                      <SelectItem key={projectId} value={projectId}>{projectName}</SelectItem>
-                    );
-                  })}
-                </SelectContent>
-              </Select>
-              {errors.project && <span className="block text-red-500 text-xs mt-1 px-2">{errors.project}</span>}
-            </PropertyRow>
           </div>
 
           {/* Description */}
