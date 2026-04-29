@@ -5,6 +5,7 @@ import { fetchCategories } from '../redux/categorySlice';
 import { fetchUsers } from '../redux/userSlice';
 import { fetchProjects } from '../redux/projectSlice';
 import { postCommentAPI, uploadImage } from '../services/api';
+import { getProjectMembersAPI } from '../services/projectApi';
 import { deleteTicket, updateTicket } from '../redux/ticketSlice';
 import { fileToBase64 } from '../function/function';
 import AlertModal from '../components/shared/AlertModal';
@@ -200,6 +201,8 @@ const TicketDetailsPage = ({ ticket, onBack, onUpdate }) => {
     } catch { /* ignore quota errors */ }
   }, [timerStorageKey, trackedTimeMs, timerStartAt]);
 
+  const [projectMembers, setProjectMembers] = useState([]);
+  const [projectMembersLoading, setProjectMembersLoading] = useState(false);
   const [comment, setComment] = useState('');
   const [worknoteHistory, setWorknoteHistory] = useState(ticket.worknoteHistory || []);
   const [errors, setErrors] = useState({});
@@ -243,6 +246,29 @@ const TicketDetailsPage = ({ ticket, onBack, onUpdate }) => {
     dispatch(fetchUsers());
     dispatch(fetchProjects());
   }, [dispatch]);
+
+  const fetchProjectMembers = async (projectId) => {
+    if (!projectId) { setProjectMembers([]); return; }
+    setProjectMembersLoading(true);
+    try {
+      const res = await getProjectMembersAPI(projectId);
+      const { owner, members = [] } = res?.data || {};
+      const all = [];
+      if (owner) all.push({ id: owner.id, name: owner.name, email: owner.email, phone: owner.phone });
+      members.forEach((m) => all.push({ id: m.id, name: m.name, email: m.email, phone: m.phone }));
+      setProjectMembers(all);
+    } catch {
+      setProjectMembers([]);
+    } finally {
+      setProjectMembersLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    const initialProjectId = ticket.project?.id || ticket.project?._id || ticket.project || '';
+    if (initialProjectId) fetchProjectMembers(initialProjectId);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   useEffect(() => {
     if (!timerStartAt) return undefined;
@@ -308,24 +334,31 @@ const TicketDetailsPage = ({ ticket, onBack, onUpdate }) => {
 
   const handleProjectChange = (e) => {
     const { value } = e.target;
-    setFormData((prev) => ({ ...prev, project: value }));
-    if (errors.project) {
-      setErrors((prev) => ({ ...prev, project: '' }));
-    }
+    setFormData((prev) => ({ ...prev, project: value, assignTo: null, reportedTo: null }));
+    if (errors.project) setErrors((prev) => ({ ...prev, project: '' }));
+    fetchProjectMembers(value);
   };
 
   const handleUserChange = (e, field) => {
     const userId = e.target.value;
+    const member = projectMembers.find((m) => m.id === userId);
+    if (member) {
+      setFormData(prev => ({ ...prev, [field]: { id: member.id, name: member.name, email: member.email, phone: member.phone } }));
+      if (errors[field]) setErrors(prev => ({ ...prev, [field]: '' }));
+      return;
+    }
     const selectedUser = users.find(user => user._id === userId);
     if (selectedUser) {
-      const userObject = {
-        id: selectedUser._id,
-        name: `${selectedUser.name?.first || ''} ${selectedUser.name?.last || ''}`.trim() || selectedUser.authentication?.userName,
-        email: selectedUser.authentication?.email,
-        userType: selectedUser.category,
-        phone: selectedUser.authentication?.phone,
-      };
-      setFormData(prev => ({ ...prev, [field]: userObject }));
+      setFormData(prev => ({
+        ...prev,
+        [field]: {
+          id: selectedUser._id,
+          name: `${selectedUser.name?.first || ''} ${selectedUser.name?.last || ''}`.trim() || selectedUser.authentication?.userName,
+          email: selectedUser.authentication?.email,
+          userType: selectedUser.category,
+          phone: selectedUser.authentication?.phone,
+        },
+      }));
     } else {
       setFormData(prev => ({ ...prev, [field]: null }));
     }
@@ -681,22 +714,45 @@ const TicketDetailsPage = ({ ticket, onBack, onUpdate }) => {
                 />
               </PropertyRow>
 
+              <PropertyRow
+                icon={iconFolder}
+                label={<span>Project <span className="text-red-500">*</span></span>}
+              >
+                <Select
+                  value={formData.project || undefined}
+                  onValueChange={(value) => handleProjectChange({ target: { value } })}
+                  disabled={projectsLoading}
+                >
+                  <SelectTrigger size="sm" className={chipTriggerClass}>
+                    <SelectValue placeholder={projectsLoading ? 'Loading projects...' : 'Empty'} />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {Array.isArray(projects) && projects.map((project) => {
+                      const projectId = project._id || project.id;
+                      const projectName = project.name || project.projectName || 'Untitled Project';
+                      return (
+                        <SelectItem key={projectId} value={projectId}>{projectName}</SelectItem>
+                      );
+                    })}
+                  </SelectContent>
+                </Select>
+                {errors.project && <span className="block text-red-500 text-xs mt-1 px-2">{errors.project}</span>}
+              </PropertyRow>
+
               <PropertyRow icon={iconUser} label="Assignee">
                 <div className="flex items-center gap-2">
                   <Avatar name={formData.assignTo?.name} email={formData.assignTo?.email} size="sm" />
                   <Select
                     value={formData.assignTo?.id || undefined}
                     onValueChange={(value) => handleUserChange({ target: { value } }, 'assignTo')}
-                    disabled={usersLoading}
+                    disabled={projectMembersLoading}
                   >
                     <SelectTrigger size="sm" className={chipTriggerClass}>
-                      <SelectValue placeholder={usersLoading ? 'Loading...' : 'Empty'} />
+                      <SelectValue placeholder="Empty" />
                     </SelectTrigger>
                     <SelectContent>
-                      {Array.isArray(users) && users.map(user => (
-                        <SelectItem key={user._id} value={user._id}>
-                          {`${user.name?.first || ''} ${user.name?.last || ''}`.trim() || user.authentication?.userName}
-                        </SelectItem>
+                      {projectMembers.map(m => (
+                        <SelectItem key={m.id} value={m.id}>{m.name}</SelectItem>
                       ))}
                     </SelectContent>
                   </Select>
@@ -727,16 +783,14 @@ const TicketDetailsPage = ({ ticket, onBack, onUpdate }) => {
                   <Select
                     value={formData.reportedTo?.id || undefined}
                     onValueChange={(value) => handleUserChange({ target: { value } }, 'reportedTo')}
-                    disabled={usersLoading}
+                    disabled={projectMembersLoading}
                   >
                     <SelectTrigger size="sm" className={chipTriggerClass}>
-                      <SelectValue placeholder={usersLoading ? 'Loading...' : 'Empty'} />
+                      <SelectValue placeholder="Empty" />
                     </SelectTrigger>
                     <SelectContent>
-                      {Array.isArray(users) && users.map(user => (
-                        <SelectItem key={user._id} value={user._id}>
-                          {`${user.name?.first || ''} ${user.name?.last || ''}`.trim() || user.authentication?.userName}
-                        </SelectItem>
+                      {projectMembers.map(m => (
+                        <SelectItem key={m.id} value={m.id}>{m.name}</SelectItem>
                       ))}
                     </SelectContent>
                   </Select>
@@ -882,31 +936,6 @@ const TicketDetailsPage = ({ ticket, onBack, onUpdate }) => {
                     </button>
                   )}
                 </div>
-              </PropertyRow>
-
-              <PropertyRow
-                icon={iconFolder}
-                label={<span>Project <span className="text-red-500">*</span></span>}
-              >
-                <Select
-                  value={formData.project || undefined}
-                  onValueChange={(value) => handleProjectChange({ target: { value } })}
-                  disabled={projectsLoading}
-                >
-                  <SelectTrigger size="sm" className={chipTriggerClass}>
-                    <SelectValue placeholder={projectsLoading ? 'Loading projects...' : 'Empty'} />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {Array.isArray(projects) && projects.map((project) => {
-                      const projectId = project._id || project.id;
-                      const projectName = project.name || project.projectName || 'Untitled Project';
-                      return (
-                        <SelectItem key={projectId} value={projectId}>{projectName}</SelectItem>
-                      );
-                    })}
-                  </SelectContent>
-                </Select>
-                {errors.project && <span className="block text-red-500 text-xs mt-1 px-2">{errors.project}</span>}
               </PropertyRow>
 
               <PropertyRow

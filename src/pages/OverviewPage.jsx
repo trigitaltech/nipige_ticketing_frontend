@@ -8,6 +8,7 @@ const OverviewPage = ({ avatarLabel, userEmail, onCreateTicket, onLogout, ticket
       userEmail={userEmail}
       onCreateTicket={onCreateTicket}
       onLogout={onLogout}
+      showCreateButton={false}
     />
     <DashboardOverview tickets={tickets} loading={loading} />
   </>
