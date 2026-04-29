@@ -2,6 +2,7 @@ import { useSelector, useDispatch } from 'react-redux';
 import { BrowserRouter } from 'react-router-dom';
 import { ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
+import { Toaster } from '@/components/ui/sonner';
 import './App.css';
 import Login from './components/Login';
 import AppLayout from './pages/AppLayout';
@@ -18,6 +19,7 @@ function App() {
   return (
     <div className="App">
       <ToastContainer position="top-right" autoClose={3000} />
+      <Toaster position="top-right" />
       {!isAuthenticated ? (
         <Login />
       ) : (

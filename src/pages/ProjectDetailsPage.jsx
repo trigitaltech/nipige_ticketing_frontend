@@ -1,4 +1,6 @@
-import { useMemo } from 'react';
+import { useMemo, useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { getProjectMembersAPI } from '../services/projectApi';
 import TicketCard from '../components/ticketing/TicketCard';
 
 const defaultTasks = [
@@ -36,7 +38,6 @@ const defaultTasks = [
   },
 ];
 
-const fallbackTeam = ['Ajay Sharma', 'Anuradha Gupta', 'Suraj Negi', 'Jitendra Singh'];
 
 const statusStyles = {
   ACTIVE: 'bg-emerald-50 text-emerald-600 border border-emerald-200',
@@ -97,7 +98,18 @@ const normalizeTaskForCard = (task, index = 0) => {
   };
 };
 
+const avatarColors = [
+  'bg-blue-100 text-blue-700',
+  'bg-violet-100 text-violet-700',
+  'bg-emerald-100 text-emerald-700',
+  'bg-amber-100 text-amber-700',
+  'bg-rose-100 text-rose-700',
+  'bg-cyan-100 text-cyan-700',
+];
+
 const ProjectDetailsPage = ({ project, onBack }) => {
+  const navigate = useNavigate();
+  const projectId = project?._id || project?.id;
   const projectName = project?.name || project?.projectName || 'Untitled Project';
   const clientName = project?.client?.name || project?.client || 'N/A';
   const leadName = project?.lead?.name || project?.lead || project?.projectLead?.name || 'N/A';
@@ -116,23 +128,23 @@ const ProjectDetailsPage = ({ project, onBack }) => {
     return defaultTasks;
   }, [project]);
 
-  const teamMembers = useMemo(() => {
-    if (Array.isArray(project?.teamMembers) && project.teamMembers.length > 0) {
-      return project.teamMembers.slice(0, 6).map((member, index) => ({
-        id: member._id || member.id || `member-${index}`,
-        name: member.name || `${member.firstName || ''} ${member.lastName || ''}`.trim() || 'Unknown Member',
-        role: member.role || member.designation || 'Project Lead',
-      }));
-    }
+  const [teamMembers, setTeamMembers] = useState([]);
 
-    const names = [leadName, ...fallbackTeam].filter(Boolean);
-    const uniqueNames = [...new Set(names)];
-    return uniqueNames.slice(0, 6).map((name, index) => ({
-      id: `member-${index}`,
-      name,
-      role: 'Project Lead',
-    }));
-  }, [leadName, project]);
+  useEffect(() => {
+    if (!projectId) return;
+    getProjectMembersAPI(projectId)
+      .then((res) => {
+        const raw = res?.data?.members || [];
+        setTeamMembers(
+          raw.slice(0, 6).map((m, i) => ({
+            id: m.id || `member-${i}`,
+            name: m.name || 'Unknown',
+            role: m.role || '',
+          }))
+        );
+      })
+      .catch(() => {});
+  }, [projectId]);
 
   return (
     <div className="h-full overflow-auto bg-slate-50">
@@ -243,25 +255,25 @@ const ProjectDetailsPage = ({ project, onBack }) => {
           <section className="space-y-6">
             <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-5">
               <h2 className="text-xl font-bold text-slate-900 mb-3">Team Members</h2>
-              <div className="space-y-3">
-                {teamMembers.map((member) => (
-                  <div key={member.id} className="flex items-center justify-between gap-3">
-                    <div className="flex items-center gap-3 min-w-0">
-                      <div className="w-9 h-9 rounded-full bg-slate-200 text-slate-600 flex items-center justify-center text-xs font-bold shrink-0">
-                        {getInitials(member.name)}
-                      </div>
-                      <div className="min-w-0">
-                        <p className="text-sm font-semibold text-slate-900 truncate">{member.name}</p>
-                        <p className="text-xs text-slate-500 truncate">{member.role}</p>
-                      </div>
+              <div className="space-y-1">
+                {teamMembers.map((member, idx) => (
+                  <div key={member.id} className="flex items-center gap-3 px-2 py-2.5 rounded-xl hover:bg-slate-50 transition-colors group">
+                    <div className={`w-9 h-9 rounded-full flex items-center justify-center text-xs font-bold shrink-0 ${avatarColors[idx % avatarColors.length]}`}>
+                      {getInitials(member.name)}
                     </div>
-                    <button className="w-8 h-8 rounded-full border border-slate-200 text-slate-500 hover:bg-slate-50 cursor-pointer">
-                      i
-                    </button>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-semibold text-slate-800 truncate leading-tight">{member.name}</p>
+                      {member.role && (
+                        <p className="text-xs text-slate-400 truncate mt-0.5">{member.role}</p>
+                      )}
+                    </div>
                   </div>
                 ))}
               </div>
-              <button className="w-full mt-6 py-3 rounded-xl border border-dashed border-slate-300 text-slate-600 text-sm font-semibold hover:bg-slate-50 transition-colors cursor-pointer">
+              <button
+                onClick={() => navigate(`/projects/${projectId}/team`)}
+                className="w-full mt-6 py-3 rounded-xl border border-dashed border-slate-300 text-slate-600 text-sm font-semibold hover:bg-slate-50 transition-colors cursor-pointer"
+              >
                 Manage Team
               </button>
             </div>

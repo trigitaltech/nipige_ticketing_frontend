@@ -3,6 +3,7 @@ import { createPortal } from 'react-dom';
 import { useSelector } from 'react-redux';
 import '../../assets/Styles/Dropdown.css';
 import { getAvatarColor, getInitials } from '../../utils/avatar';
+import { ScrollArea } from '@/components/ui/scroll-area';
 
 const Avatar = ({ label, size = 24 }) => (
   <span
@@ -25,7 +26,7 @@ const ChevronDown = () => (
   </svg>
 );
 
-const PortalMultiSelect = ({ options, value = [], onChange, placeholder = 'Search...', showAvatar = false }) => {
+const PortalMultiSelect = ({ options, value = [], onChange, placeholder = 'Search...', showAvatar = false, triggerClassName }) => {
   const [open, setOpen] = useState(false);
   const [search, setSearch] = useState('');
   const [dropdownStyle, setDropdownStyle] = useState({});
@@ -71,7 +72,7 @@ const PortalMultiSelect = ({ options, value = [], onChange, placeholder = 'Searc
         ref={triggerRef}
         type="button"
         onClick={handleOpen}
-        className="w-full h-8 flex items-center justify-between px-2 bg-[#FAFBFC] border border-[#DFE1E6] rounded-[3px] text-[13px] cursor-pointer gap-1.5 overflow-hidden"
+        className={triggerClassName || "w-full h-8 flex items-center justify-between px-2 bg-[#FAFBFC] border border-[#DFE1E6] rounded-[3px] text-[13px] cursor-pointer gap-1.5 overflow-hidden"}
       >
         {value.length === 0 ? (
           <span className="text-slate-400">All</span>
@@ -109,29 +110,31 @@ const PortalMultiSelect = ({ options, value = [], onChange, placeholder = 'Searc
               />
             </div>
           </div>
-          <div className="max-h-[220px] overflow-y-auto pb-1.5">
-            {filtered.length === 0 ? (
-              <div className="px-4 py-3 text-[13px] text-slate-400 text-center">No results found</div>
-            ) : (
-              filtered.map(opt => {
-                const checked = value.includes(opt.value);
-                return (
-                  <button
-                    key={opt.value}
-                    type="button"
-                    onClick={() => toggleOne(opt.value)}
-                    className="w-full flex items-center gap-2.5 px-3 py-2 text-[13px] cursor-pointer transition-colors hover:bg-slate-50"
-                  >
-                    {showAvatar && <Avatar label={opt.label} size={28} />}
-                    <span className={`flex-1 text-left truncate ${showAvatar ? 'font-medium' : ''} text-slate-700`}>
-                      {opt.label}
-                    </span>
-                    {checked && <Checkmark />}
-                  </button>
-                );
-              })
-            )}
-          </div>
+          <ScrollArea className="h-[220px]">
+            <div className="pb-1.5">
+              {filtered.length === 0 ? (
+                <div className="px-4 py-3 text-[13px] text-slate-400 text-center">No results found</div>
+              ) : (
+                filtered.map(opt => {
+                  const checked = value.includes(opt.value);
+                  return (
+                    <button
+                      key={opt.value}
+                      type="button"
+                      onClick={() => toggleOne(opt.value)}
+                      className="w-full flex items-center gap-2.5 px-3 py-2 text-[13px] cursor-pointer transition-colors hover:bg-slate-50"
+                    >
+                      {showAvatar && <Avatar label={opt.label} size={28} />}
+                      <span className={`flex-1 text-left truncate ${showAvatar ? 'font-medium' : ''} text-slate-700`}>
+                        {opt.label}
+                      </span>
+                      {checked && <Checkmark />}
+                    </button>
+                  );
+                })
+              )}
+            </div>
+          </ScrollArea>
         </div>,
         document.body
       )}
@@ -331,4 +334,5 @@ const FilterDropdown = ({ filters, onFilterChange, onClearFilters, categories, p
   );
 };
 
+export { PortalMultiSelect };
 export default FilterDropdown;
