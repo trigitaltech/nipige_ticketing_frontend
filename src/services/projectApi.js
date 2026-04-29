@@ -80,4 +80,19 @@ export const deleteProjectAPI = async (projectId) => {
   return response.data;
 };
 
+export const getProjectMembersAPI = async (projectId) => {
+  const response = await projectApi.get(`/servicerequest/project/${projectId}/members`);
+  return response.data;
+};
+
+export const addProjectMembersAPI = async (projectId, members) => {
+  const response = await projectApi.post(`/servicerequest/project/${projectId}/members`, { members });
+  return response.data;
+};
+
+export const removeProjectMemberAPI = async (projectId, memberId) => {
+  const response = await projectApi.delete(`/servicerequest/project/${projectId}/members/${memberId}`);
+  return response.data;
+};
+
 export default projectApi;

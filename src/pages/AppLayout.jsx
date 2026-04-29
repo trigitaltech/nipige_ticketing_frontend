@@ -13,6 +13,7 @@ import CreateTicketModal from '../components/ticketing/CreateTicketModal';
 import TicketDetailsPage from './TicketDetailsPage';
 import ProjectMaster from './ProjectMaster';
 import ProjectDetailsPage from './ProjectDetailsPage';
+import ManageTeamPage from './ManageTeamPage';
 import WeeklyTasks from './WeeklyTasks';
 import DeleteConfirmModal from '../components/shared/DeleteConfirmModal';
 import OverviewPage from './OverviewPage';
@@ -212,6 +213,7 @@ const AppLayout = ({ currentUser, onLogout }) => {
           />
           <Route path="/projects" element={withHeader(<ProjectMaster />, { showCreateButton: false })} />
           <Route path="/projects/:projectId" element={withHeader(<ProjectDetailsRoute />, { showCreateButton: false })} />
+          <Route path="/projects/:projectId/team" element={withHeader(<ManageTeamPage />, { showCreateButton: false })} />
           <Route
             path="/weekly-tasks"
             element={withHeader(<WeeklyTasks onOpenCreateModal={handleOpenCreateModal} />, { showCreateButton: false })}
