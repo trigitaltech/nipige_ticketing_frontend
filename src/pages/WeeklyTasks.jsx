@@ -9,6 +9,9 @@ import { Loader2, ChevronLeft, ChevronRight, Plus } from 'lucide-react';
 import {
   Tooltip, TooltipContent, TooltipProvider, TooltipTrigger,
 } from '@/components/ui/tooltip';
+import {
+  Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
+} from '@/components/ui/select';
 import usePersistentState from '../hooks/usePersistentState';
 
 import { HOUR_HEIGHT, HOURS, FULL_DAY_NAMES, MONTHS, FULL_MONTHS, STATUS_CHIP } from '../components/weeklyTask/constants';
@@ -38,6 +41,7 @@ const WeeklyTasks = ({ onOpenCreateModal }) => {
   const [editingDay, setEditingDay] = useState(null);
   const [drag, setDrag] = useState(null);
   const [showClosed, setShowClosed] = usePersistentState('weeklyTasks.showClosed', false);
+  const [selectedProjectId, setSelectedProjectId] = usePersistentState('weeklyTasks.selectedProjectId', '');
   const [viewMode, setViewMode] = usePersistentState('weeklyTasks.viewMode', 'week');
   const [now, setNow] = useState(new Date());
 
@@ -218,12 +222,20 @@ const WeeklyTasks = ({ onOpenCreateModal }) => {
     setEditingDay(null);
   };
 
+  const matchesProject = (t) => {
+    if (!selectedProjectId) return true;
+    const raw = t.project;
+    const pid = typeof raw === 'string' ? raw : (raw?.id || raw?._id || raw?.projectId || '');
+    return String(pid) === String(selectedProjectId);
+  };
+
   const ticketsForDay = (date) =>
     (Array.isArray(weeklyTickets) ? weeklyTickets : []).filter(t =>
       t.startDate &&
       isSameDay(new Date(t.startDate), date) &&
       !isAllDayTicket(t) &&
-      (showClosed || (t.status !== 'RESOLVED' && t.status !== 'CLOSED'))
+      (showClosed || (t.status !== 'RESOLVED' && t.status !== 'CLOSED')) &&
+      matchesProject(t)
     );
 
   const allDayTicketsForDay = (date) =>
@@ -231,7 +243,8 @@ const WeeklyTasks = ({ onOpenCreateModal }) => {
       t.startDate &&
       isSameDay(new Date(t.startDate), date) &&
       isAllDayTicket(t) &&
-      (showClosed || (t.status !== 'RESOLVED' && t.status !== 'CLOSED'))
+      (showClosed || (t.status !== 'RESOLVED' && t.status !== 'CLOSED')) &&
+      matchesProject(t)
     );
 
   const handleOpenTicket = useCallback((ticket) => {
@@ -251,7 +264,7 @@ const WeeklyTasks = ({ onOpenCreateModal }) => {
 
       {/* Header */}
       <div className="flex items-center justify-between px-4 py-2 border-b border-slate-200 shrink-0 bg-white">
-        <div className="flex items-center gap-1.5">
+        <div className="flex items-center gap-1.5 h-[22px]">
           <button
             className="h-[22px] border border-slate-200 rounded-md bg-white inline-flex items-center justify-center text-slate-700 cursor-pointer text-[12px] font-medium px-3 transition-colors hover:bg-slate-50"
             onClick={() => setCurrentDate(new Date())}
@@ -276,6 +289,18 @@ const WeeklyTasks = ({ onOpenCreateModal }) => {
           <span className="text-[14px] font-semibold text-slate-800 ml-1">{dateRangeLabel}</span>
         </div>
         <div className="flex items-center gap-[5px]">
+          <Select value={selectedProjectId || '__all__'} onValueChange={(v) => setSelectedProjectId(v === '__all__' ? '' : v)}>
+            <SelectTrigger className="!h-[22px] !py-0 border border-slate-200 rounded-md bg-white text-slate-700 text-[12px] font-medium px-3 shadow-none focus:ring-0 focus-visible:ring-0 w-auto min-w-[110px] max-w-[170px] gap-1">
+              <SelectValue placeholder="All Projects" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="__all__">All Projects</SelectItem>
+              {Array.isArray(projects) && projects.map((p) => {
+                const pid = p._id || p.id;
+                return <SelectItem key={pid} value={pid}>{p.name || p.projectName || 'Untitled'}</SelectItem>;
+              })}
+            </SelectContent>
+          </Select>
           <TooltipProvider delayDuration={100}>
             <Tooltip>
               <TooltipTrigger asChild>

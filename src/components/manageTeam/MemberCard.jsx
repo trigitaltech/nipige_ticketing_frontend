@@ -1,5 +1,6 @@
 import { useState } from 'react';
-import { avatarColors, getInitials } from './teamUtils';
+import { getInitials } from './teamUtils';
+import { getAvatarColor } from '../../utils/avatar';
 
 const MemberCard = ({ member, onRemove, onRoleSave }) => {
   const [editing, setEditing] = useState(false);
@@ -31,7 +32,7 @@ const MemberCard = ({ member, onRemove, onRoleSave }) => {
       </button>
 
       {/* Avatar */}
-      <div className={`w-14 h-14 rounded-2xl flex items-center justify-center text-lg font-bold mb-3 mt-1 ${avatarColors[member.colorIndex]}`}>
+      <div className="w-14 h-14 rounded-2xl flex items-center justify-center text-lg font-bold mb-3 mt-1 text-white" style={{ backgroundColor: getAvatarColor(member.name) }}>
         {getInitials(member.name)}
       </div>
 
