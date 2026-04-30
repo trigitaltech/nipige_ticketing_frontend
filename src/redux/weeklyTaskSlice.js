@@ -81,7 +81,7 @@ const weeklyTaskSlice = createSlice({
       .addCase(updateWeeklyTask.pending, (state) => { state.saving = true; state.error = null; })
       .addCase(updateWeeklyTask.fulfilled, (state) => { state.saving = false; state.success = 'Weekly task updated successfully'; })
       .addCase(updateWeeklyTask.rejected, (state, action) => { state.saving = false; state.error = action.payload; })
-      .addCase(fetchWeeklyTickets.pending, (state) => { state.weeklyTicketsLoading = true; })
+      .addCase(fetchWeeklyTickets.pending, (state) => { state.weeklyTicketsLoading = true; state.weeklyTickets = []; })
       .addCase(fetchWeeklyTickets.fulfilled, (state, action) => { state.weeklyTicketsLoading = false; state.weeklyTickets = action.payload; })
       .addCase(fetchWeeklyTickets.rejected, (state) => { state.weeklyTicketsLoading = false; });
   },
