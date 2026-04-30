@@ -5,6 +5,7 @@ import { format } from 'date-fns';
 import { Plus, ChevronLeft, Rocket, Calendar as CalendarIcon } from 'lucide-react';
 import { Spinner } from '@/components/ui/spinner';
 import { fetchProjects, createProject, updateProject, deleteProject } from '../redux/projectSlice';
+import { fetchTickets } from '../redux/ticketSlice';
 import { fetchUsers } from '../redux/userSlice';
 import deleteIcon from '../assets/icons/delete.png';
 import AlertModal from '../components/shared/AlertModal';
@@ -24,14 +25,7 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import '../assets/Styles/ListView.css';
-
-const getInitials = (name) => {
-  return name
-    .split(' ')
-    .map((w) => w[0]?.toUpperCase())
-    .join('')
-    .slice(0, 2);
-};
+import { getAvatarColor, getInitials } from '../utils/avatar';
 
 const statusStyles = {
   ACTIVE: 'bg-emerald-50 text-emerald-600 border border-emerald-200',
@@ -724,12 +718,14 @@ const ProjectMaster = () => {
     if (id) navigate(`/projects/${id}`);
   };
   const { projects, loading, error } = useSelector((state) => state.projects);
+  const { tickets } = useSelector((state) => state.tickets);
   const [showCreateProject, setShowCreateProject] = useState(false);
   const [editingProject, setEditingProject] = useState(null);
   const [deleteConfirm, setDeleteConfirm] = useState({ open: false, projectId: null, projectName: '' });
 
   useEffect(() => {
     dispatch(fetchProjects());
+    dispatch(fetchTickets());
   }, [dispatch]);
 
   if (showCreateProject) {
@@ -817,8 +813,14 @@ const ProjectMaster = () => {
                 const status = (project.status || 'ACTIVE').toUpperCase();
                 const startDate = project.startDate ? new Date(project.startDate).toLocaleDateString('en-CA') : 'N/A';
                 const endDate = project.endDate ? new Date(project.endDate).toLocaleDateString('en-CA') : 'N/A';
-                const progress = project.progress || 0;
-                const tasks = project.tasks || project.taskCount || 0;
+                const projectTickets = Array.isArray(tickets) ? tickets.filter((t) => {
+                  const raw = t.project;
+                  const tid = typeof raw === 'string' ? raw : (raw?.id || raw?._id || raw?.projectId || '');
+                  return String(tid) === String(projectId);
+                }) : [];
+                const tasks = projectTickets.length;
+                const completed = projectTickets.filter((t) => t.status === 'RESOLVED' || t.status === 'CLOSED').length;
+                const progress = tasks > 0 ? Math.round((completed / tasks) * 100) : 0;
 
                 return (
                 <tr
@@ -842,7 +844,7 @@ const ProjectMaster = () => {
                   {/* Lead */}
                   <td className="px-6 py-3">
                     <div className="flex items-center gap-2.5">
-                      <div className="w-8 h-8 rounded-full bg-blue-100 text-blue-600 flex items-center justify-center text-xs font-bold shrink-0">
+                      <div className="w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold shrink-0 text-white" style={{ backgroundColor: getAvatarColor(leadName) }}>
                         {getInitials(leadName)}
                       </div>
                       <span className="text-sm text-gray-700 font-medium">{leadName}</span>
