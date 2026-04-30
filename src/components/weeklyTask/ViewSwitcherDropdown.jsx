@@ -16,7 +16,7 @@ const ViewSwitcherDropdown = ({ viewMode, onChange }) => {
   }, [open]);
 
   return (
-    <div className="relative" ref={ref}>
+    <div className="relative flex items-center" ref={ref}>
       <button
         type="button"
         className="h-[22px] border border-slate-200 rounded-md bg-white inline-flex items-center gap-1 text-slate-700 cursor-pointer text-[12px] font-medium px-3 transition-colors hover:bg-slate-50"

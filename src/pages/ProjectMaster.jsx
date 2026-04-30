@@ -24,14 +24,7 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import '../assets/Styles/ListView.css';
-
-const getInitials = (name) => {
-  return name
-    .split(' ')
-    .map((w) => w[0]?.toUpperCase())
-    .join('')
-    .slice(0, 2);
-};
+import { getAvatarColor, getInitials } from '../utils/avatar';
 
 const statusStyles = {
   ACTIVE: 'bg-emerald-50 text-emerald-600 border border-emerald-200',
@@ -842,7 +835,7 @@ const ProjectMaster = () => {
                   {/* Lead */}
                   <td className="px-6 py-3">
                     <div className="flex items-center gap-2.5">
-                      <div className="w-8 h-8 rounded-full bg-blue-100 text-blue-600 flex items-center justify-center text-xs font-bold shrink-0">
+                      <div className="w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold shrink-0 text-white" style={{ backgroundColor: getAvatarColor(leadName) }}>
                         {getInitials(leadName)}
                       </div>
                       <span className="text-sm text-gray-700 font-medium">{leadName}</span>

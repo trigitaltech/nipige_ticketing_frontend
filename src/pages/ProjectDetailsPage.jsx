@@ -1,7 +1,19 @@
-import { useMemo, useState, useEffect } from 'react';
+import { useMemo, useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useDispatch, useSelector } from 'react-redux';
+import { fetchTickets } from '../redux/ticketSlice';
 import { getProjectMembersAPI } from '../services/projectApi';
 import TicketCard from '../components/ticketing/TicketCard';
+import { getAvatarColor } from '../utils/avatar';
+import {
+  Pagination,
+  PaginationContent,
+  PaginationItem,
+  PaginationLink,
+  PaginationNext,
+  PaginationPrevious,
+  PaginationEllipsis,
+} from '@/components/ui/pagination';
 
 const defaultTasks = [
   {
@@ -98,37 +110,58 @@ const normalizeTaskForCard = (task, index = 0) => {
   };
 };
 
-const avatarColors = [
-  'bg-blue-100 text-blue-700',
-  'bg-violet-100 text-violet-700',
-  'bg-emerald-100 text-emerald-700',
-  'bg-amber-100 text-amber-700',
-  'bg-rose-100 text-rose-700',
-  'bg-cyan-100 text-cyan-700',
-];
 
 const ProjectDetailsPage = ({ project, onBack }) => {
   const navigate = useNavigate();
+  const dispatch = useDispatch();
+  const { tickets } = useSelector((state) => state.tickets);
+
   const projectId = project?._id || project?.id;
   const projectName = project?.name || project?.projectName || 'Untitled Project';
   const clientName = project?.client?.name || project?.client || 'N/A';
   const leadName = project?.lead?.name || project?.lead || project?.projectLead?.name || 'N/A';
   const status = (project?.status || 'ACTIVE').toUpperCase();
-  const progress = Number(project?.progress ?? 45);
-  const taskCount = Array.isArray(project?.tasks)
-    ? project.tasks.length
-    : Number(project?.taskCount ?? project?.tasks ?? 0);
-  const activeTasks = Number(project?.activeTasks ?? taskCount);
-  const daysRemaining = Number(project?.daysRemaining ?? calcDaysRemaining(project?.endDate));
+
+  useEffect(() => {
+    dispatch(fetchTickets());
+  }, [dispatch]);
+
+  // Filter tickets belonging to this project
+  const projectTickets = useMemo(() => {
+    if (!projectId || !Array.isArray(tickets)) return [];
+    return tickets.filter((t) => {
+      const raw = t.project;
+      const tid = typeof raw === 'string' ? raw : (raw?.id || raw?._id || raw?.projectId || '');
+      return String(tid) === String(projectId);
+    });
+  }, [tickets, projectId]);
+
+  const taskCount = projectTickets.length;
+  const activeTasks = projectTickets.filter((t) => t.status === 'OPEN' || t.status === 'IN_PROGRESS').length;
+  const completedTasks = projectTickets.filter((t) => t.status === 'RESOLVED' || t.status === 'CLOSED').length;
+  const progress = taskCount > 0 ? Math.round((completedTasks / taskCount) * 100) : 0;
+  const daysRemaining = calcDaysRemaining(project?.endDate);
 
   const taskCards = useMemo(() => {
-    if (Array.isArray(project?.tasks) && project.tasks.length > 0) {
-      return project.tasks.map((task, index) => normalizeTaskForCard(task, index));
+    if (projectTickets.length > 0) {
+      return projectTickets.map((task, index) => normalizeTaskForCard(task, index));
     }
     return defaultTasks;
-  }, [project]);
+  }, [projectTickets]);
 
   const [teamMembers, setTeamMembers] = useState([]);
+  const [currentPage, setCurrentPage] = useState(1);
+  const scrollRef = useRef(null);
+  const PAGE_SIZE = 20;
+
+  const totalPages = Math.max(1, Math.ceil(taskCards.length / PAGE_SIZE));
+  const pagedTaskCards = taskCards.slice((currentPage - 1) * PAGE_SIZE, currentPage * PAGE_SIZE);
+
+  useEffect(() => { setCurrentPage(1); }, [projectId]);
+
+  useEffect(() => {
+    scrollRef.current?.scrollTo({ top: 0, behavior: 'smooth' });
+  }, [currentPage]);
 
   useEffect(() => {
     if (!projectId) return;
@@ -147,7 +180,7 @@ const ProjectDetailsPage = ({ project, onBack }) => {
   }, [projectId]);
 
   return (
-    <div className="h-full overflow-auto bg-slate-50">
+    <div ref={scrollRef} className="h-full overflow-auto bg-slate-50">
       <div className="px-8 py-7 max-[768px]:px-4">
         <div className="flex items-center gap-4">
           <button
@@ -207,7 +240,7 @@ const ProjectDetailsPage = ({ project, onBack }) => {
             </div>
             <div>
               <p className="text-xs font-semibold text-slate-500 uppercase tracking-wide">Completed</p>
-              <p className="text-3xl font-bold text-slate-900 mt-1 leading-none">{progress}%</p>
+              <p className="text-3xl font-bold text-slate-900 mt-1 leading-none">{completedTasks}</p>
             </div>
           </div>
 
@@ -240,7 +273,7 @@ const ProjectDetailsPage = ({ project, onBack }) => {
             </div>
 
             <div className="grid grid-cols-2 gap-4 max-[1100px]:grid-cols-1">
-              {taskCards.map((task) => (
+              {pagedTaskCards.map((task) => (
                 <TicketCard
                   key={task._id || task.id}
                   ticket={task}
@@ -250,15 +283,62 @@ const ProjectDetailsPage = ({ project, onBack }) => {
                 />
               ))}
             </div>
+
+            {totalPages > 1 && (
+              <div className="mt-6">
+                <Pagination>
+                  <PaginationContent>
+                    <PaginationItem>
+                      <PaginationPrevious
+                        onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
+                        className={currentPage === 1 ? 'pointer-events-none opacity-40' : 'cursor-pointer'}
+                      />
+                    </PaginationItem>
+
+                    {Array.from({ length: totalPages }, (_, i) => i + 1)
+                      .filter((page) => page === 1 || page === totalPages || Math.abs(page - currentPage) <= 1)
+                      .reduce((acc, page, idx, arr) => {
+                        if (idx > 0 && page - arr[idx - 1] > 1) acc.push('ellipsis');
+                        acc.push(page);
+                        return acc;
+                      }, [])
+                      .map((item, idx) =>
+                        item === 'ellipsis' ? (
+                          <PaginationItem key={`ellipsis-${idx}`}>
+                            <PaginationEllipsis />
+                          </PaginationItem>
+                        ) : (
+                          <PaginationItem key={item}>
+                            <PaginationLink
+                              isActive={item === currentPage}
+                              onClick={() => setCurrentPage(item)}
+                              className="cursor-pointer"
+                            >
+                              {item}
+                            </PaginationLink>
+                          </PaginationItem>
+                        )
+                      )}
+
+                    <PaginationItem>
+                      <PaginationNext
+                        onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
+                        className={currentPage === totalPages ? 'pointer-events-none opacity-40' : 'cursor-pointer'}
+                      />
+                    </PaginationItem>
+                  </PaginationContent>
+                </Pagination>
+              </div>
+            )}
           </section>
 
           <section className="space-y-6">
             <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-5">
               <h2 className="text-xl font-bold text-slate-900 mb-3">Team Members</h2>
               <div className="space-y-1">
-                {teamMembers.map((member, idx) => (
+                {teamMembers.map((member) => (
                   <div key={member.id} className="flex items-center gap-3 px-2 py-2.5 rounded-xl hover:bg-slate-50 transition-colors group">
-                    <div className={`w-9 h-9 rounded-full flex items-center justify-center text-xs font-bold shrink-0 ${avatarColors[idx % avatarColors.length]}`}>
+                    <div className="w-9 h-9 rounded-full flex items-center justify-center text-xs font-bold shrink-0 text-white" style={{ backgroundColor: getAvatarColor(member.name) }}>
                       {getInitials(member.name)}
                     </div>
                     <div className="flex-1 min-w-0">
