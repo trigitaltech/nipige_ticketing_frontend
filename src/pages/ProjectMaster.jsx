@@ -5,6 +5,7 @@ import { format } from 'date-fns';
 import { Plus, ChevronLeft, Rocket, Calendar as CalendarIcon } from 'lucide-react';
 import { Spinner } from '@/components/ui/spinner';
 import { fetchProjects, createProject, updateProject, deleteProject } from '../redux/projectSlice';
+import { fetchTickets } from '../redux/ticketSlice';
 import { fetchUsers } from '../redux/userSlice';
 import deleteIcon from '../assets/icons/delete.png';
 import AlertModal from '../components/shared/AlertModal';
@@ -717,12 +718,14 @@ const ProjectMaster = () => {
     if (id) navigate(`/projects/${id}`);
   };
   const { projects, loading, error } = useSelector((state) => state.projects);
+  const { tickets } = useSelector((state) => state.tickets);
   const [showCreateProject, setShowCreateProject] = useState(false);
   const [editingProject, setEditingProject] = useState(null);
   const [deleteConfirm, setDeleteConfirm] = useState({ open: false, projectId: null, projectName: '' });
 
   useEffect(() => {
     dispatch(fetchProjects());
+    dispatch(fetchTickets());
   }, [dispatch]);
 
   if (showCreateProject) {
@@ -810,8 +813,14 @@ const ProjectMaster = () => {
                 const status = (project.status || 'ACTIVE').toUpperCase();
                 const startDate = project.startDate ? new Date(project.startDate).toLocaleDateString('en-CA') : 'N/A';
                 const endDate = project.endDate ? new Date(project.endDate).toLocaleDateString('en-CA') : 'N/A';
-                const progress = project.progress || 0;
-                const tasks = project.tasks || project.taskCount || 0;
+                const projectTickets = Array.isArray(tickets) ? tickets.filter((t) => {
+                  const raw = t.project;
+                  const tid = typeof raw === 'string' ? raw : (raw?.id || raw?._id || raw?.projectId || '');
+                  return String(tid) === String(projectId);
+                }) : [];
+                const tasks = projectTickets.length;
+                const completed = projectTickets.filter((t) => t.status === 'RESOLVED' || t.status === 'CLOSED').length;
+                const progress = tasks > 0 ? Math.round((completed / tasks) * 100) : 0;
 
                 return (
                 <tr
