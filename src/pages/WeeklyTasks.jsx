@@ -36,12 +36,13 @@ const WeeklyTasks = ({ onOpenCreateModal }) => {
 
   const [currentDate, setCurrentDate] = useState(new Date());
   const [weekData, setWeekData] = useState(createEmptyWeekData());
-  const [selectedUserId, setSelectedUserId] = usePersistentState('weeklyTasks.selectedUserId', null);
+  const [selectedUserId, setSelectedUserId] = useState(null);
 
   const [editingDay, setEditingDay] = useState(null);
   const [drag, setDrag] = useState(null);
+  const [expandedAllDay, setExpandedAllDay] = useState(null);
   const [showClosed, setShowClosed] = usePersistentState('weeklyTasks.showClosed', false);
-  const [selectedProjectId, setSelectedProjectId] = usePersistentState('weeklyTasks.selectedProjectId', '');
+  const [selectedProjectId, setSelectedProjectId] = useState('');
   const [viewMode, setViewMode] = usePersistentState('weeklyTasks.viewMode', 'week');
   const [now, setNow] = useState(new Date());
 
@@ -76,6 +77,10 @@ const WeeklyTasks = ({ onOpenCreateModal }) => {
   }, [currentUser, selectedUserId]);
 
   useEffect(() => {
+    setExpandedAllDay(null);
+  }, [currentDate]);
+
+  useEffect(() => {
     if (!selectedUserId) return;
     setWeekData(createEmptyWeekData());
     dispatch(fetchWeeklyTasks({
@@ -87,9 +92,12 @@ const WeeklyTasks = ({ onOpenCreateModal }) => {
   }, [dispatch, currentDate, selectedUserId]);
 
   useEffect(() => {
-    if (!selectedUserId) return;
-    dispatch(fetchWeeklyTickets({ assignTo: selectedUserId }));
-  }, [dispatch, selectedUserId]);
+    if (selectedProjectId) {
+      dispatch(fetchWeeklyTickets({ project: selectedProjectId }));
+    } else if (selectedUserId) {
+      dispatch(fetchWeeklyTickets({ assignTo: selectedUserId }));
+    }
+  }, [dispatch, selectedUserId, selectedProjectId]);
 
   useEffect(() => {
     const nd = createEmptyWeekData();
@@ -335,7 +343,7 @@ const WeeklyTasks = ({ onOpenCreateModal }) => {
               <TooltipContent side="bottom">Show closed tasks</TooltipContent>
             </Tooltip>
           </TooltipProvider>
-          <UserCombobox users={users} selectedUserId={selectedUserId} onSelect={setSelectedUserId} />
+          <UserCombobox users={users} selectedUserId={selectedUserId} onSelect={setSelectedUserId} disabled={!!selectedProjectId} />
           <TooltipProvider>
             <Tooltip>
               <TooltipTrigger asChild>
@@ -395,9 +403,13 @@ const WeeklyTasks = ({ onOpenCreateModal }) => {
             const chip = STATUS_CHIP[d?.status] || STATUS_CHIP['Not Started'];
             const allDayTix = allDayTicketsForDay(date);
             const isEmpty = !has && allDayTix.length === 0;
+            const MAX_VISIBLE = 2;
+            const isExpanded = !!expandedAllDay;
+            const visibleTix = isExpanded ? allDayTix : allDayTix.slice(0, MAX_VISIBLE);
+            const hiddenCount = allDayTix.length - MAX_VISIBLE;
             return (
-              <div key={i} className="border-r border-slate-100 py-[4px] px-1 flex flex-col gap-[3px] last:border-r-0 min-h-[36px] overflow-hidden min-w-0">
-                {allDayTix.map(ticket => (
+              <div key={i} className="border-r border-slate-100 py-[4px] px-1 flex flex-col gap-[3px] last:border-r-0 min-h-[36px] min-w-0">
+                {visibleTix.map(ticket => (
                   <MonthTicketChip
                     key={ticket._id || ticket.id}
                     ticket={ticket}
@@ -405,6 +417,24 @@ const WeeklyTasks = ({ onOpenCreateModal }) => {
                     onStatusChange={handleMarkComplete}
                   />
                 ))}
+                {!isExpanded && hiddenCount > 0 && (
+                  <button
+                    type="button"
+                    onClick={() => setExpandedAllDay(true)}
+                    className="text-left text-[10px] font-medium text-slate-400 hover:text-slate-600 hover:underline cursor-pointer px-1 leading-none py-[2px]"
+                  >
+                    +{hiddenCount} more
+                  </button>
+                )}
+                {isExpanded && allDayTix.length > MAX_VISIBLE && (
+                  <button
+                    type="button"
+                    onClick={() => setExpandedAllDay(null)}
+                    className="text-left text-[10px] font-medium text-slate-400 hover:text-slate-600 hover:underline cursor-pointer px-1 leading-none py-[2px]"
+                  >
+                    less
+                  </button>
+                )}
                 {has && (
                   <button
                     className="w-full border border-transparent rounded-[6px] py-1 px-2 text-[11px] text-left cursor-pointer flex flex-col gap-px transition-[filter] hover:brightness-[0.94]"
