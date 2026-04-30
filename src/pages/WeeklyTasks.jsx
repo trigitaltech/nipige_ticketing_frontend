@@ -229,23 +229,41 @@ const WeeklyTasks = ({ onOpenCreateModal }) => {
     return String(pid) === String(selectedProjectId);
   };
 
+  const toCalendarDay = (d) => new Date(d.getFullYear(), d.getMonth(), d.getDate()).getTime();
+
   const ticketsForDay = (date) =>
-    (Array.isArray(weeklyTickets) ? weeklyTickets : []).filter(t =>
-      t.startDate &&
-      isSameDay(new Date(t.startDate), date) &&
-      !isAllDayTicket(t) &&
-      (showClosed || (t.status !== 'RESOLVED' && t.status !== 'CLOSED')) &&
-      matchesProject(t)
-    );
+    (Array.isArray(weeklyTickets) ? weeklyTickets : []).filter(t => {
+      if (!t.startDate || isAllDayTicket(t)) return false;
+      if (!(showClosed || (t.status !== 'RESOLVED' && t.status !== 'CLOSED'))) return false;
+      if (!matchesProject(t)) return false;
+      const startMs = toCalendarDay(new Date(t.startDate));
+      const viewMs = toCalendarDay(date);
+      if (viewMs < startMs) return false;
+      if (t.endDate) {
+        const endMs = toCalendarDay(new Date(t.endDate));
+        if (viewMs > endMs) return false;
+      } else {
+        // no end date — show only on start day in the time grid
+        if (!isSameDay(new Date(t.startDate), date)) return false;
+      }
+      return true;
+    });
 
   const allDayTicketsForDay = (date) =>
-    (Array.isArray(weeklyTickets) ? weeklyTickets : []).filter(t =>
-      t.startDate &&
-      isSameDay(new Date(t.startDate), date) &&
-      isAllDayTicket(t) &&
-      (showClosed || (t.status !== 'RESOLVED' && t.status !== 'CLOSED')) &&
-      matchesProject(t)
-    );
+    (Array.isArray(weeklyTickets) ? weeklyTickets : []).filter(t => {
+      if (!t.startDate || !isAllDayTicket(t)) return false;
+      if (!(showClosed || (t.status !== 'RESOLVED' && t.status !== 'CLOSED'))) return false;
+      if (!matchesProject(t)) return false;
+      const startMs = toCalendarDay(new Date(t.startDate));
+      const viewMs = toCalendarDay(date);
+      if (viewMs < startMs) return false;
+      if (t.endDate) {
+        const endMs = toCalendarDay(new Date(t.endDate));
+        if (viewMs > endMs) return false;
+      }
+      // no end date → show on startDate and all future days
+      return true;
+    });
 
   const handleOpenTicket = useCallback((ticket) => {
     const id = ticket?._id || ticket?.id;
