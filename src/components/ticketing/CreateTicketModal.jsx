@@ -99,9 +99,11 @@ const CreateTicketModal = ({ onClose, onCreate, initialData }) => {
   const [uploadedFiles, setUploadedFiles] = useState([]);
   const [uploadProgress, setUploadProgress] = useState(null);
   const [isUploading, setIsUploading] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const [projectMembers, setProjectMembers] = useState([]);
   const [projectMembersLoading, setProjectMembersLoading] = useState(false);
   const fileInputRef = useRef(null);
+  const submittingRef = useRef(false);
 
   const sevInfo = severityConfig[formData.severity] || severityConfig.Medium;
 
@@ -291,12 +293,15 @@ const CreateTicketModal = ({ onClose, onCreate, initialData }) => {
       setErrors((prev) => ({ ...prev, attachments: 'Please wait for uploads to finish.' }));
       return;
     }
+    if (submittingRef.current) return;
 
     const newErrors = validate();
     if (Object.keys(newErrors).length > 0) {
       setErrors(newErrors);
       return;
     }
+    submittingRef.current = true;
+    setIsSubmitting(true);
     onCreate({ ...formData, attachments: uploadedFiles });
   };
 
@@ -587,11 +592,11 @@ const CreateTicketModal = ({ onClose, onCreate, initialData }) => {
             </Button>
             <Button
               type="submit"
-              disabled={isUploading}
+              disabled={isUploading || isSubmitting}
               className="!bg-[#5449D6] text-white border-transparent hover:!bg-[#5449D6] hover:text-white hover:brightness-110 focus-visible:ring-[#5449D6]/30"
             >
-              {isUploading && <Spinner className="size-4" />}
-              {isUploading ? 'Uploading...' : 'Create Task'}
+              {(isUploading || isSubmitting) && <Spinner className="size-4" />}
+              {isUploading ? 'Uploading...' : isSubmitting ? 'Creating...' : 'Create Task'}
             </Button>
           </div>
         </form>

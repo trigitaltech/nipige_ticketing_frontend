@@ -26,12 +26,6 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import EstimateTimePicker from '../components/shared/EstimateTimePicker';
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipProvider,
-  TooltipTrigger,
-} from '@/components/ui/tooltip';
 import { getAvatarColor, getInitials } from '../utils/avatar';
 
 const statusConfig = {
@@ -101,7 +95,7 @@ const PropertyRow = ({ icon, label, children }) => (
 const TicketDetailsPage = ({ ticket, onBack, onUpdate }) => {
   const dispatch = useDispatch();
   const { categories, loading: categoriesLoading } = useSelector((state) => state.categories);
-  const { users, loading: usersLoading } = useSelector((state) => state.users);
+  const { users } = useSelector((state) => state.users);
   const { projects, loading: projectsLoading } = useSelector((state) => state.projects);
 
   const formatDateTimeLocal = (dateString) => {
@@ -389,6 +383,8 @@ const TicketDetailsPage = ({ ticket, onBack, onUpdate }) => {
     try {
       await onUpdate({ ...ticket, ...formData, attachments: mergedAttachments, trackedTimeMs: totalTrackedMs });
       localStorage.removeItem(timerStorageKey);
+      initialSnapshotRef.current = JSON.stringify(formData);
+      setUploadedFiles([]);
     } finally {
       setIsSubmitting(false);
     }
