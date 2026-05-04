@@ -92,6 +92,22 @@ const PropertyRow = ({ icon, label, children }) => (
   </div>
 );
 
+const normalizeAttachmentUrls = (attachmentsInput) => {
+  const attachments = Array.isArray(attachmentsInput)
+    ? attachmentsInput
+    : attachmentsInput
+      ? [attachmentsInput]
+      : [];
+
+  return attachments
+    .map((attachment) => {
+      if (typeof attachment === 'string') return attachment.trim();
+      if (attachment && typeof attachment === 'object') return (attachment.url || attachment.fileUrl || '').trim();
+      return '';
+    })
+    .filter(Boolean);
+};
+
 const TicketDetailsPage = ({ ticket, onBack, onUpdate }) => {
   const dispatch = useDispatch();
   const { categories, loading: categoriesLoading } = useSelector((state) => state.categories);
@@ -279,7 +295,7 @@ const TicketDetailsPage = ({ ticket, onBack, onUpdate }) => {
       if (ticketId) {
         dispatch(updateTicket({
           ticketId,
-          ticketData: { ...ticket, trackedTimeMs: newTrackedMs },
+          ticketData: { trackedTimeMs: newTrackedMs },
         }));
       }
     } else {
@@ -371,17 +387,44 @@ const TicketDetailsPage = ({ ticket, onBack, onUpdate }) => {
 
     // Merge existing attachments with newly uploaded files.
     // For the API we only send URL strings.
-    const existingAttachmentsRaw = ticket.attachments || [];
-    const existingUrls = existingAttachmentsRaw.map((att) =>
-      typeof att === 'string' ? att : att?.url
-    ).filter(Boolean);
-
+    const existingUrls = normalizeAttachmentUrls(ticket.attachments || []);
     const mergedAttachments = [...existingUrls, ...uploadedFiles];
 
     const totalTrackedMs = trackedTimeMs + (timerStartAt ? Date.now() - timerStartAt : 0);
     setIsSubmitting(true);
     try {
-      await onUpdate({ ...ticket, ...formData, attachments: mergedAttachments, trackedTimeMs: totalTrackedMs });
+      const updatedFields = {};
+      const setIfChanged = (key, nextValue, currentValue) => {
+        if (JSON.stringify(nextValue) !== JSON.stringify(currentValue)) {
+          updatedFields[key] = nextValue;
+        }
+      };
+
+      setIfChanged('subject', formData.subject, initialFormData.subject);
+      setIfChanged('description', formData.description, initialFormData.description);
+      setIfChanged('priority', Number(formData.priority), Number(initialFormData.priority));
+      setIfChanged('severity', formData.severity, initialFormData.severity);
+      setIfChanged('assignTo', formData.assignTo, initialFormData.assignTo);
+      setIfChanged('reportedTo', formData.reportedTo, initialFormData.reportedTo);
+      setIfChanged('status', formData.status, initialFormData.status);
+      setIfChanged('project', formData.project, initialFormData.project);
+      setIfChanged('category', formData.category, initialFormData.category);
+      setIfChanged('scope', formData.scope, initialFormData.scope);
+      setIfChanged('startDate', formData.startDate || null, initialFormData.startDate || null);
+      setIfChanged('endDate', formData.endDate || null, initialFormData.endDate || null);
+      setIfChanged('timeEstimateMs', Number(formData.timeEstimateMs) || 0, Number(initialFormData.timeEstimateMs) || 0);
+      setIfChanged('attachments', mergedAttachments, existingUrls);
+      setIfChanged('trackedTimeMs', totalTrackedMs, initialTrackedMs);
+
+      if (Object.keys(updatedFields).length === 0) {
+        setIsSubmitting(false);
+        return;
+      }
+
+      await onUpdate({
+        _id: ticket._id || ticket.id,
+        ...updatedFields,
+      });
       localStorage.removeItem(timerStorageKey);
       initialSnapshotRef.current = JSON.stringify(formData);
       setUploadedFiles([]);
