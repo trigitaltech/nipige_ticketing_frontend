@@ -5,6 +5,7 @@ import { fetchWeeklyTasks, fetchWeeklyTickets, updateWeeklyTicketStatusOptimisti
 import { updateTicket } from '../redux/ticketSlice';
 import { fetchProjects } from '../redux/projectSlice';
 import { fetchUsers } from '../redux/userSlice';
+import { getProjectMembersAPI } from '../services/projectApi';
 import { Loader2, ChevronLeft, ChevronRight, Plus } from 'lucide-react';
 import {
   Tooltip, TooltipContent, TooltipProvider, TooltipTrigger,
@@ -43,6 +44,7 @@ const WeeklyTasks = ({ onOpenCreateModal }) => {
   const [expandedAllDay, setExpandedAllDay] = useState(null);
   const [showClosed, setShowClosed] = usePersistentState('weeklyTasks.showClosed', false);
   const [selectedProjectId, setSelectedProjectId] = useState('');
+  const [projectMembers, setProjectMembers] = useState([]);
   const [viewMode, setViewMode] = usePersistentState('weeklyTasks.viewMode', 'week');
   const [now, setNow] = useState(new Date());
 
@@ -90,6 +92,23 @@ const WeeklyTasks = ({ onOpenCreateModal }) => {
     }));
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [dispatch, currentDate, selectedUserId]);
+
+  useEffect(() => {
+    if (!selectedProjectId) {
+      setProjectMembers([]);
+      return;
+    }
+    getProjectMembersAPI(selectedProjectId).then((res) => {
+      const { owner, members = [] } = res?.data || {};
+      const all = [];
+      if (owner) all.push(owner);
+      members.forEach(m => all.push(m));
+      setProjectMembers(all.map(m => ({
+        _id: m.id,
+        authentication: { userName: m.name, email: m.email },
+      })));
+    }).catch(() => setProjectMembers([]));
+  }, [selectedProjectId]);
 
   useEffect(() => {
     if (selectedProjectId) {
@@ -343,7 +362,7 @@ const WeeklyTasks = ({ onOpenCreateModal }) => {
               <TooltipContent side="bottom">Show closed tasks</TooltipContent>
             </Tooltip>
           </TooltipProvider>
-          <UserCombobox users={users} selectedUserId={selectedUserId} onSelect={setSelectedUserId} disabled={!!selectedProjectId} />
+          <UserCombobox users={selectedProjectId ? projectMembers : users} selectedUserId={selectedUserId} onSelect={setSelectedUserId} />
           <TooltipProvider>
             <Tooltip>
               <TooltipTrigger asChild>

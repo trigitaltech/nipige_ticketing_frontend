@@ -229,28 +229,14 @@ export const updateTicketAPI = async (ticketId, ticketData) => {
   const userString = localStorage.getItem('user');
   const user = userString ? JSON.parse(userString) : null;
   const currentUser = user?.response?.user;
+  const has = (key) => Object.prototype.hasOwnProperty.call(ticketData, key);
   const projectId =
     ticketData.project?.id ||
     ticketData.project?._id ||
     (typeof ticketData.project === 'string' ? ticketData.project : '');
-  
+
   const updatePayload = {
     _id: ticketId,
-    category: ticketData.category?._id || ticketData.category,
-    description: ticketData.description,
-    subject: ticketData.subject,
-    status: ticketData.status,
-    priority: ticketData.priority,
-    severity: ticketData.severity,
-    escalated: ticketData.escalated ? "true" : "false",
-    attachments: normalizeAttachmentPayload(ticketData.attachments || ticketData.attachment),
-    ticketNo: ticketData.ticketNo,
-    tenant: ticketData.tenant,
-    scope: ticketData.scope,
-    worknoteHistory: ticketData.worknoteHistory || [],
-    changeHistory: ticketData.changeHistory || [],
-    internalComments: ticketData.internalComments || [],
-    reportedBy: ticketData.reportedBy,
     updatedBy: {
       name: currentUser?.authentication?.userName || currentUser?.name,
       email: currentUser?.authentication?.email || currentUser?.email,
@@ -260,40 +246,40 @@ export const updateTicketAPI = async (ticketId, ticketData) => {
     agentId: currentUser?._id
   };
 
-  if (projectId) {
-    updatePayload.project = { id: projectId };
+  if (has('category')) updatePayload.category = ticketData.category?._id || ticketData.category || null;
+  if (has('description')) updatePayload.description = ticketData.description;
+  if (has('subject')) updatePayload.subject = ticketData.subject;
+  if (has('status')) updatePayload.status = ticketData.status;
+  if (has('priority')) updatePayload.priority = ticketData.priority;
+  if (has('severity')) updatePayload.severity = ticketData.severity;
+  if (has('escalated')) updatePayload.escalated = ticketData.escalated ? 'true' : 'false';
+  if (has('attachments') || has('attachment')) {
+    updatePayload.attachments = normalizeAttachmentPayload(ticketData.attachments || ticketData.attachment);
+  }
+  if (has('ticketNo')) updatePayload.ticketNo = ticketData.ticketNo;
+  if (has('tenant')) updatePayload.tenant = ticketData.tenant;
+  if (has('scope')) updatePayload.scope = ticketData.scope;
+  if (has('worknoteHistory')) updatePayload.worknoteHistory = ticketData.worknoteHistory || [];
+  if (has('changeHistory')) updatePayload.changeHistory = ticketData.changeHistory || [];
+  if (has('internalComments')) updatePayload.internalComments = ticketData.internalComments || [];
+  if (has('reportedBy')) updatePayload.reportedBy = ticketData.reportedBy;
+  if (has('project')) updatePayload.project = projectId ? { id: projectId } : null;
+  if (has('assignTo')) updatePayload.assignTo = ticketData.assignTo;
+  if (has('reportedTo')) updatePayload.reportedTo = ticketData.reportedTo;
+  if (has('startDate')) updatePayload.startDate = ticketData.startDate;
+  if (has('endDate')) updatePayload.endDate = ticketData.endDate;
+
+  if (has('timeEstimateMs') || has('estimateTime')) {
+    updatePayload.estimateTime = formatDurationString(ticketData.timeEstimateMs ?? ticketData.estimateTime);
   }
 
-  if (ticketData.assignTo) {
-    updatePayload.assignTo = ticketData.assignTo;
-  }
-
-
-  if (ticketData.reportedTo) {
-    updatePayload.reportedTo = ticketData.reportedTo;
-  }
-
-
-  if (ticketData.startDate) {
-    updatePayload.startDate = ticketData.startDate;
-  }
-  if (ticketData.endDate) {
-    updatePayload.endDate = ticketData.endDate;
-  }
-
-  const estimateTime = formatDurationString(ticketData.timeEstimateMs ?? ticketData.estimateTime);
-  if (estimateTime) {
-    updatePayload.estimateTime = estimateTime;
-  }
-
-  const trackTime = formatDurationString(
-    ticketData.trackedTimeMs ??
-    ticketData.timeTracked ??
-    ticketData.trackedTime ??
-    ticketData.trackTime
-  );
-  if (trackTime) {
-    updatePayload.trackTime = trackTime;
+  if (has('trackedTimeMs') || has('timeTracked') || has('trackedTime') || has('trackTime')) {
+    updatePayload.trackTime = formatDurationString(
+      ticketData.trackedTimeMs ??
+      ticketData.timeTracked ??
+      ticketData.trackedTime ??
+      ticketData.trackTime
+    );
   }
 
   const response = await nipige.put(`/servicerequest/ticket/update/${ticketId}`, updatePayload);

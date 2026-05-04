@@ -124,10 +124,13 @@ const AppLayout = ({ currentUser, onLogout }) => {
 
   const handleUpdateTicket = async (updatedTicket) => {
     const ticketId = updatedTicket._id || updatedTicket.id;
-    const existing = tickets.find((t) => (t._id || t.id) === ticketId) || {};
-    const ticketData = { ...existing, ...updatedTicket, _id: ticketId };
-    if (ticketData.startDate) ticketData.startDate = formatDateForAPI(ticketData.startDate);
-    if (ticketData.endDate) ticketData.endDate = formatDateForAPI(ticketData.endDate);
+    const ticketData = { ...updatedTicket };
+    if (Object.prototype.hasOwnProperty.call(ticketData, 'startDate')) {
+      ticketData.startDate = ticketData.startDate ? formatDateForAPI(ticketData.startDate) : null;
+    }
+    if (Object.prototype.hasOwnProperty.call(ticketData, 'endDate')) {
+      ticketData.endDate = ticketData.endDate ? formatDateForAPI(ticketData.endDate) : null;
+    }
     await dispatch(updateTicket({ ticketId, ticketData }));
     dispatch(fetchTickets());
   };
@@ -152,7 +155,7 @@ const AppLayout = ({ currentUser, onLogout }) => {
     const ticket = tickets.find((t) => String(t.id || t._id) === String(ticketId));
     if (ticket) {
       dispatch(updateTicketStatusOptimistic({ ticketId: ticket._id || ticket.id, newStatus }));
-      dispatch(updateTicket({ ticketId: ticket._id || ticket.id, ticketData: { ...ticket, status: newStatus } }));
+      dispatch(updateTicket({ ticketId: ticket._id || ticket.id, ticketData: { status: newStatus } }));
     }
   };
 
