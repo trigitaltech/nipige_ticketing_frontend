@@ -1,10 +1,11 @@
 import { useState } from 'react';
 import { TICKET_STATUS_CONFIG, MONTH_MAX_VISIBLE } from './constants';
-import { isSameDay, packLanes } from './utils';
+import { isSameDay, packLanes, isOffDay } from './utils';
 import MonthTicketChip from './MonthTicketChip';
 import SpanningStatusButton from './SpanningStatusButton';
+import UserAvatar from './UserAvatar';
 
-const MonthView = ({ currentDate, weeklyTickets, showClosed, onOpenTicket, onStatusChange }) => {
+const MonthView = ({ currentDate, weeklyTickets, statusFilter, onOpenTicket, onStatusChange }) => {
   const today = new Date();
   const year = currentDate.getFullYear();
   const month = currentDate.getMonth();
@@ -17,7 +18,7 @@ const MonthView = ({ currentDate, weeklyTickets, showClosed, onOpenTicket, onSta
   }));
 
   const firstOfMonth = new Date(year, month, 1);
-  const startOffset = (firstOfMonth.getDay() + 6) % 7;
+  const startOffset = firstOfMonth.getDay();
   const gridStart = new Date(firstOfMonth);
   gridStart.setDate(1 - startOffset);
 
@@ -31,7 +32,8 @@ const MonthView = ({ currentDate, weeklyTickets, showClosed, onOpenTicket, onSta
   const weeks = Array.from({ length: totalRows }, (_, r) => cells.slice(r * 7, r * 7 + 7));
 
   const allTickets = Array.isArray(weeklyTickets) ? weeklyTickets : [];
-  const isVisible = (t) => showClosed || (t.status !== 'RESOLVED' && t.status !== 'CLOSED');
+  const allowedStatuses = Array.isArray(statusFilter) ? statusFilter : [];
+  const isVisible = (t) => allowedStatuses.includes(t.status || 'OPEN');
   const isSpanningTicket = (t) => {
     if (!t.startDate || !t.endDate) return false;
     const s = new Date(t.startDate);
@@ -41,6 +43,7 @@ const MonthView = ({ currentDate, weeklyTickets, showClosed, onOpenTicket, onSta
   };
 
   const singleDayForDate = (date) =>
+    isOffDay(date) ? [] :
     allTickets.filter(t =>
       t.startDate &&
       isSameDay(new Date(t.startDate), date) &&
@@ -75,7 +78,7 @@ const MonthView = ({ currentDate, weeklyTickets, showClosed, onOpenTicket, onSta
   return (
     <div className="flex-1 min-h-0 flex flex-col overflow-hidden">
       <div className="grid shrink-0 border-b border-slate-200" style={{ gridTemplateColumns: 'repeat(7, 1fr)' }}>
-        {['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'].map(d => (
+        {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map(d => (
           <div key={d} className="text-center py-[7px] text-[11px] font-semibold text-slate-400 uppercase tracking-widest border-r border-slate-100 last:border-r-0">
             {d}
           </div>
@@ -99,7 +102,7 @@ const MonthView = ({ currentDate, weeklyTickets, showClosed, onOpenTicket, onSta
                   {weekDates.map((date, ci) => (
                     <div
                       key={ci}
-                      className={`border-r border-slate-100 last:border-r-0 ${date.getMonth() !== month ? 'bg-slate-50/60' : ''}`}
+                      className={`border-r border-slate-100 last:border-r-0 ${date.getMonth() !== month ? 'bg-slate-50/60' : isOffDay(date) ? 'bg-slate-50/70' : ''}`}
                     />
                   ))}
                 </div>
@@ -189,6 +192,14 @@ const MonthView = ({ currentDate, weeklyTickets, showClosed, onOpenTicket, onSta
                             title={ticket.subject}
                           >
                             <SpanningStatusButton ticket={ticket} onStatusChange={onStatusChange} />
+                            {(() => {
+                              const an = ticket.assignTo?.name || ticket.assignTo?.username || ticket.assignTo?.email || '';
+                              return an ? (
+                                <span title={an} className="shrink-0">
+                                  <UserAvatar name={an} size={14} />
+                                </span>
+                              ) : null;
+                            })()}
                             <span className="text-[11px] font-medium truncate">{ticket.subject}</span>
                           </div>
                         );

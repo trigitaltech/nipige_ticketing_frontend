@@ -5,6 +5,7 @@ import {
 import { HOUR_HEIGHT, TICKET_STATUS_CONFIG, TICKET_STATUS_OPTIONS } from './constants';
 import { fmt12, parseEstimateHours } from './utils';
 import StatusDropdownPortal from './StatusDropdownPortal';
+import UserAvatar from './UserAvatar';
 
 const TicketEventCard = ({ ticket, onOpen, onStatusChange }) => {
   const [statusOpen, setStatusOpen] = useState(false);
@@ -45,6 +46,7 @@ const TicketEventCard = ({ ticket, onOpen, onStatusChange }) => {
     ? `${fmt12(start)} – ${fmt12(new Date(ticket.endDate))}`
     : fmt12(start);
   const isShort = heightPx <= 44;
+  const assigneeName = ticket.assignTo?.name || ticket.assignTo?.username || ticket.assignTo?.email || '';
 
   return (
     <div
@@ -100,6 +102,12 @@ const TicketEventCard = ({ ticket, onOpen, onStatusChange }) => {
           </div>
         )}
       </div>
+
+      {assigneeName && (
+        <span title={assigneeName} className="shrink-0 mt-px">
+          <UserAvatar name={assigneeName} size={14} />
+        </span>
+      )}
 
       <div className="flex-1 min-w-0 overflow-hidden">
         {isShort ? (

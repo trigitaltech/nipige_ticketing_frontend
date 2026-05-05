@@ -18,7 +18,7 @@ import usePersistentState from '../hooks/usePersistentState';
 import { HOUR_HEIGHT, HOURS, FULL_DAY_NAMES, MONTHS, FULL_MONTHS, STATUS_CHIP } from '../components/weeklyTask/constants';
 import {
   isSameDay, getWeekDates, formatWeekRange, toDateTimeLocalValue,
-  formatHourLabel, yToMins, minsToLabel, isAllDayTicket, createEmptyWeekData,
+  formatHourLabel, yToMins, minsToLabel, isAllDayTicket, createEmptyWeekData, isOffDay,
 } from '../components/weeklyTask/utils';
 import DayModal from '../components/weeklyTask/DayModal';
 import UserCombobox from '../components/weeklyTask/UserCombobox';
@@ -26,6 +26,9 @@ import ViewSwitcherDropdown from '../components/weeklyTask/ViewSwitcherDropdown'
 import MonthView from '../components/weeklyTask/MonthView';
 import MonthTicketChip from '../components/weeklyTask/MonthTicketChip';
 import TicketEventCard from '../components/weeklyTask/TicketEventCard';
+import StatusFilterDropdown from '../components/weeklyTask/StatusFilterDropdown';
+
+const DEFAULT_STATUS_FILTER = ['OPEN', 'IN_PROGRESS', 'BACKLOG'];
 
 const WeeklyTasks = ({ onOpenCreateModal }) => {
   const dispatch = useDispatch();
@@ -42,7 +45,7 @@ const WeeklyTasks = ({ onOpenCreateModal }) => {
   const [editingDay, setEditingDay] = useState(null);
   const [drag, setDrag] = useState(null);
   const [expandedAllDay, setExpandedAllDay] = useState(null);
-  const [showClosed, setShowClosed] = usePersistentState('weeklyTasks.showClosed', false);
+  const [statusFilter, setStatusFilter] = usePersistentState('weeklyTasks.statusFilter', DEFAULT_STATUS_FILTER);
   const [selectedProjectId, setSelectedProjectId] = useState('');
   const [projectMembers, setProjectMembers] = useState([]);
   const [viewMode, setViewMode] = usePersistentState('weeklyTasks.viewMode', 'week');
@@ -259,9 +262,10 @@ const WeeklyTasks = ({ onOpenCreateModal }) => {
   const toCalendarDay = (d) => new Date(d.getFullYear(), d.getMonth(), d.getDate()).getTime();
 
   const ticketsForDay = (date) =>
+    isOffDay(date) ? [] :
     (Array.isArray(weeklyTickets) ? weeklyTickets : []).filter(t => {
       if (!t.startDate || isAllDayTicket(t)) return false;
-      if (!(showClosed || (t.status !== 'RESOLVED' && t.status !== 'CLOSED'))) return false;
+      if (!statusFilter.includes(t.status || 'OPEN')) return false;
       if (!matchesProject(t)) return false;
       const startMs = toCalendarDay(new Date(t.startDate));
       const viewMs = toCalendarDay(date);
@@ -277,9 +281,10 @@ const WeeklyTasks = ({ onOpenCreateModal }) => {
     });
 
   const allDayTicketsForDay = (date) =>
+    isOffDay(date) ? [] :
     (Array.isArray(weeklyTickets) ? weeklyTickets : []).filter(t => {
       if (!t.startDate || !isAllDayTicket(t)) return false;
-      if (!(showClosed || (t.status !== 'RESOLVED' && t.status !== 'CLOSED'))) return false;
+      if (!statusFilter.includes(t.status || 'OPEN')) return false;
       if (!matchesProject(t)) return false;
       const startMs = toCalendarDay(new Date(t.startDate));
       const viewMs = toCalendarDay(date);
@@ -346,22 +351,7 @@ const WeeklyTasks = ({ onOpenCreateModal }) => {
               })}
             </SelectContent>
           </Select>
-          <TooltipProvider delayDuration={100}>
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <button
-                  onClick={() => setShowClosed(v => !v)}
-                  className={`h-[22px] px-3 rounded-full inline-flex items-center gap-1.5 text-[12px] font-medium border cursor-pointer transition-colors ${showClosed ? 'bg-[#3B2FB1]/10 border-[#3B2FB1]/30 text-[#3B2FB1]' : 'bg-white border-slate-200 text-slate-500 hover:bg-slate-50'}`}
-                >
-                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                    <circle cx="12" cy="12" r="10"/><path d="m9 12 2 2 4-4"/>
-                  </svg>
-                  Closed
-                </button>
-              </TooltipTrigger>
-              <TooltipContent side="bottom">Show closed tasks</TooltipContent>
-            </Tooltip>
-          </TooltipProvider>
+          <StatusFilterDropdown selected={statusFilter} onChange={setStatusFilter} />
           <UserCombobox users={selectedProjectId ? projectMembers : users} selectedUserId={selectedUserId} onSelect={setSelectedUserId} />
           <TooltipProvider>
             <Tooltip>
@@ -386,7 +376,7 @@ const WeeklyTasks = ({ onOpenCreateModal }) => {
         <MonthView
           currentDate={currentDate}
           weeklyTickets={weeklyTickets}
-          showClosed={showClosed}
+          statusFilter={statusFilter}
           onOpenTicket={handleOpenTicket}
           onStatusChange={handleMarkComplete}
         />
@@ -399,12 +389,13 @@ const WeeklyTasks = ({ onOpenCreateModal }) => {
           <div className="border-r border-slate-200" />
           {displayDates.map((date, i) => {
             const isToday = isSameDay(date, today);
+            const off = isOffDay(date);
             return (
-              <div key={i} className="flex flex-col items-center pt-2 pb-2 border-r border-slate-100 last:border-r-0">
-                <span className={`text-[12px] font-medium mb-0.5 ${isToday ? 'text-indigo-600' : 'text-slate-500'}`}>
+              <div key={i} className={`flex flex-col items-center pt-2 pb-2 border-r border-slate-100 last:border-r-0 ${off ? 'bg-slate-50/70' : ''}`}>
+                <span className={`text-[12px] font-medium mb-0.5 ${isToday ? 'text-indigo-600' : off ? 'text-slate-400' : 'text-slate-500'}`}>
                   {FULL_DAY_NAMES[date.getDay()]}
                 </span>
-                <span className={`text-[12px] font-medium ${isToday ? 'text-red-500' : 'text-slate-500'}`}>
+                <span className={`text-[12px] font-medium ${isToday ? 'text-red-500' : off ? 'text-slate-400' : 'text-slate-500'}`}>
                   {date.getDate()} {MONTHS[date.getMonth()]}
                 </span>
               </div>
@@ -420,12 +411,20 @@ const WeeklyTasks = ({ onOpenCreateModal }) => {
             const d = weekData[i];
             const has = d?.projectNames || d?.workDescription || d?.time || d?.status;
             const chip = STATUS_CHIP[d?.status] || STATUS_CHIP['Not Started'];
+            const off = isOffDay(date);
             const allDayTix = allDayTicketsForDay(date);
             const isEmpty = !has && allDayTix.length === 0;
             const MAX_VISIBLE = 2;
             const isExpanded = !!expandedAllDay;
             const visibleTix = isExpanded ? allDayTix : allDayTix.slice(0, MAX_VISIBLE);
             const hiddenCount = allDayTix.length - MAX_VISIBLE;
+            if (off) {
+              return (
+                <div key={i} className="border-r border-slate-100 last:border-r-0 min-h-[36px] min-w-0 bg-slate-50/70 flex items-center justify-center">
+                  <span className="text-[10px] font-semibold uppercase tracking-wider text-slate-400">Off</span>
+                </div>
+              );
+            }
             return (
               <div key={i} className="border-r border-slate-100 py-[4px] px-1 flex flex-col gap-[3px] last:border-r-0 min-h-[36px] min-w-0">
                 {visibleTix.map(ticket => (
@@ -492,12 +491,26 @@ const WeeklyTasks = ({ onOpenCreateModal }) => {
             <div className="absolute inset-0 left-[52px] grid" style={{ gridTemplateColumns: `repeat(${displayDates.length}, 1fr)` }}>
               {displayDates.map((date, i) => {
                 const isToday = isSameDay(date, today);
+                const off = isOffDay(date);
                 const isDraggingThisCol = drag?.dayIndex === i;
                 const dragTop    = drag ? Math.min(drag.startY, drag.endY) : 0;
                 const dragHeight = drag ? Math.abs(drag.endY - drag.startY) : 0;
                 const dragStartMins = drag ? yToMins(Math.min(drag.startY, drag.endY)) : 0;
                 const dragEndMins   = drag ? yToMins(Math.max(drag.startY, drag.endY)) : 0;
                 const nowTop = (now.getHours() + now.getMinutes() / 60) * HOUR_HEIGHT;
+
+                if (off) {
+                  return (
+                    <div
+                      key={i}
+                      className="relative border-r border-slate-100 last:border-r-0 bg-slate-50/70 select-none"
+                    >
+                      <div className="sticky top-0 flex items-center justify-center h-full pointer-events-none">
+                        <span className="text-[11px] font-semibold uppercase tracking-wider text-slate-300 absolute" style={{ top: '40px' }}>Off</span>
+                      </div>
+                    </div>
+                  );
+                }
 
                 return (
                   <div

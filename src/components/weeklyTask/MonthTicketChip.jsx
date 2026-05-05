@@ -4,6 +4,7 @@ import {
 } from '@/components/ui/tooltip';
 import { TICKET_STATUS_CONFIG } from './constants';
 import StatusDropdownPortal from './StatusDropdownPortal';
+import UserAvatar from './UserAvatar';
 
 const MonthTicketChip = ({ ticket, onOpen, onStatusChange }) => {
   const [statusOpen, setStatusOpen] = useState(false);
@@ -13,6 +14,7 @@ const MonthTicketChip = ({ ticket, onOpen, onStatusChange }) => {
   const isDone = status === 'RESOLVED' || status === 'CLOSED';
   const chkBorder = isDone ? '#16a34a' : '#94a3b8';
   const chkBg = isDone ? '#16a34a' : '#ffffff';
+  const assigneeName = ticket.assignTo?.name || ticket.assignTo?.username || ticket.assignTo?.email || '';
 
   return (
     <div
@@ -49,6 +51,12 @@ const MonthTicketChip = ({ ticket, onOpen, onStatusChange }) => {
           onSelect={(val) => { onStatusChange(ticket, val); setStatusOpen(false); }}
           onClose={() => setStatusOpen(false)}
         />
+      )}
+
+      {assigneeName && (
+        <span title={assigneeName} className="shrink-0">
+          <UserAvatar name={assigneeName} size={14} />
+        </span>
       )}
 
       <span className="truncate flex-1">{ticket.subject}</span>

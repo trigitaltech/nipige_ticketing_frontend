@@ -10,11 +10,11 @@ export const isSameDay = (d1, d2) =>
 export const getWeekDates = (base) => {
   const date = new Date(base);
   const day = date.getDay();
-  const mon = new Date(date);
-  mon.setDate(date.getDate() - ((day + 6) % 7));
+  const sun = new Date(date);
+  sun.setDate(date.getDate() - day);
   return Array.from({ length: 7 }, (_, i) => {
-    const d = new Date(mon);
-    d.setDate(mon.getDate() + i);
+    const d = new Date(sun);
+    d.setDate(sun.getDate() + i);
     return d;
   });
 };
@@ -66,6 +66,11 @@ export const parseEstimateHours = (str) => {
   const m = str.match(/(\d+)\s*m/i);
   const total = (h ? Number(h[1]) : 0) + (m ? Number(m[1]) : 0) / 60;
   return total > 0 ? total : 1;
+};
+
+export const isOffDay = (date) => {
+  const d = date.getDay();
+  return d === 0 || d === 6;
 };
 
 export const isAllDayTicket = (ticket) => {
