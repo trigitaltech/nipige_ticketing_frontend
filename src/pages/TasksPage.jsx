@@ -1,4 +1,3 @@
-import { useState } from 'react';
 import usePersistentState from '../hooks/usePersistentState';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Button } from '@/components/ui/button';
@@ -33,12 +32,12 @@ const TasksPage = ({
   onDeleteTicket,
   onLogout,
 }) => {
-  const [activeFilter, setActiveFilter] = useState('all');
+  const [activeFilter, setActiveFilter] = usePersistentState('tasks.activeFilter', 'all');
   const [viewMode, setViewMode] = usePersistentState('tasks.viewMode', 'kanban');
-  const [groupBy, setGroupBy] = useState('status');
-  const [searchQuery, setSearchQuery] = useState('');
-  const [filters, setFilters] = useState(EMPTY_FILTERS);
-  const [sortConfig, setSortConfig] = useState({ field: '', direction: 'asc' });
+  const [groupBy, setGroupBy] = usePersistentState('tasks.groupBy', 'status');
+  const [searchQuery, setSearchQuery] = usePersistentState('tasks.searchQuery', '');
+  const [filters, setFilters] = usePersistentState('tasks.filters', EMPTY_FILTERS);
+  const [sortConfig, setSortConfig] = usePersistentState('tasks.sortConfig', { field: '', direction: 'asc' });
 
   const handleClearFilters = () => setFilters(EMPTY_FILTERS);
 

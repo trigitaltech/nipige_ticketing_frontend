@@ -4,6 +4,7 @@ import { useSelector } from 'react-redux';
 import '../../assets/Styles/Dropdown.css';
 import { getAvatarColor, getInitials } from '../../utils/avatar';
 import { ScrollArea } from '@/components/ui/scroll-area';
+import { getProjectMembersAPI } from '../../services/projectApi';
 
 const Avatar = ({ label, size = 24 }) => (
   <span
@@ -147,6 +148,48 @@ const FilterDropdown = ({ filters, onFilterChange, onClearFilters, categories, p
   const wrapperRef = useRef(null);
   const { users, loading: usersLoading } = useSelector((state) => state.users);
   const [clearClicked, setClearClicked] = useState(false);
+  const [projectMembers, setProjectMembers] = useState([]);
+  const [membersLoading, setMembersLoading] = useState(false);
+
+  const selectedProjects = Array.isArray(filters.project) ? filters.project : [];
+
+  const filtersRef = useRef(filters);
+  const onFilterChangeRef = useRef(onFilterChange);
+  filtersRef.current = filters;
+  onFilterChangeRef.current = onFilterChange;
+
+  useEffect(() => {
+    if (selectedProjects.length === 0) {
+      setProjectMembers([]);
+      return;
+    }
+    setMembersLoading(true);
+    Promise.all(selectedProjects.map(pid => getProjectMembersAPI(pid).catch(() => null)))
+      .then(results => {
+        const seen = new Set();
+        const merged = [];
+        results.forEach(res => {
+          const { owner, members = [] } = res?.data || {};
+          const all = owner ? [owner, ...members] : members;
+          all.forEach(m => {
+            const id = m.id || m._id;
+            if (id && !seen.has(id)) {
+              seen.add(id);
+              merged.push(m);
+            }
+          });
+        });
+        setProjectMembers(merged);
+        const validIds = new Set(merged.map(m => m.id || m._id));
+        const currentAssignTo = Array.isArray(filtersRef.current.assignTo) ? filtersRef.current.assignTo : [];
+        const stillValid = currentAssignTo.filter(id => validIds.has(id));
+        if (stillValid.length !== currentAssignTo.length) {
+          onFilterChangeRef.current({ ...filtersRef.current, assignTo: stillValid });
+        }
+      })
+      .finally(() => setMembersLoading(false));
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [filters.project]);
 
   const activeFilterCount = [
     Array.isArray(filters.status) ? filters.status.length > 0 : !!filters.status,
@@ -217,10 +260,15 @@ const FilterDropdown = ({ filters, onFilterChange, onClearFilters, categories, p
     label: proj.name || proj.projectName || 'Untitled Project',
   }));
 
-  const userOptions = (Array.isArray(users) ? users : []).map(user => ({
-    value: user._id,
-    label: `${user.name?.first || ''} ${user.name?.last || ''}`.trim() || user.authentication?.userName || '',
-  }));
+  const userOptions = selectedProjects.length > 0
+    ? projectMembers.map(m => ({
+        value: m.id || m._id,
+        label: m.name || m.authentication?.userName || '',
+      }))
+    : (Array.isArray(users) ? users : []).map(u => ({
+        value: u._id,
+        label: `${u.name?.first || ''} ${u.name?.last || ''}`.trim() || u.authentication?.userName || '',
+      }));
 
   return (
     <div className="dropdown-wrapper" ref={wrapperRef}>
@@ -299,7 +347,7 @@ const FilterDropdown = ({ filters, onFilterChange, onClearFilters, categories, p
               <div className="filter-row">
                 <span className="filter-row-label">Assigned To</span>
                 <PortalMultiSelect
-                  options={usersLoading ? [] : userOptions}
+                  options={(usersLoading || membersLoading) ? [] : userOptions}
                   value={Array.isArray(filters.assignTo) ? filters.assignTo : []}
                   onChange={v => handleChange('assignTo', v)}
                   placeholder="Search or enter email..."
