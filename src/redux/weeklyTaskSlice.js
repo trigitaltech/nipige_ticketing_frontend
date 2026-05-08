@@ -41,6 +41,42 @@ export const fetchWeeklyTickets = createAsyncThunk(
   'weeklyTasks/fetchWeeklyTickets',
   async (params, { rejectWithValue }) => {
     try {
+      const projectIds = Array.isArray(params?.projects) ? params.projects : null;
+      const assigneeIds = Array.isArray(params?.assignees) ? params.assignees : null;
+      const hasMultiProjects = projectIds && projectIds.length > 0;
+      const hasMultiAssignees = assigneeIds && assigneeIds.length > 0;
+
+      if (hasMultiProjects || hasMultiAssignees) {
+        const { projects: _p, assignees: _a, ...rest } = params;
+        let combos = [{}];
+        if (hasMultiProjects) {
+          combos = projectIds.map(id => ({ project: id }));
+        }
+        if (hasMultiAssignees) {
+          const expanded = [];
+          combos.forEach(c => {
+            assigneeIds.forEach(uid => expanded.push({ ...c, assignTo: uid }));
+          });
+          combos = expanded;
+        }
+        const responses = await Promise.all(
+          combos.map(c => getWeeklyTicketsAPI({ ...rest, ...c }))
+        );
+        const seen = new Set();
+        const merged = [];
+        responses.forEach(res => {
+          const list = Array.isArray(res?.data) ? res.data : [];
+          list.forEach(t => {
+            const id = t._id || t.id;
+            if (id && !seen.has(id)) {
+              seen.add(id);
+              merged.push(t);
+            }
+          });
+        });
+        return merged;
+      }
+
       const response = await getWeeklyTicketsAPI(params);
       return response.data || [];
     } catch (error) {

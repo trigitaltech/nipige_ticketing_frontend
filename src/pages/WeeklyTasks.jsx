@@ -5,14 +5,12 @@ import { fetchWeeklyTasks, fetchWeeklyTickets, updateWeeklyTicketStatusOptimisti
 import { updateTicket } from '../redux/ticketSlice';
 import { fetchProjects } from '../redux/projectSlice';
 import { fetchUsers } from '../redux/userSlice';
+import { fetchCategories } from '../redux/categorySlice';
 import { getProjectMembersAPI } from '../services/projectApi';
 import { Loader2, ChevronLeft, ChevronRight, Plus } from 'lucide-react';
 import {
   Tooltip, TooltipContent, TooltipProvider, TooltipTrigger,
 } from '@/components/ui/tooltip';
-import {
-  Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
-} from '@/components/ui/select';
 import usePersistentState from '../hooks/usePersistentState';
 
 import { HOUR_HEIGHT, HOURS, FULL_DAY_NAMES, MONTHS, FULL_MONTHS, STATUS_CHIP } from '../components/weeklyTask/constants';
@@ -27,6 +25,8 @@ import MonthView from '../components/weeklyTask/MonthView';
 import MonthTicketChip from '../components/weeklyTask/MonthTicketChip';
 import TicketEventCard from '../components/weeklyTask/TicketEventCard';
 import StatusFilterDropdown from '../components/weeklyTask/StatusFilterDropdown';
+import ProjectFilterDropdown from '../components/weeklyTask/ProjectFilterDropdown';
+import CategoryFilterDropdown from '../components/weeklyTask/CategoryFilterDropdown';
 
 const DEFAULT_STATUS_FILTER = ['OPEN', 'IN_PROGRESS', 'BACKLOG'];
 
@@ -37,16 +37,18 @@ const WeeklyTasks = ({ onOpenCreateModal }) => {
   const { projects } = useSelector(s => s.projects);
   const { tasks: weeklyTasks, loading: fetchingTasks, weeklyTickets } = useSelector(s => s.weeklyTasks);
   const { users } = useSelector(s => s.users);
+  const { categories } = useSelector(s => s.categories);
 
   const [currentDate, setCurrentDate] = useState(new Date());
   const [weekData, setWeekData] = useState(createEmptyWeekData());
-  const [selectedUserId, setSelectedUserId] = useState(null);
+  const [selectedUserIds, setSelectedUserIds] = useState([]);
 
   const [editingDay, setEditingDay] = useState(null);
   const [drag, setDrag] = useState(null);
   const [expandedAllDay, setExpandedAllDay] = useState(null);
   const [statusFilter, setStatusFilter] = usePersistentState('weeklyTasks.statusFilter', DEFAULT_STATUS_FILTER);
-  const [selectedProjectId, setSelectedProjectId] = useState('');
+  const [selectedProjectIds, setSelectedProjectIds] = useState([]);
+  const [selectedCategoryIds, setSelectedCategoryIds] = useState([]);
   const [projectMembers, setProjectMembers] = useState([]);
   const [viewMode, setViewMode] = usePersistentState('weeklyTasks.viewMode', 'week');
   const [now, setNow] = useState(new Date());
@@ -75,51 +77,70 @@ const WeeklyTasks = ({ onOpenCreateModal }) => {
 
   useEffect(() => { dispatch(fetchProjects()); }, [dispatch]);
   useEffect(() => { dispatch(fetchUsers()); }, [dispatch]);
+  useEffect(() => { dispatch(fetchCategories()); }, [dispatch]);
 
   useEffect(() => {
-    if (currentUser?._id && !selectedUserId)
-      setSelectedUserId(String(currentUser._id));
-  }, [currentUser, selectedUserId]);
+    if (currentUser?._id && selectedUserIds.length === 0)
+      setSelectedUserIds([String(currentUser._id)]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [currentUser]);
 
   useEffect(() => {
     setExpandedAllDay(null);
   }, [currentDate]);
 
   useEffect(() => {
-    if (!selectedUserId) return;
     setWeekData(createEmptyWeekData());
+    if (selectedUserIds.length !== 1) return;
     dispatch(fetchWeeklyTasks({
-      userId: selectedUserId,
+      userId: selectedUserIds[0],
       weekStartDate: weekDates[0].toISOString(),
       weekEndDate: weekDates[6].toISOString(),
     }));
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [dispatch, currentDate, selectedUserId]);
+  }, [dispatch, currentDate, selectedUserIds]);
 
   useEffect(() => {
-    if (!selectedProjectId) {
+    if (selectedProjectIds.length === 0) {
       setProjectMembers([]);
       return;
     }
-    getProjectMembersAPI(selectedProjectId).then((res) => {
-      const { owner, members = [] } = res?.data || {};
-      const all = [];
-      if (owner) all.push(owner);
-      members.forEach(m => all.push(m));
-      setProjectMembers(all.map(m => ({
-        _id: m.id,
-        authentication: { userName: m.name, email: m.email },
-      })));
-    }).catch(() => setProjectMembers([]));
-  }, [selectedProjectId]);
+    let cancelled = false;
+    Promise.all(selectedProjectIds.map(id =>
+      getProjectMembersAPI(id).then(res => res?.data).catch(() => null)
+    )).then((results) => {
+      if (cancelled) return;
+      const seen = new Set();
+      const merged = [];
+      results.forEach((data) => {
+        if (!data) return;
+        const { owner, members = [] } = data;
+        const all = [];
+        if (owner) all.push(owner);
+        members.forEach(m => all.push(m));
+        all.forEach(m => {
+          if (!m?.id || seen.has(m.id)) return;
+          seen.add(m.id);
+          merged.push({
+            _id: m.id,
+            authentication: { userName: m.name, email: m.email },
+          });
+        });
+      });
+      setProjectMembers(merged);
+    });
+    return () => { cancelled = true; };
+  }, [selectedProjectIds]);
 
   useEffect(() => {
-    if (selectedProjectId) {
-      dispatch(fetchWeeklyTickets({ project: selectedProjectId }));
-    } else if (selectedUserId) {
-      dispatch(fetchWeeklyTickets({ assignTo: selectedUserId }));
-    }
-  }, [dispatch, selectedUserId, selectedProjectId]);
+    const hasProjects = selectedProjectIds.length > 0;
+    const hasUsers = selectedUserIds.length > 0;
+    if (!hasProjects && !hasUsers) return;
+    const params = {};
+    if (hasProjects) params.projects = selectedProjectIds;
+    if (hasUsers) params.assignees = selectedUserIds;
+    dispatch(fetchWeeklyTickets(params));
+  }, [dispatch, selectedUserIds, selectedProjectIds]);
 
   useEffect(() => {
     const nd = createEmptyWeekData();
@@ -253,10 +274,24 @@ const WeeklyTasks = ({ onOpenCreateModal }) => {
   };
 
   const matchesProject = (t) => {
-    if (!selectedProjectId) return true;
+    if (selectedProjectIds.length === 0) return true;
     const raw = t.project;
     const pid = typeof raw === 'string' ? raw : (raw?.id || raw?._id || raw?.projectId || '');
-    return String(pid) === String(selectedProjectId);
+    return selectedProjectIds.some(id => String(id) === String(pid));
+  };
+
+  const matchesAssignee = (t) => {
+    if (selectedUserIds.length === 0) return true;
+    const raw = t.assignTo;
+    const aid = typeof raw === 'string' ? raw : (raw?.id || raw?._id || '');
+    return selectedUserIds.some(id => String(id) === String(aid));
+  };
+
+  const matchesCategory = (t) => {
+    if (selectedCategoryIds.length === 0) return true;
+    const raw = t.category;
+    const cid = typeof raw === 'string' ? raw : (raw?._id || raw?.id || '');
+    return selectedCategoryIds.some(id => String(id) === String(cid));
   };
 
   const toCalendarDay = (d) => new Date(d.getFullYear(), d.getMonth(), d.getDate()).getTime();
@@ -267,6 +302,8 @@ const WeeklyTasks = ({ onOpenCreateModal }) => {
       if (!t.startDate || isAllDayTicket(t)) return false;
       if (!statusFilter.includes(t.status || 'OPEN')) return false;
       if (!matchesProject(t)) return false;
+      if (!matchesAssignee(t)) return false;
+      if (!matchesCategory(t)) return false;
       const startMs = toCalendarDay(new Date(t.startDate));
       const viewMs = toCalendarDay(date);
       if (viewMs < startMs) return false;
@@ -286,6 +323,8 @@ const WeeklyTasks = ({ onOpenCreateModal }) => {
       if (!t.startDate || !isAllDayTicket(t)) return false;
       if (!statusFilter.includes(t.status || 'OPEN')) return false;
       if (!matchesProject(t)) return false;
+      if (!matchesAssignee(t)) return false;
+      if (!matchesCategory(t)) return false;
       const startMs = toCalendarDay(new Date(t.startDate));
       const viewMs = toCalendarDay(date);
       if (viewMs < startMs) return false;
@@ -339,20 +378,10 @@ const WeeklyTasks = ({ onOpenCreateModal }) => {
           <span className="text-[14px] font-semibold text-slate-800 ml-1">{dateRangeLabel}</span>
         </div>
         <div className="flex items-center gap-[5px]">
-          <Select value={selectedProjectId || '__all__'} onValueChange={(v) => setSelectedProjectId(v === '__all__' ? '' : v)}>
-            <SelectTrigger className="!h-[22px] !py-0 border border-slate-200 rounded-md bg-white text-slate-700 text-[12px] font-medium px-3 shadow-none focus:ring-0 focus-visible:ring-0 w-auto min-w-[110px] max-w-[170px] gap-1">
-              <SelectValue placeholder="All Projects" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="__all__">All Projects</SelectItem>
-              {Array.isArray(projects) && projects.map((p) => {
-                const pid = p._id || p.id;
-                return <SelectItem key={pid} value={pid}>{p.name || p.projectName || 'Untitled'}</SelectItem>;
-              })}
-            </SelectContent>
-          </Select>
+          <ProjectFilterDropdown projects={projects} selected={selectedProjectIds} onChange={setSelectedProjectIds} />
+          <CategoryFilterDropdown categories={categories} selected={selectedCategoryIds} onChange={setSelectedCategoryIds} />
           <StatusFilterDropdown selected={statusFilter} onChange={setStatusFilter} />
-          <UserCombobox users={selectedProjectId ? projectMembers : users} selectedUserId={selectedUserId} onSelect={setSelectedUserId} />
+          <UserCombobox users={selectedProjectIds.length > 0 ? projectMembers : users} selectedUserIds={selectedUserIds} onChange={setSelectedUserIds} />
           <TooltipProvider>
             <Tooltip>
               <TooltipTrigger asChild>
