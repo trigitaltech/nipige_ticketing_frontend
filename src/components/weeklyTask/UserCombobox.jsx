@@ -41,7 +41,7 @@ const UserCombobox = ({ users, selectedUserIds, onChange, disabled }) => {
         <button
           type="button"
           disabled={disabled}
-          className={`h-[22px] inline-flex items-center gap-1.5 px-3 rounded-full border text-[12px] font-medium transition-colors ${disabled ? 'border-slate-200 bg-slate-50 text-slate-300 cursor-not-allowed opacity-60' : `cursor-pointer ${isFiltered ? 'border-[#3B2FB1]/30 bg-[#3B2FB1]/10 text-[#3B2FB1]' : 'border-slate-200 bg-white text-slate-500 hover:bg-slate-50'}`}`}
+          className={`h-[22px] inline-flex items-center gap-1.5 px-3 rounded-full border text-[12px] font-medium transition-colors whitespace-nowrap shrink-0 ${disabled ? 'border-slate-200 bg-slate-50 text-slate-300 cursor-not-allowed opacity-60' : `cursor-pointer ${isFiltered ? 'border-[#3B2FB1]/30 bg-[#3B2FB1]/10 text-[#3B2FB1]' : 'border-slate-200 bg-white text-slate-500 hover:bg-slate-50'}`}`}
         >
           <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
             <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/>

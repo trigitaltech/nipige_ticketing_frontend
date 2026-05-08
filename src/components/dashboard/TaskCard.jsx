@@ -2,7 +2,7 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import TaskRow from './TaskRow';
 
 const TaskCard = ({ title, subtitle, dotColor, count, countClassName, tickets, today, emptyMessage }) => (
-  <div className="col-span-4 bg-white border border-slate-200 rounded-xl overflow-hidden">
+  <div className="bg-white border border-slate-200 rounded-xl overflow-hidden">
     <div className="flex items-center justify-between px-5 pt-5 pb-3">
       <div>
         <div className="text-[13px] font-semibold text-slate-800 flex items-center gap-2">

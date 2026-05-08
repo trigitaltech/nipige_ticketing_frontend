@@ -184,26 +184,36 @@ function FilterBar({ filters, setFilters, projectOptions, memberOptions }) {
   const { statuses, severities, dateRange, projectIds, memberIds } = filters;
   const statusOptions = Object.entries(STATUS_CONFIG).map(([id, cfg]) => ({ id, label: cfg.label, dot: cfg.color }));
   const severityOptions = SEVERITY_PRIORITY.map(p => ({ id: p.label, label: p.label, dot: p.color }));
+  const segmented = (
+    <Segmented
+      value={dateRange}
+      onChange={v => setFilters(f => ({ ...f, dateRange: v }))}
+      options={[{ label: '7D', value: '7d' }, { label: '30D', value: '30d' }, { label: '90D', value: '90d' }, { label: 'All', value: 'all' }]}
+    />
+  );
   return (
-    <div className="bg-white border border-slate-200 rounded-xl px-4 py-3 flex flex-wrap items-center gap-2">
-      <MultiSelectDropdown label="Project"  icon="folder" options={projectOptions} selected={projectIds} onChange={v => setFilters(f => ({ ...f, projectIds: v }))}  width={190} searchable />
-      <MultiSelectDropdown label="Member"   icon="users"  options={memberOptions}  selected={memberIds}  onChange={v => setFilters(f => ({ ...f, memberIds: v }))}   width={190} searchable />
-      <MultiSelectDropdown label="Status"   icon="filter" options={statusOptions}   selected={statuses}   onChange={v => setFilters(f => ({ ...f, statuses: v }))}    width={170} />
-      <MultiSelectDropdown label="Severity" icon="flag"   options={severityOptions} selected={severities} onChange={v => setFilters(f => ({ ...f, severities: v }))}  width={170} />
-      <div className="ml-auto">
-        <Segmented
-          value={dateRange}
-          onChange={v => setFilters(f => ({ ...f, dateRange: v }))}
-          options={[{ label: '7D', value: '7d' }, { label: '30D', value: '30d' }, { label: '90D', value: '90d' }, { label: 'All', value: 'all' }]}
-        />
+    <div className="bg-white border border-slate-200 rounded-xl px-4 py-3">
+      {/* Mobile: date range at the top with a label */}
+      <div className="flex items-center justify-between mb-3 sm:hidden">
+        <span className="text-[11px] font-semibold text-slate-500 uppercase tracking-wider">Date range</span>
+        {segmented}
+      </div>
+      {/* Dropdowns — stacked on mobile, inline on sm+ */}
+      <div className="flex flex-col sm:flex-row sm:flex-wrap sm:items-center gap-2">
+        <MultiSelectDropdown label="Project"  icon="folder" options={projectOptions} selected={projectIds} onChange={v => setFilters(f => ({ ...f, projectIds: v }))}  width={190} searchable />
+        <MultiSelectDropdown label="Member"   icon="users"  options={memberOptions}  selected={memberIds}  onChange={v => setFilters(f => ({ ...f, memberIds: v }))}   width={190} searchable />
+        <MultiSelectDropdown label="Status"   icon="filter" options={statusOptions}   selected={statuses}   onChange={v => setFilters(f => ({ ...f, statuses: v }))}    width={170} />
+        <MultiSelectDropdown label="Severity" icon="flag"   options={severityOptions} selected={severities} onChange={v => setFilters(f => ({ ...f, severities: v }))}  width={170} />
+        {/* Desktop: date range pushed to the right */}
+        <div className="hidden sm:block sm:ml-auto">{segmented}</div>
       </div>
     </div>
   );
 }
 
 const OverviewSkeleton = () => (
-  <div className="px-5 pt-4 pb-2 space-y-4">
-    <div className="grid grid-cols-5 gap-4">
+  <div className="px-3 sm:px-5 pt-4 pb-2 space-y-4">
+    <div className="grid grid-cols-2 sm:grid-cols-3 xl:grid-cols-5 gap-3">
       {[0,1,2,3,4].map(i => (
         <div key={i} className="bg-white border border-slate-200 rounded-xl p-4 space-y-3">
           <Skeleton className="h-3 w-24" />
@@ -212,20 +222,20 @@ const OverviewSkeleton = () => (
         </div>
       ))}
     </div>
-    <div className="grid grid-cols-12 gap-4">
-      {(['col-span-3', 'col-span-3', 'col-span-6']).map((cls, i) => (
+    <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-12 gap-4">
+      {(['sm:col-span-1 xl:col-span-3', 'sm:col-span-1 xl:col-span-3', 'sm:col-span-2 xl:col-span-6']).map((cls, i) => (
         <div key={i} className={`${cls} bg-white border border-slate-200 rounded-xl p-5`}>
           <Skeleton className="h-4 w-32 mb-4" />
           <Skeleton className="h-40 w-full" />
         </div>
       ))}
     </div>
-    <div className="grid grid-cols-12 gap-4">
-      <div className="col-span-7 bg-white border border-slate-200 rounded-xl">
+    <div className="grid grid-cols-1 xl:grid-cols-12 gap-4">
+      <div className="xl:col-span-7 bg-white border border-slate-200 rounded-xl">
         <Skeleton className="h-12 w-full rounded-t-xl" />
         {[0,1,2,3].map(i => <Skeleton key={i} className="h-14 w-full mx-4 my-2" />)}
       </div>
-      <div className="col-span-5 bg-white border border-slate-200 rounded-xl p-4 space-y-3">
+      <div className="xl:col-span-5 bg-white border border-slate-200 rounded-xl p-4 space-y-3">
         <Skeleton className="h-4 w-32" />
         {[0,1,2,3].map(i => <Skeleton key={i} className="h-10 w-full" />)}
       </div>
@@ -515,7 +525,7 @@ const DashboardOverview = ({ tickets = [], loading = false }) => {
 
   return (
     <ScrollArea className="flex-1 min-h-0 mx-2 mb-2">
-    <div className="px-5 pt-4 pb-4 space-y-4">
+    <div className="px-3 sm:px-5 pb-4 space-y-4">
 
       {/* Filter bar */}
       <FilterBar
@@ -526,7 +536,7 @@ const DashboardOverview = ({ tickets = [], loading = false }) => {
       />
 
       {/* KPI tiles */}
-      <div className="grid grid-cols-5 gap-4">
+      <div className="grid grid-cols-2 sm:grid-cols-3 xl:grid-cols-5 gap-3">
         <StatTile
           label="Total tasks"
           value={apiStats ? apiStats.total_tasks : filteredTickets.length}
@@ -567,10 +577,10 @@ const DashboardOverview = ({ tickets = [], loading = false }) => {
       </div>
 
       {/* Charts row */}
-      <div className="grid grid-cols-12 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-12 gap-4">
 
         {/* Status donut */}
-        <div className="col-span-3 bg-white border border-slate-200 rounded-xl p-5">
+        <div className="sm:col-span-1 xl:col-span-3 bg-white border border-slate-200 rounded-xl p-5">
           <div className="text-[13px] font-semibold text-slate-800 mb-0.5">Status breakdown</div>
           <div className="text-[11px] text-slate-400 mb-3">All {statusTotal} tasks</div>
           <div className="flex justify-center mb-4">
@@ -588,7 +598,7 @@ const DashboardOverview = ({ tickets = [], loading = false }) => {
         </div>
 
         {/* Priority + alerts */}
-        <div className="col-span-3 bg-white border border-slate-200 rounded-xl p-5">
+        <div className="sm:col-span-1 xl:col-span-3 bg-white border border-slate-200 rounded-xl p-5">
           <div className="text-[13px] font-semibold text-slate-800 mb-0.5">Priority</div>
           <div className="text-[11px] text-slate-400 mb-3">By severity level</div>
           <BarList rows={severityRows} />
@@ -618,7 +628,7 @@ const DashboardOverview = ({ tickets = [], loading = false }) => {
         </div>
 
         {/* Trend chart */}
-        <div className="col-span-6 bg-white border border-slate-200 rounded-xl p-5">
+        <div className="sm:col-span-2 xl:col-span-6 bg-white border border-slate-200 rounded-xl p-5">
           <div className="flex items-start justify-between mb-1">
             <div>
               <div className="text-[13px] font-semibold text-slate-800">Completion trend</div>
@@ -634,13 +644,13 @@ const DashboardOverview = ({ tickets = [], loading = false }) => {
       </div>
 
       {/* Projects + Members */}
-      <div className="grid grid-cols-12 gap-4">
+      <div className="grid grid-cols-1 xl:grid-cols-12 gap-4">
         <ProjectCard projectList={stats.projectList} projectColor={projectColor} today={today} apiProjects={apiProjectReport} />
         <WorkloadCard memberList={stats.memberList} today={today} apiMembers={apiMemberReport} />
       </div>
 
       {/* Task lists */}
-      <div className="grid grid-cols-12 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         <TaskCard
           title="Overdue"
           subtitle="Needs immediate attention"

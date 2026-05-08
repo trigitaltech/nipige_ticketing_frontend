@@ -352,44 +352,63 @@ const WeeklyTasks = ({ onOpenCreateModal }) => {
     <div className="flex flex-col bg-white overflow-hidden relative border border-slate-200 rounded-xl mx-2 mb-2" style={{ height: 'calc(100% - 0.5rem)' }}>
 
       {/* Header */}
-      <div className="flex items-center justify-between px-4 py-2 border-b border-slate-200 shrink-0 bg-white">
-        <div className="flex items-center gap-1.5 h-[22px]">
-          <button
-            className="h-[22px] border border-slate-200 rounded-md bg-white inline-flex items-center justify-center text-slate-700 cursor-pointer text-[12px] font-medium px-3 transition-colors hover:bg-slate-50"
-            onClick={() => setCurrentDate(new Date())}
-          >
-            Today
-          </button>
-          <ViewSwitcherDropdown viewMode={viewMode} onChange={setViewMode} />
-          <div className="flex items-center">
+      <div className="px-3 sm:px-4 py-2 border-b border-slate-200 shrink-0 bg-white">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:gap-2">
+          {/* Navigation + date + add */}
+          <div className="flex items-center gap-1.5 min-w-0 flex-1">
             <button
-              className="h-[22px] w-[22px] bg-white inline-flex items-center justify-center text-slate-500 cursor-pointer transition-colors hover:bg-slate-50 border-r border-slate-200"
-              onClick={() => navigateWeek(-1)}
+              className="h-[22px] border border-slate-200 rounded-md bg-white inline-flex items-center justify-center text-slate-700 cursor-pointer text-[12px] font-medium px-2.5 transition-colors hover:bg-slate-50 shrink-0"
+              onClick={() => setCurrentDate(new Date())}
             >
-              <ChevronLeft size={15} />
+              Today
             </button>
-            <button
-              className="h-[22px] w-[22px] bg-white inline-flex items-center justify-center text-slate-500 cursor-pointer transition-colors hover:bg-slate-50"
-              onClick={() => navigateWeek(1)}
-            >
-              <ChevronRight size={15} />
-            </button>
+            <ViewSwitcherDropdown viewMode={viewMode} onChange={setViewMode} />
+            <div className="flex items-center shrink-0">
+              <button
+                className="h-[22px] w-[22px] bg-white inline-flex items-center justify-center text-slate-500 cursor-pointer transition-colors hover:bg-slate-50 border-r border-slate-200"
+                onClick={() => navigateWeek(-1)}
+              >
+                <ChevronLeft size={15} />
+              </button>
+              <button
+                className="h-[22px] w-[22px] bg-white inline-flex items-center justify-center text-slate-500 cursor-pointer transition-colors hover:bg-slate-50"
+                onClick={() => navigateWeek(1)}
+              >
+                <ChevronRight size={15} />
+              </button>
+            </div>
+            <span className="text-[12px] sm:text-[14px] font-semibold text-slate-800 ml-1 truncate flex-1 min-w-0">{dateRangeLabel}</span>
+            {/* Add button — mobile only (end of nav row) */}
+            <TooltipProvider>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <button
+                    className="sm:hidden h-[26px] min-w-[26px] rounded-lg inline-flex items-center justify-center cursor-pointer transition-colors bg-[#3B2FB1] border border-[#3B2FB1] text-white hover:bg-[#2d2490] shrink-0"
+                    onClick={() => handleDragCreate(Math.floor(weekDates.findIndex(d => isSameDay(d, today)) >= 0 ? weekDates.findIndex(d => isSameDay(d, today)) : 0), 540, 1080)}
+                  >
+                    <Plus size={15} />
+                  </button>
+                </TooltipTrigger>
+                <TooltipContent side="bottom">Create new task</TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
           </div>
-          <span className="text-[14px] font-semibold text-slate-800 ml-1">{dateRangeLabel}</span>
-        </div>
-        <div className="flex items-center gap-[5px]">
-          <ProjectFilterDropdown projects={projects} selected={selectedProjectIds} onChange={setSelectedProjectIds} />
-          <CategoryFilterDropdown categories={categories} selected={selectedCategoryIds} onChange={setSelectedCategoryIds} />
-          <StatusFilterDropdown selected={statusFilter} onChange={setStatusFilter} />
-          <UserCombobox users={selectedProjectIds.length > 0 ? projectMembers : users} selectedUserIds={selectedUserIds} onChange={setSelectedUserIds} />
+          {/* Filters — second row on mobile, inline on desktop */}
+          <div className="flex items-center gap-[5px] mt-1.5 sm:mt-0 overflow-x-auto scrollbar-none sm:overflow-visible">
+            <ProjectFilterDropdown projects={projects} selected={selectedProjectIds} onChange={setSelectedProjectIds} />
+            <CategoryFilterDropdown categories={categories} selected={selectedCategoryIds} onChange={setSelectedCategoryIds} />
+            <StatusFilterDropdown selected={statusFilter} onChange={setStatusFilter} />
+            <UserCombobox users={selectedProjectIds.length > 0 ? projectMembers : users} selectedUserIds={selectedUserIds} onChange={setSelectedUserIds} />
+          </div>
+          {/* Add button — desktop only (after filters) */}
           <TooltipProvider>
             <Tooltip>
               <TooltipTrigger asChild>
                 <button
-                  className="h-[28px] min-w-[28px] rounded-lg inline-flex items-center justify-center cursor-pointer transition-colors bg-[#3B2FB1] border border-[#3B2FB1] text-white hover:bg-[#2d2490]"
+                  className="hidden sm:inline-flex h-[26px] min-w-[26px] rounded-lg items-center justify-center cursor-pointer transition-colors bg-[#3B2FB1] border border-[#3B2FB1] text-white hover:bg-[#2d2490] shrink-0"
                   onClick={() => handleDragCreate(Math.floor(weekDates.findIndex(d => isSameDay(d, today)) >= 0 ? weekDates.findIndex(d => isSameDay(d, today)) : 0), 540, 1080)}
                 >
-                  <Plus size={16} />
+                  <Plus size={15} />
                 </button>
               </TooltipTrigger>
               <TooltipContent side="bottom">Create new task</TooltipContent>
@@ -410,7 +429,8 @@ const WeeklyTasks = ({ onOpenCreateModal }) => {
           onStatusChange={handleMarkComplete}
         />
       ) : (
-      <div className="flex-1 min-h-0 flex flex-col overflow-hidden">
+      <div className="flex-1 min-h-0 overflow-x-auto scrollbar-none">
+      <div className="flex flex-col h-full w-full" style={{ minWidth: `${52 + displayDates.length * 80}px` }}>
 
         {/* Day header row — week view only */}
         {viewMode === 'week' && (
@@ -507,7 +527,7 @@ const WeeklyTasks = ({ onOpenCreateModal }) => {
         </div>
 
         {/* Scrollable time grid */}
-        <div className="flex-1 overflow-y-auto overflow-x-hidden" ref={gridRef}>
+        <div className="flex-1 overflow-y-auto" ref={gridRef}>
           <div className="relative" style={{ height: `${24 * HOUR_HEIGHT}px` }}>
 
             {HOURS.map(h => (
@@ -583,6 +603,7 @@ const WeeklyTasks = ({ onOpenCreateModal }) => {
 
           </div>
         </div>
+      </div>
       </div>
       )}
 

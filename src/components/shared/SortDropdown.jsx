@@ -1,5 +1,4 @@
 import { useState } from 'react';
-import '../../assets/Styles/Dropdown.css';
 
 const SORT_OPTIONS = [
   { field: 'ticketNo', label: 'Ticket ID' },
@@ -43,7 +42,7 @@ const SortDropdown = ({ sortConfig, onSortChange, onClearSort }) => {
   };
 
   return (
-    <div className="dropdown-wrapper">
+    <div className="relative inline-flex">
       <button
         type="button"
         onClick={() => setIsOpen(!isOpen)}
@@ -71,26 +70,29 @@ const SortDropdown = ({ sortConfig, onSortChange, onClearSort }) => {
 
       {isOpen && (
         <>
-          <div className="dropdown-overlay" onClick={() => setIsOpen(false)} />
-          <div className="dropdown-panel">
-            <div className="sort-dropdown-header">
-              <span>Sort</span>
-              <button className={`filter-dropdown-clear ${clearClicked ? 'clicked' : ''}`} onClick={handleClear}>
+          <div className="fixed inset-0 z-[999]" onClick={() => setIsOpen(false)} />
+          <div className="absolute top-[calc(100%+4px)] right-0 bg-white border border-[#DFE1E6] rounded-md shadow-[0_4px_16px_rgba(0,0,0,0.12)] z-[1000] min-w-[280px] max-h-[calc(100vh-120px)] overflow-y-auto">
+            <div className="flex justify-between items-center px-3.5 py-2.5 border-b border-[#EBECF0]">
+              <span className="text-[12px] font-semibold text-[#5E6C84] uppercase tracking-[0.5px]">Sort</span>
+              <button
+                className="text-[12px] text-[#0052CC] bg-transparent border-none cursor-pointer px-2.5 py-1 rounded font-medium hover:bg-[#DEEBFF] hover:text-[#0747A6] active:bg-[#B3D4FF] outline-none transition-all"
+                onClick={handleClear}
+              >
                 Clear all
               </button>
             </div>
-            <div className="sort-dropdown-items">
+            <div className="py-1">
               {SORT_OPTIONS.map((option) => (
                 <button
                   key={option.field}
-                  className={`sort-dropdown-item ${sortConfig.field === option.field ? 'active' : ''}`}
+                  className={`flex items-center justify-between px-3.5 py-2 cursor-pointer text-[13px] bg-transparent border-none w-full text-left outline-none hover:bg-[#F4F5F7] hover:text-[#172B4D] active:bg-[#EBECF0] transition-colors [font-family:inherit] ${sortConfig.field === option.field ? 'bg-[#F4F5F7] font-medium text-[#172B4D]' : 'text-[#5E6C84]'}`}
                   onClick={() => handleSortClick(option.field)}
                 >
-                  <span className="sort-dropdown-item-label">
+                  <span className="flex items-center gap-2">
                     {option.label}
                   </span>
                   {getDirectionIcon(option.field) && (
-                    <span className="sort-dropdown-item-direction">
+                    <span className="text-[13px] text-[#5E6C84]">
                       {getDirectionIcon(option.field)}
                     </span>
                   )}

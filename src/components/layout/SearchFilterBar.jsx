@@ -53,7 +53,7 @@ const SearchFilterBar = ({
   return (
     <div>
       {/* Row 1: View tabs */}
-      <div className="flex items-center border-b border-slate-200 px-5">
+      <div className="flex items-center border-b border-slate-200 px-3 sm:px-5 overflow-x-auto scrollbar-none">
         <button
           type="button"
           onClick={() => setViewMode('list')}
@@ -82,9 +82,9 @@ const SearchFilterBar = ({
       </div>
 
       {/* Row 2: Action bar */}
-      <div className="flex items-center gap-3 py-1.5 px-5">
+      <div className="flex items-center gap-2 sm:gap-3 py-1.5 px-3 sm:px-5 overflow-x-auto scrollbar-none">
         {/* Left */}
-        <div className="flex items-center gap-2 shrink-0">
+        <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
           <div className="flex items-center gap-0.5 bg-slate-100 rounded-lg p-0.5">
             <button
               type="button"
@@ -125,7 +125,7 @@ const SearchFilterBar = ({
         <div className="flex-1" />
 
         {/* Right */}
-        <div className="flex items-center gap-2 shrink-0">
+        <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
           <SortDropdown
             sortConfig={sortConfig}
             onSortChange={setSortConfig}

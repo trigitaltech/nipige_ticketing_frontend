@@ -18,7 +18,7 @@ const WorkloadCard = ({ memberList, today, apiMembers }) => {
   const count = useApi ? apiMembers.length : memberList.length;
 
   return (
-    <div className="col-span-5 bg-white border border-slate-200 rounded-xl overflow-hidden flex flex-col">
+    <div className="xl:col-span-5 bg-white border border-slate-200 rounded-xl overflow-hidden flex flex-col">
       <div className="px-5 py-3.5 border-b border-slate-100">
         <div className="flex items-center justify-between mb-2">
           <div>

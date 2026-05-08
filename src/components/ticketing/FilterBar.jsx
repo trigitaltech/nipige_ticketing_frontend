@@ -1,6 +1,5 @@
 import { useState } from 'react';
 import { useSelector } from 'react-redux';
-import '../../assets/Styles/FilterBar.css';
 
 const FilterBar = ({ onFilterChange, onSortChange, categories, activePanel }) => {
   const { users, loading: usersLoading } = useSelector((state) => state.users);
@@ -54,30 +53,36 @@ const FilterBar = ({ onFilterChange, onSortChange, categories, activePanel }) =>
 
   if (!activePanel) return null;
 
+  const selectInputClass = "py-2 px-2.5 border-2 border-[#DFE1E6] rounded text-[14px] text-[#172B4D] bg-[#FAFBFC] outline-none transition-all hover:bg-white hover:border-[#B3BAC5]";
+
+  const sortBtnClass = (field) =>
+    `py-2 px-3 border rounded text-[13px] font-medium cursor-pointer flex items-center gap-1.5 whitespace-nowrap outline-none transition-none ${
+      sortConfig.field === field
+        ? 'bg-[#5E6C84] text-white border-[#5E6C84] hover:bg-[#42526E] hover:border-[#42526E]'
+        : 'bg-[#FAFBFC] text-[#42526E] border-[#DFE1E6] hover:bg-[#EBECF0] hover:border-[#B3BAC5] hover:text-[#172B4D] active:bg-[#DFE1E6]'
+    }`;
+
   return (
-    <div className="filter-bar">
-      <div className="filter-header">
+    <div className="bg-white rounded border border-[#DFE1E6] overflow-hidden shadow-sm">
+      <div className="flex justify-between items-center px-4 py-3 bg-[#FAFBFC] border-b border-[#DFE1E6]">
         <span style={{ fontSize: '14px', fontWeight: '600', color: '#172B4D' }}>
           {activePanel === 'filter' ? 'Filters' : 'Sort By'}
         </span>
         <button
-          className="clear-filters-btn"
+          className="px-3 py-1.5 bg-white text-[#42526E] border border-[#DFE1E6] rounded text-[13px] font-medium cursor-pointer hover:bg-[#FAFBFC] hover:border-[#B3BAC5] active:bg-[#EBECF0] outline-none"
           onClick={handleClearFilters}
         >
           Clear All
         </button>
       </div>
 
-      <div className="filter-content">
+      <div className="p-4 bg-white">
         {activePanel === 'filter' && (
-          <div className="filter-section">
-            <div className="filter-grid">
-              <div className="filter-item">
-                <label>Status</label>
-                <select
-                  value={filters.status}
-                  onChange={(e) => handleFilterChange('status', e.target.value)}
-                >
+          <div className="mb-5 pb-5 border-b border-[#EBECF0] last:border-b-0 last:mb-0 last:pb-0">
+            <div className="grid grid-cols-[repeat(auto-fit,minmax(180px,1fr))] gap-3">
+              <div className="flex flex-col gap-1.5">
+                <label className="text-[12px] font-semibold text-[#5E6C84]">Status</label>
+                <select value={filters.status} onChange={(e) => handleFilterChange('status', e.target.value)} className={selectInputClass}>
                   <option value="">All</option>
                   <option value="OPEN">Open</option>
                   <option value="IN_PROGRESS">In Progress</option>
@@ -87,47 +92,35 @@ const FilterBar = ({ onFilterChange, onSortChange, categories, activePanel }) =>
                 </select>
               </div>
 
-              <div className="filter-item">
-                <label>Priority</label>
+              <div className="flex flex-col gap-1.5">
+                <label className="text-[12px] font-semibold text-[#5E6C84]">Priority</label>
                 <select
                   value={filters.priority || ''}
                   onChange={(e) => handleFilterChange('priority', e.target.value ? parseInt(e.target.value) : null)}
+                  className={selectInputClass}
                 >
                   <option value="">All</option>
-                  <option value="1">1</option>
-                  <option value="2">2</option>
-                  <option value="3">3</option>
-                  <option value="4">4</option>
-                  <option value="5">5</option>
-                  <option value="6">6</option>
-                  <option value="7">7</option>
-                  <option value="8">8</option>
-                  <option value="9">9</option>
-                  <option value="10">10</option>
+                  {[1,2,3,4,5,6,7,8,9,10].map(n => <option key={n} value={n}>{n}</option>)}
                 </select>
               </div>
 
-              <div className="filter-item">
-                <label>Category</label>
-                <select
-                  value={filters.category}
-                  onChange={(e) => handleFilterChange('category', e.target.value)}
-                >
+              <div className="flex flex-col gap-1.5">
+                <label className="text-[12px] font-semibold text-[#5E6C84]">Category</label>
+                <select value={filters.category} onChange={(e) => handleFilterChange('category', e.target.value)} className={selectInputClass}>
                   <option value="">All</option>
                   {categories && Array.isArray(categories) && categories.map((cat) => (
-                    <option key={cat._id} value={cat._id}>
-                      {cat.name}
-                    </option>
+                    <option key={cat._id} value={cat._id}>{cat.name}</option>
                   ))}
                 </select>
               </div>
 
-              <div className="filter-item">
-                <label>Assigned To</label>
+              <div className="flex flex-col gap-1.5">
+                <label className="text-[12px] font-semibold text-[#5E6C84]">Assigned To</label>
                 <select
                   value={filters.assignTo}
                   onChange={(e) => handleFilterChange('assignTo', e.target.value)}
                   disabled={usersLoading}
+                  className={selectInputClass}
                 >
                   <option value="">All</option>
                   {users && Array.isArray(users) && users.map((user) => (
@@ -138,31 +131,24 @@ const FilterBar = ({ onFilterChange, onSortChange, categories, activePanel }) =>
                 </select>
               </div>
 
-              <div className="filter-item">
-                <label>From Date</label>
-                <input
-                  type="date"
-                  value={filters.fromDate}
-                  onChange={(e) => handleFilterChange('fromDate', e.target.value)}
-                />
+              <div className="flex flex-col gap-1.5">
+                <label className="text-[12px] font-semibold text-[#5E6C84]">From Date</label>
+                <input type="date" value={filters.fromDate} onChange={(e) => handleFilterChange('fromDate', e.target.value)} className={selectInputClass} />
               </div>
 
-              <div className="filter-item">
-                <label>To Date</label>
-                <input
-                  type="date"
-                  value={filters.toDate}
-                  onChange={(e) => handleFilterChange('toDate', e.target.value)}
-                />
+              <div className="flex flex-col gap-1.5">
+                <label className="text-[12px] font-semibold text-[#5E6C84]">To Date</label>
+                <input type="date" value={filters.toDate} onChange={(e) => handleFilterChange('toDate', e.target.value)} className={selectInputClass} />
               </div>
 
-              <div className="filter-item">
-                <label>TICKET ID</label>
+              <div className="flex flex-col gap-1.5">
+                <label className="text-[12px] font-semibold text-[#5E6C84]">TICKET ID</label>
                 <input
                   type="text"
                   value={filters.orderId}
                   onChange={(e) => handleFilterChange('orderId', e.target.value)}
-                  placeholder="Enter Tas ID"
+                  placeholder="Enter Task ID"
+                  className={selectInputClass}
                 />
               </div>
             </div>
@@ -170,44 +156,14 @@ const FilterBar = ({ onFilterChange, onSortChange, categories, activePanel }) =>
         )}
 
         {activePanel === 'sort' && (
-          <div className="sort-section">
-            <div className="sort-buttons">
-              <button
-                className={`sort-btn ${sortConfig.field === 'ticketNo' ? 'active' : ''}`}
-                onClick={() => handleSortChange('ticketNo')}
-              >
-                Ticket ID {getSortIcon('ticketNo')}
-              </button>
-              <button
-                className={`sort-btn ${sortConfig.field === 'subject' ? 'active' : ''}`}
-                onClick={() => handleSortChange('subject')}
-              >
-                Title {getSortIcon('subject')}
-              </button>
-              <button
-                className={`sort-btn ${sortConfig.field === 'status' ? 'active' : ''}`}
-                onClick={() => handleSortChange('status')}
-              >
-                Status {getSortIcon('status')}
-              </button>
-              <button
-                className={`sort-btn ${sortConfig.field === 'priority' ? 'active' : ''}`}
-                onClick={() => handleSortChange('priority')}
-              >
-                Priority {getSortIcon('priority')}
-              </button>
-              <button
-                className={`sort-btn ${sortConfig.field === 'severity' ? 'active' : ''}`}
-                onClick={() => handleSortChange('severity')}
-              >
-                Severity {getSortIcon('severity')}
-              </button>
-              <button
-                className={`sort-btn ${sortConfig.field === 'createdAt' ? 'active' : ''}`}
-                onClick={() => handleSortChange('createdAt')}
-              >
-                Created Date {getSortIcon('createdAt')}
-              </button>
+          <div>
+            <div className="flex flex-wrap gap-2">
+              <button className={sortBtnClass('ticketNo')} onClick={() => handleSortChange('ticketNo')}>Ticket ID {getSortIcon('ticketNo')}</button>
+              <button className={sortBtnClass('subject')} onClick={() => handleSortChange('subject')}>Title {getSortIcon('subject')}</button>
+              <button className={sortBtnClass('status')} onClick={() => handleSortChange('status')}>Status {getSortIcon('status')}</button>
+              <button className={sortBtnClass('priority')} onClick={() => handleSortChange('priority')}>Priority {getSortIcon('priority')}</button>
+              <button className={sortBtnClass('severity')} onClick={() => handleSortChange('severity')}>Severity {getSortIcon('severity')}</button>
+              <button className={sortBtnClass('createdAt')} onClick={() => handleSortChange('createdAt')}>Created Date {getSortIcon('createdAt')}</button>
             </div>
           </div>
         )}

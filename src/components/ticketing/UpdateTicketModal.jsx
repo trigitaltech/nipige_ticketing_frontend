@@ -7,7 +7,6 @@ import { fetchProjects } from '../../redux/projectSlice';
 import { postCommentAPI } from '../../services/api';
 import TicketInfoPanel from './TicketInfoPanel';
 import AlertModal from '../shared/AlertModal';
-import '../../assets/Styles/Modal.css';
 
 const UpdateTicketModal = ({ ticket, onClose, onUpdate }) => {
   const dispatch = useDispatch();
@@ -248,25 +247,26 @@ const UpdateTicketModal = ({ ticket, onClose, onUpdate }) => {
   };
 
   return (
-    <div className="modal-overlay" onClick={onClose}>
-      <div className="modal-content modal-content-wide" onClick={(e) => e.stopPropagation()}>
-        <div className="modal-header">
-          <h2>Ticket Details #{ticket.ticketNo || ticket.id || 'N/A'}</h2>
-          <button className="close-btn" onClick={onClose}>×</button>
+    <div className="fixed inset-0 bg-[rgba(9,30,66,0.54)] flex justify-center items-center z-[1000]" onClick={onClose}>
+      <div className="bg-white rounded w-[90%] max-w-[1100px] max-h-[90vh] flex flex-col shadow-[0_8px_16px_rgba(9,30,66,0.25)]" onClick={(e) => e.stopPropagation()}>
+        <div className="px-6 py-4 border-b border-[#DFE1E6] flex justify-between items-center shrink-0">
+          <h2 className="text-[20px] text-[#172B4D] m-0 font-medium">Ticket Details #{ticket.ticketNo || ticket.id || 'N/A'}</h2>
+          <button className="bg-transparent border-none text-[24px] text-[#6B778C] cursor-pointer p-0 w-7 h-7 leading-none hover:text-[#172B4D] transition-colors" onClick={onClose}>×</button>
         </div>
 
-        <form onSubmit={handleSubmit}>
-          <div className="modal-two-column">
+        <form onSubmit={handleSubmit} className="flex flex-col flex-1 overflow-hidden">
+          <div className="grid grid-cols-2 gap-5 flex-1 overflow-hidden px-5 py-4">
             {/* Left Section - Form Fields */}
-            <div className="modal-left-section">
-              <div className="form-group">
-                <label htmlFor="project">Project *</label>
+            <div className="min-w-0 flex flex-col overflow-y-auto pr-2 max-h-[calc(90vh-80px)] scroll-hover">
+              <div className="mb-2">
+                <label htmlFor="project" className="block mb-[3px] text-[#172B4D] font-semibold text-[11px] uppercase tracking-[0.3px]">Project *</label>
                 <select
                   id="project"
                   name="project"
                   value={formData.project}
                   onChange={handleProjectChange}
                   disabled={projectsLoading}
+                  className="w-full px-2 py-1.5 border-2 border-[#DFE1E6] rounded text-[13px] bg-[#FAFBFC] text-[#172B4D] focus:outline-none focus:border-[#0052CC] focus:bg-white transition-colors"
                 >
                   <option value="">
                     {projectsLoading ? 'Loading projects...' : 'Select a project'}
@@ -281,17 +281,18 @@ const UpdateTicketModal = ({ ticket, onClose, onUpdate }) => {
                     );
                   })}
                 </select>
-                {errors.project && <span className="error">{errors.project}</span>}
+                {errors.project && <span className="block text-[#DE350B] text-[12px] mt-1">{errors.project}</span>}
               </div>
 
-              <div className="form-group">
-                <label htmlFor="category">Category</label>
+              <div className="mb-2">
+                <label htmlFor="category" className="block mb-[3px] text-[#172B4D] font-semibold text-[11px] uppercase tracking-[0.3px]">Category</label>
                 <select
                   id="category"
                   name="category"
                   value={formData.category}
                   onChange={handleCategoryChange}
                   disabled={categoriesLoading}
+                  className="w-full px-2 py-1.5 border-2 border-[#DFE1E6] rounded text-[13px] bg-[#FAFBFC] text-[#172B4D] focus:outline-none focus:border-[#0052CC] focus:bg-white transition-colors"
                 >
                   <option value="">
                     {categoriesLoading ? 'Loading categories...' : 'Select a category'}
@@ -304,8 +305,8 @@ const UpdateTicketModal = ({ ticket, onClose, onUpdate }) => {
                 </select>
               </div>
 
-              <div className="form-group">
-                <label htmlFor="subject">Subject *</label>
+              <div className="mb-2">
+                <label htmlFor="subject" className="block mb-[3px] text-[#172B4D] font-semibold text-[11px] uppercase tracking-[0.3px]">Subject *</label>
                 <input
                   type="text"
                   id="subject"
@@ -313,12 +314,13 @@ const UpdateTicketModal = ({ ticket, onClose, onUpdate }) => {
                   value={formData.subject}
                   onChange={handleChange}
                   placeholder="Enter task subject"
+                  className="w-full px-2 py-1.5 border-2 border-[#DFE1E6] rounded text-[13px] bg-[#FAFBFC] text-[#172B4D] focus:outline-none focus:border-[#0052CC] focus:bg-white placeholder-[#8993A4] transition-colors"
                 />
-                {errors.subject && <span className="error">{errors.subject}</span>}
+                {errors.subject && <span className="block text-[#DE350B] text-[12px] mt-1">{errors.subject}</span>}
               </div>
 
-              <div className="form-group">
-                <label htmlFor="initialDescription">Description</label>
+              <div className="mb-2">
+                <label htmlFor="initialDescription" className="block mb-[3px] text-[#172B4D] font-semibold text-[11px] uppercase tracking-[0.3px]">Description</label>
                 <textarea
                   id="initialDescription"
                   name="description"
@@ -327,17 +329,19 @@ const UpdateTicketModal = ({ ticket, onClose, onUpdate }) => {
                   rows="2"
                   placeholder="Enter initial description"
                   style={{ minHeight: '32px' }}
+                  className="w-full px-2 py-1.5 border-2 border-[#DFE1E6] rounded text-[13px] bg-[#FAFBFC] text-[#172B4D] focus:outline-none focus:border-[#0052CC] focus:bg-white placeholder-[#8993A4] transition-colors resize-y"
                 />
               </div>
 
-              <div className="form-row">
-                <div className="form-group">
-                  <label htmlFor="status">Status</label>
+              <div className="grid grid-cols-2 gap-2 mb-2">
+                <div className="mb-2">
+                  <label htmlFor="status" className="block mb-[3px] text-[#172B4D] font-semibold text-[11px] uppercase tracking-[0.3px]">Status</label>
                   <select
                     id="status"
                     name="status"
                     value={formData.status}
                     onChange={handleChange}
+                    className="w-full px-2 py-1.5 border-2 border-[#DFE1E6] rounded text-[13px] bg-[#FAFBFC] text-[#172B4D] focus:outline-none focus:border-[#0052CC] focus:bg-white transition-colors"
                   >
                     <option value="OPEN">Open</option>
                     <option value="IN_PROGRESS">In Progress</option>
@@ -347,8 +351,8 @@ const UpdateTicketModal = ({ ticket, onClose, onUpdate }) => {
                   </select>
                 </div>
 
-                <div className="form-group">
-                  <label htmlFor="scope">Scope</label>
+                <div className="mb-2">
+                  <label htmlFor="scope" className="block mb-[3px] text-[#172B4D] font-semibold text-[11px] uppercase tracking-[0.3px]">Scope</label>
                   <input
                     type="text"
                     id="scope"
@@ -357,18 +361,20 @@ const UpdateTicketModal = ({ ticket, onClose, onUpdate }) => {
                     onChange={handleChange}
                     placeholder="Scope (auto-filled)"
                     readOnly
+                    className="w-full px-2 py-1.5 border-2 border-[#DFE1E6] rounded text-[13px] bg-[#FAFBFC] text-[#172B4D] focus:outline-none focus:border-[#0052CC] focus:bg-white placeholder-[#8993A4] transition-colors"
                   />
                 </div>
               </div>
 
-              <div className="form-row">
-                <div className="form-group">
-                  <label htmlFor="severity">Severity</label>
+              <div className="grid grid-cols-2 gap-2 mb-2">
+                <div className="mb-2">
+                  <label htmlFor="severity" className="block mb-[3px] text-[#172B4D] font-semibold text-[11px] uppercase tracking-[0.3px]">Severity</label>
                   <select
                     id="severity"
                     name="severity"
                     value={formData.severity}
                     onChange={handleChange}
+                    className="w-full px-2 py-1.5 border-2 border-[#DFE1E6] rounded text-[13px] bg-[#FAFBFC] text-[#172B4D] focus:outline-none focus:border-[#0052CC] focus:bg-white transition-colors"
                   >
                     <option value="Low">Low</option>
                     <option value="Medium">Medium</option>
@@ -377,8 +383,8 @@ const UpdateTicketModal = ({ ticket, onClose, onUpdate }) => {
                   </select>
                 </div>
 
-                <div className="form-group">
-                  <label htmlFor="priority">Priority (0-10)</label>
+                <div className="mb-2">
+                  <label htmlFor="priority" className="block mb-[3px] text-[#172B4D] font-semibold text-[11px] uppercase tracking-[0.3px]">Priority (0-10)</label>
                   <input
                     type="number"
                     id="priority"
@@ -388,19 +394,21 @@ const UpdateTicketModal = ({ ticket, onClose, onUpdate }) => {
                     value={formData.priority}
                     onChange={handleChange}
                     placeholder="Priority level"
+                    className="w-full px-2 py-1.5 border-2 border-[#DFE1E6] rounded text-[13px] bg-[#FAFBFC] text-[#172B4D] focus:outline-none focus:border-[#0052CC] focus:bg-white placeholder-[#8993A4] transition-colors"
                   />
                 </div>
               </div>
 
-              <div className="form-row">
-                <div className="form-group">
-                  <label htmlFor="assignTo">Assign To</label>
+              <div className="grid grid-cols-2 gap-2 mb-2">
+                <div className="mb-2">
+                  <label htmlFor="assignTo" className="block mb-[3px] text-[#172B4D] font-semibold text-[11px] uppercase tracking-[0.3px]">Assign To</label>
                   <select
                     id="assignTo"
                     name="assignTo"
                     value={formData.assignTo?.id || ''}
                     onChange={(e) => handleUserChange(e, 'assignTo')}
                     disabled={usersLoading}
+                    className="w-full px-2 py-1.5 border-2 border-[#DFE1E6] rounded text-[13px] bg-[#FAFBFC] text-[#172B4D] focus:outline-none focus:border-[#0052CC] focus:bg-white transition-colors"
                   >
                     <option value="">
                       {usersLoading ? 'Loading users...' : 'Select a user'}
@@ -413,14 +421,15 @@ const UpdateTicketModal = ({ ticket, onClose, onUpdate }) => {
                   </select>
                 </div>
 
-                <div className="form-group">
-                  <label htmlFor="reportedTo">Reported To</label>
+                <div className="mb-2">
+                  <label htmlFor="reportedTo" className="block mb-[3px] text-[#172B4D] font-semibold text-[11px] uppercase tracking-[0.3px]">Reported To</label>
                   <select
                     id="reportedTo"
                     name="reportedTo"
                     value={formData.reportedTo?.id || ''}
                     onChange={(e) => handleUserChange(e, 'reportedTo')}
                     disabled={usersLoading}
+                    className="w-full px-2 py-1.5 border-2 border-[#DFE1E6] rounded text-[13px] bg-[#FAFBFC] text-[#172B4D] focus:outline-none focus:border-[#0052CC] focus:bg-white transition-colors"
                   >
                     <option value="">
                       {usersLoading ? 'Loading users...' : 'Select a user'}
@@ -434,9 +443,9 @@ const UpdateTicketModal = ({ ticket, onClose, onUpdate }) => {
                 </div>
               </div>
 
-              <div className="form-row">
-                <div className="form-group">
-                  <label htmlFor="startDate">Start Date & Time</label>
+              <div className="grid grid-cols-2 gap-2 mb-2">
+                <div className="mb-2">
+                  <label htmlFor="startDate" className="block mb-[3px] text-[#172B4D] font-semibold text-[11px] uppercase tracking-[0.3px]">Start Date & Time</label>
                   <input
                     type="datetime-local"
                     id="startDate"
@@ -445,11 +454,12 @@ const UpdateTicketModal = ({ ticket, onClose, onUpdate }) => {
                     onChange={handleChange}
                     min="1900-01-01T00:00"
                     max="9999-12-31T23:59"
+                    className="w-full px-2 py-1.5 border-2 border-[#DFE1E6] rounded text-[13px] bg-[#FAFBFC] text-[#172B4D] focus:outline-none focus:border-[#0052CC] focus:bg-white transition-colors"
                   />
                 </div>
 
-                <div className="form-group">
-                  <label htmlFor="endDate">End Date & Time</label>
+                <div className="mb-2">
+                  <label htmlFor="endDate" className="block mb-[3px] text-[#172B4D] font-semibold text-[11px] uppercase tracking-[0.3px]">End Date & Time</label>
                   <input
                     type="datetime-local"
                     id="endDate"
@@ -458,12 +468,13 @@ const UpdateTicketModal = ({ ticket, onClose, onUpdate }) => {
                     onChange={handleChange}
                     min="1900-01-01T00:00"
                     max="9999-12-31T23:59"
+                    className="w-full px-2 py-1.5 border-2 border-[#DFE1E6] rounded text-[13px] bg-[#FAFBFC] text-[#172B4D] focus:outline-none focus:border-[#0052CC] focus:bg-white transition-colors"
                   />
                 </div>
               </div>
 
-              <div className="form-group">
-                <label htmlFor="comment">Add Comment</label>
+              <div className="mb-2">
+                <label htmlFor="comment" className="block mb-[3px] text-[#172B4D] font-semibold text-[11px] uppercase tracking-[0.3px]">Add Comment</label>
                 <textarea
                   id="comment"
                   value={comment}
@@ -471,40 +482,26 @@ const UpdateTicketModal = ({ ticket, onClose, onUpdate }) => {
                   placeholder="Enter your comment/update here..."
                   rows="2"
                   style={{ minHeight: '40px' }}
+                  className="w-full px-2 py-1.5 border-2 border-[#DFE1E6] rounded text-[13px] bg-[#FAFBFC] text-[#172B4D] focus:outline-none focus:border-[#0052CC] focus:bg-white placeholder-[#8993A4] transition-colors resize-y"
                 />
-                {errors.comment && <span className="error">{errors.comment}</span>}
-                <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: '8px' }}>
+                {errors.comment && <span className="block text-[#DE350B] text-[12px] mt-1">{errors.comment}</span>}
+                <div className="flex justify-end mt-2">
                   <button
                     type="button"
                     onClick={handlePostComment}
                     disabled={isPostingComment || !comment.trim()}
-                    style={{
-                      padding: '8px 16px',
-                      backgroundColor: '#0052CC',
-                      color: 'white',
-                      border: 'none',
-                      borderRadius: '4px',
-                      cursor: isPostingComment || !comment.trim() ? 'not-allowed' : 'pointer',
-                      fontSize: '14px',
-                      fontWeight: '500',
-                      opacity: isPostingComment || !comment.trim() ? 0.6 : 1,
-                      transition: 'all 0.2s',
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      gap: '8px',
-                    }}
+                    className="px-4 py-2 bg-[#0052CC] text-white border-none rounded text-[14px] font-medium flex items-center justify-center gap-2 hover:enabled:bg-[#0065FF] disabled:opacity-60 disabled:cursor-not-allowed transition-all"
                   >
                     {isPostingComment ? 'Posting...' : 'Post Comment'}
                   </button>
                 </div>
               </div>
 
-              <div className="modal-footer-left">
-                <button type="button" className="cancel-btn" onClick={onClose}>
+              <div className="flex justify-start gap-2 pt-3 mt-3 border-t border-[#DFE1E6]">
+                <button type="button" className="px-4 py-1.5 rounded text-[13px] font-medium cursor-pointer bg-[#FAFBFC] text-[#42526E] border border-[#DFE1E6] hover:bg-[#EBECF0] transition-colors" onClick={onClose}>
                   Cancel
                 </button>
-                <button type="submit" className="submit-btn inline-flex items-center gap-2" disabled={isSubmitting}>
+                <button type="submit" className="inline-flex items-center gap-2 px-4 py-1.5 rounded text-[13px] font-medium cursor-pointer bg-[#0052CC] text-white border-none hover:bg-[#0065FF] active:bg-[#0747A6] disabled:opacity-70 disabled:cursor-not-allowed transition-colors" disabled={isSubmitting}>
                   {isSubmitting && <Spinner className="size-4" />}
                   Update Ticket
                 </button>
@@ -512,7 +509,7 @@ const UpdateTicketModal = ({ ticket, onClose, onUpdate }) => {
             </div>
 
             {/* Right Section - Ticket Info & Change History (Scrollable) */}
-            <div className="modal-right-section scrollable">
+            <div className="min-w-0 flex flex-col overflow-y-auto pr-2 scroll-hover">
               <TicketInfoPanel ticket={{ ...ticket, worknoteHistory }} />
             </div>
           </div>

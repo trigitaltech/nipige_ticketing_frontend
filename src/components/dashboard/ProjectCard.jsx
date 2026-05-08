@@ -37,7 +37,7 @@ const ProjectRow = ({ name, color, tasks, today }) => {
   const riskLabel = { high: 'At risk', med: 'Monitor', low: 'On track' }[riskLevel];
 
   return (
-    <div className="grid grid-cols-[minmax(0,1.6fr)_minmax(0,2fr)_72px_72px_90px] gap-3 items-center px-4 py-3 border-b border-slate-100 last:border-0 hover:bg-slate-50/60">
+    <div className="flex items-center gap-3 sm:grid sm:grid-cols-[minmax(0,1.6fr)_minmax(0,2fr)_72px_72px_90px] px-4 py-3 border-b border-slate-100 last:border-0 hover:bg-slate-50/60">
       <div className="min-w-0">
         <div className="flex items-center gap-2">
           <span className="w-2.5 h-2.5 rounded-sm shrink-0" style={{ background: color }} />
@@ -45,7 +45,7 @@ const ProjectRow = ({ name, color, tasks, today }) => {
         </div>
         <div className="text-[10.5px] text-slate-400 mt-0.5 ml-[18px]">{tasks.length} tasks · {inProg} in progress</div>
       </div>
-      <div>
+      <div className="hidden sm:block">
         <div className="flex h-2 rounded-full overflow-hidden bg-slate-100 mb-1">
           {segs.filter(s => s.value > 0).map((s, i) => (
             <div key={i} title={`${s.label}: ${s.value}`} style={{ width: `${(s.value / total) * 100}%`, background: s.color }} />
@@ -59,11 +59,11 @@ const ProjectRow = ({ name, color, tasks, today }) => {
           ))}
         </div>
       </div>
-      <div className="text-right tabular-nums">
+      <div className="hidden sm:block text-right tabular-nums">
         <div className="text-[14px] font-bold text-slate-800">{pct}%</div>
         <div className="text-[10px] text-slate-400">done</div>
       </div>
-      <div className="text-right tabular-nums">
+      <div className="hidden sm:block text-right tabular-nums">
         <div className={`text-[14px] font-bold ${overdueCt ? 'text-rose-600' : 'text-slate-300'}`}>{overdueCt}</div>
         <div className="text-[10px] text-slate-400">overdue</div>
       </div>
@@ -92,7 +92,7 @@ const ApiProjectRow = ({ row, color }) => {
   const riskLabel = row.health_status || { high: 'At risk', med: 'Monitor', low: 'On track' }[riskLevel];
 
   return (
-    <div className="grid grid-cols-[minmax(0,1.6fr)_minmax(0,2fr)_72px_72px_90px] gap-3 items-center px-4 py-3 border-b border-slate-100 last:border-0 hover:bg-slate-50/60">
+    <div className="flex items-center gap-3 sm:grid sm:grid-cols-[minmax(0,1.6fr)_minmax(0,2fr)_72px_72px_90px] px-4 py-3 border-b border-slate-100 last:border-0 hover:bg-slate-50/60">
       <div className="min-w-0">
         <div className="flex items-center gap-2">
           <span className="w-2.5 h-2.5 rounded-sm shrink-0" style={{ background: color }} />
@@ -100,7 +100,7 @@ const ApiProjectRow = ({ row, color }) => {
         </div>
         <div className="text-[10.5px] text-slate-400 mt-0.5 ml-[18px]">{row.total_tasks} tasks · {inProg} in progress</div>
       </div>
-      <div>
+      <div className="hidden sm:block">
         <div className="flex h-2 rounded-full overflow-hidden bg-slate-100 mb-1">
           {segs.filter(s => s.value > 0).map((s, i) => (
             <div key={i} title={`${s.label}: ${s.value}`} style={{ width: `${(s.value / total) * 100}%`, background: s.color }} />
@@ -114,11 +114,11 @@ const ApiProjectRow = ({ row, color }) => {
           ))}
         </div>
       </div>
-      <div className="text-right tabular-nums">
+      <div className="hidden sm:block text-right tabular-nums">
         <div className="text-[14px] font-bold text-slate-800">{pct}%</div>
         <div className="text-[10px] text-slate-400">done</div>
       </div>
-      <div className="text-right tabular-nums">
+      <div className="hidden sm:block text-right tabular-nums">
         <div className={`text-[14px] font-bold ${overdueCt ? 'text-rose-600' : 'text-slate-300'}`}>{overdueCt}</div>
         <div className="text-[10px] text-slate-400">overdue</div>
       </div>
@@ -147,7 +147,7 @@ const ProjectCard = ({ projectList, projectColor, today, apiProjects }) => {
   const count = useApi ? apiProjects.length : projectList.length;
 
   return (
-    <div className="col-span-7 bg-white border border-slate-200 rounded-xl overflow-hidden">
+    <div className="xl:col-span-7 bg-white border border-slate-200 rounded-xl overflow-hidden">
       <div className="px-5 py-3.5 border-b border-slate-100">
         <div className="flex items-center justify-between mb-2">
           <div>
@@ -168,7 +168,7 @@ const ProjectCard = ({ projectList, projectColor, today, apiProjects }) => {
           />
         </div>
       </div>
-      <div className="grid grid-cols-[minmax(0,1.6fr)_minmax(0,2fr)_72px_72px_90px] gap-3 px-4 py-2 text-[10px] uppercase tracking-wider text-slate-400 font-semibold bg-slate-50/60">
+      <div className="hidden sm:grid sm:grid-cols-[minmax(0,1.6fr)_minmax(0,2fr)_72px_72px_90px] gap-3 px-4 py-2 text-[10px] uppercase tracking-wider text-slate-400 font-semibold bg-slate-50/60">
         <div>Project</div>
         <div>Status distribution</div>
         <div className="text-right">Done</div>

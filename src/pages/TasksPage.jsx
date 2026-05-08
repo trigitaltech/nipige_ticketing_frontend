@@ -133,19 +133,20 @@ const TasksPage = ({
         showCreateButton={false}
       />
       <div className="mx-2 mb-2 border border-slate-200 rounded-xl flex-1 min-h-0 flex flex-col overflow-hidden">
-        <div className="px-5 pt-2.5 pb-1.5 flex items-center justify-between">
-          <h1 className="text-[16px] font-medium text-slate-900 truncate">
+        <div className="px-4 sm:px-5 pt-3 pb-2 sm:pt-2.5 sm:pb-1.5 flex items-center justify-between gap-2">
+          <h1 className="text-[13px] sm:text-[16px] font-medium text-slate-900 truncate">
             {fullName ? `${fullName}'s Workspace` : 'Workspace'}
           </h1>
           <Button
             onClick={() => onOpenCreateModal(null)}
             size="sm"
-            className="!bg-[#5449D6] text-white border-transparent hover:!bg-[#5449D6] hover:brightness-110 focus-visible:ring-[#5449D6]/30 rounded-lg h-8 px-3 text-[13px] shrink-0"
+            className="!bg-[#5449D6] text-white border-transparent hover:!bg-[#5449D6] hover:brightness-110 focus-visible:ring-[#5449D6]/30 rounded-lg h-7 sm:h-8 px-2 sm:px-3 text-[11px] sm:text-[13px] shrink-0"
           >
-            <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <svg width="12" height="12" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
             </svg>
-            Create Task
+            <span className="hidden sm:inline">Create Task</span>
+            <span className="sm:hidden">New</span>
           </Button>
         </div>
         <SearchFilterBar

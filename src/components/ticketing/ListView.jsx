@@ -1,5 +1,4 @@
 import { useState, useMemo } from 'react';
-import '../../assets/Styles/ListView.css';
 import deleteIcon from '../../assets/icons/delete.png';
 import DeleteConfirmModal from '../shared/DeleteConfirmModal';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -7,11 +6,18 @@ import usePersistentState from '../../hooks/usePersistentState';
 import { getAssigneeDisplay } from '../../utils/avatar';
 
 const statusBadgeColors = {
-  OPEN: { bg: '#EEF5FF', color: '#0880EA', dot: '#0880EA' },
-  IN_PROGRESS: { bg: '#FFF4EE', color: '#f59e0b', dot: '#f59e0b' },
-  RESOLVED: { bg: '#EDFAF4', color: '#299764', dot: '#299764' },
-  BACKLOG: { bg: '#F5EFEC', color: '#a18072', dot: '#a18072' },
-  CLOSED: { bg: '#F3F4F6', color: '#656F7D', dot: '#656F7D' },
+  OPEN: { bg: '#EEF5FF', color: '#0880EA' },
+  IN_PROGRESS: { bg: '#FFF4EE', color: '#f59e0b' },
+  RESOLVED: { bg: '#EDFAF4', color: '#299764' },
+  BACKLOG: { bg: '#F5EFEC', color: '#a18072' },
+  CLOSED: { bg: '#F3F4F6', color: '#656F7D' },
+};
+
+const severityBadgeColors = {
+  Critical: { bg: '#FEF2F2', color: '#DC2626' },
+  High: { bg: '#FFF7ED', color: '#EA580C' },
+  Medium: { bg: '#FFFBEB', color: '#CA8A04' },
+  Low: { bg: '#ECFDF5', color: '#059669' },
 };
 
 const groupPalette = [
@@ -82,6 +88,9 @@ const getTimeTrackedMs = (ticket) => {
     0
   );
 };
+
+const thClass = 'text-left px-3 py-2 text-[11px] font-bold text-[#1F2937] uppercase tracking-[0.4px] bg-[#EEF2FF] border-b-2 border-[#C7D2FE]';
+const tdClass = 'px-3 py-[10px] text-[13px] text-[#2D2D2D] align-middle';
 
 const ListView = ({ tickets, onTicketClick, onDeleteTicket, groupBy = 'status', projects = [], categories = [], loading = false }) => {
   const [deleteConfirm, setDeleteConfirm] = useState({ open: false, ticketId: null, ticketNo: '' });
@@ -199,36 +208,12 @@ const ListView = ({ tickets, onTicketClick, onDeleteTicket, groupBy = 'status', 
     return { backgroundColor: palette.bg, color: palette.color };
   };
 
-  const getStatusClass = (status) => {
-    const map = {
-      OPEN: 'status-open',
-      IN_PROGRESS: 'status-in-progress',
-      RESOLVED: 'status-resolved',
-      BACKLOG: 'status-backlog',
-      CLOSED: 'status-closed',
-    };
-    return map[status] || 'status-default';
+  const getStatusBadgeStyle = (status) => {
+    return statusBadgeColors[status] || { bg: '#F3F4F6', color: '#6B7280' };
   };
 
-  const getStatusDotClass = (status) => {
-    const map = {
-      OPEN: 'open',
-      IN_PROGRESS: 'in-progress',
-      RESOLVED: 'resolved',
-      BACKLOG: 'backlog',
-      CLOSED: 'closed',
-    };
-    return map[status] || 'open';
-  };
-
-  const getSeverityClass = (severity) => {
-    const map = {
-      Critical: 'severity-critical',
-      High: 'severity-high',
-      Medium: 'severity-medium',
-      Low: 'severity-low',
-    };
-    return map[severity] || 'severity-default';
+  const getSeverityBadgeStyle = (severity) => {
+    return severityBadgeColors[severity] || { bg: '#F3F4F6', color: '#6B7280' };
   };
 
   const formatStatusLabel = (status) => {
@@ -237,12 +222,12 @@ const ListView = ({ tickets, onTicketClick, onDeleteTicket, groupBy = 'status', 
   };
 
   return (
-    <div className="list-view-container">
+    <div className="flex flex-col rounded-lg overflow-hidden">
       {showInitialSkeleton ? (
         Array.from({ length: 2 }).map((_, si) => (
-          <div key={`skeleton-group-${si}`} className="list-group-section">
-            <div className="list-group-header">
-              <span className="list-group-arrow">
+          <div key={`skeleton-group-${si}`} className="mb-4 border border-[#E8E8E8] rounded-lg overflow-hidden bg-white last:mb-0">
+            <div className="flex items-center gap-[10px] px-4 py-[10px] bg-[#FAFAFA] cursor-pointer select-none border-b border-[#EFEFEF]">
+              <span className="flex items-center justify-center text-[#9CA3AF]">
                 <svg width="10" height="10" viewBox="0 0 10 10" fill="currentColor">
                   <path d="M2 3.5L5 7L8 3.5H2Z" />
                 </svg>
@@ -250,30 +235,47 @@ const ListView = ({ tickets, onTicketClick, onDeleteTicket, groupBy = 'status', 
               <Skeleton className="h-5 w-24 rounded" />
               <Skeleton className="h-3 w-6" />
             </div>
-            <table className="list-table">
-              <thead>
-                <tr>
-                  <th className="col-ticket-id">Ticket</th>
-                  <th className="col-title">Subject</th>
-                  <th className="col-assigned">Assigned To</th>
-                  <th className="col-reported">Reported By</th>
-                  <th className="col-category">Category</th>
-                  <th className="col-status">Status</th>
-                  <th className="col-severity">Severity</th>
-                  <th className="col-action">Action</th>
+            {/* Mobile skeleton cards */}
+            <div className="sm:hidden divide-y divide-[#F2F2F2]">
+              {Array.from({ length: 3 }).map((_, ri) => (
+                <div key={`m-sk-${si}-${ri}`} className="p-3">
+                  <Skeleton className="h-4 w-3/4 mb-2" />
+                  <div className="flex gap-2 mb-2">
+                    <Skeleton className="h-5 w-16 rounded-full" />
+                    <Skeleton className="h-5 w-14 rounded-full" />
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <Skeleton className="w-6 h-6 rounded-full shrink-0" />
+                    <Skeleton className="h-3 w-24" />
+                  </div>
+                </div>
+              ))}
+            </div>
+            {/* Desktop skeleton table */}
+            <table className="hidden sm:table w-full border-collapse bg-white">
+              <thead className="border-b border-[#D8DEEA]">
+                <tr className="h-10">
+                  <th className={thClass}>Ticket</th>
+                  <th className={thClass}>Subject</th>
+                  <th className={thClass}>Assigned To</th>
+                  <th className={thClass}>Reported By</th>
+                  <th className={thClass}>Category</th>
+                  <th className={thClass}>Status</th>
+                  <th className={thClass}>Severity</th>
+                  <th className={thClass}>Action</th>
                 </tr>
               </thead>
               <tbody>
                 {Array.from({ length: 4 }).map((_, ri) => (
-                  <tr key={`skeleton-row-${si}-${ri}`} className="list-row">
-                    <td><div className="ticket-id-cell"><Skeleton className="w-2 h-2 rounded-full" /><Skeleton className="h-3 w-10" /></div></td>
-                    <td><Skeleton className="h-3 w-40" /></td>
-                    <td><Skeleton className="h-3 w-20" /></td>
-                    <td><Skeleton className="h-3 w-20" /></td>
-                    <td><Skeleton className="h-3 w-16" /></td>
-                    <td><Skeleton className="h-5 w-20 rounded-full" /></td>
-                    <td><Skeleton className="h-5 w-16 rounded-full" /></td>
-                    <td><Skeleton className="h-4 w-4 mx-auto rounded" /></td>
+                  <tr key={`skeleton-row-${si}-${ri}`} className="border-b border-[#F2F2F2] last:border-b-0">
+                    <td className={tdClass}><div className="flex items-center gap-2"><Skeleton className="w-2 h-2 rounded-full" /><Skeleton className="h-3 w-10" /></div></td>
+                    <td className={tdClass}><Skeleton className="h-3 w-40" /></td>
+                    <td className={tdClass}><Skeleton className="h-3 w-20" /></td>
+                    <td className={tdClass}><Skeleton className="h-3 w-20" /></td>
+                    <td className={tdClass}><Skeleton className="h-3 w-16" /></td>
+                    <td className={tdClass}><Skeleton className="h-5 w-20 rounded-full" /></td>
+                    <td className={tdClass}><Skeleton className="h-5 w-16 rounded-full" /></td>
+                    <td className={tdClass}><Skeleton className="h-4 w-4 mx-auto rounded" /></td>
                   </tr>
                 ))}
               </tbody>
@@ -281,131 +283,230 @@ const ListView = ({ tickets, onTicketClick, onDeleteTicket, groupBy = 'status', 
           </div>
         ))
       ) : tickets.length === 0 ? (
-        <div className="empty-list">No tickets</div>
+        <div className="py-12 px-5 text-center text-[#9CA3AF] text-[14px]">No tickets</div>
       ) : (
         groups.map((group, groupIndex) => {
           const isCollapsed = collapsedGroups[group.id];
           const badgeStyle = getGroupBadgeStyle(group, groupIndex);
 
           return (
-            <div key={group.id} className="list-group-section">
+            <div key={group.id} className="mb-4 border border-[#E8E8E8] rounded-lg overflow-hidden bg-white last:mb-0">
               {/* Group Header */}
               <div
-                className="list-group-header"
+                className="flex items-center gap-[10px] px-4 py-[10px] bg-[#FAFAFA] cursor-pointer select-none border-b border-[#EFEFEF] hover:bg-[#F3F4F6]"
                 onClick={() => toggleGroup(group.id)}
               >
-                <span className={`list-group-arrow ${isCollapsed ? 'collapsed' : ''}`}>
+                <span className={`flex items-center justify-center text-[#9CA3AF] transition-transform duration-200${isCollapsed ? ' -rotate-90' : ''}`}>
                   <svg width="10" height="10" viewBox="0 0 10 10" fill="currentColor">
                     <path d="M2 3.5L5 7L8 3.5H2Z" />
                   </svg>
                 </span>
-                <span className="list-group-badge" style={badgeStyle}>
+                <span
+                  className="inline-flex items-center px-[10px] py-[3px] rounded text-[11px] font-bold tracking-[0.5px] whitespace-nowrap"
+                  style={badgeStyle}
+                >
                   {group.name.toUpperCase()}
                 </span>
-                <span className="list-group-count">{group.tickets.length}</span>
+                <span className="text-[13px] font-semibold text-[#6B7280]">{group.tickets.length}</span>
               </div>
 
-              {/* Group Table */}
               {!isCollapsed && (
-                <table className="list-table">
-                  <thead>
-                    <tr>
-                      <th className="col-title">Subject</th>
-                      <th className="col-assigned">Assigned</th>
-                      <th className="col-status">Status</th>
-                      <th className="col-date">Start Date</th>
-                      <th className="col-date">Due Date</th>
-                      <th className="col-time">Time Estimated</th>
-                      <th className="col-time">Time Tracked</th>
-                      <th className="col-date">Date Closed</th>
-                      <th className="col-priority">Priority</th>
-                      <th className="col-severity">Severity</th>
-                      <th className="col-action">Action</th>
-                    </tr>
-                  </thead>
-                  <tbody>
+                <>
+                  {/* Mobile card layout */}
+                  <div className="sm:hidden divide-y divide-[#F2F2F2]">
                     {group.tickets.map((ticket) => {
                       const ticketId = ticket._id || ticket.id;
                       const assignee = getAssigneeDisplay(ticket.assignTo);
                       const priority = Number(ticket.priority) || 0;
+                      const statusStyle = getStatusBadgeStyle(ticket.status);
+                      const severityStyle = getSeverityBadgeStyle(ticket.severity);
+                      const dueDate = ticket.endDate || ticket.dueDate;
                       return (
-                        <tr
+                        <div
                           key={ticketId}
-                          className="list-row"
+                          className="p-3 cursor-pointer hover:bg-[#FAFBFC] transition-colors"
                           onClick={() => onTicketClick(ticket)}
                         >
-                          <td>
-                            <span className="title-text" title={ticket.subject || ''}>
-                              {ticket.subject?.split(' ').slice(0, 4).join(' ')}{ticket.subject?.split(' ').length > 6 ? '...' : ''}
+                          {/* Subject + delete */}
+                          <div className="flex items-start justify-between gap-2 mb-2">
+                            <span className="text-[13px] font-semibold text-[#1A1A1A] line-clamp-2 leading-snug flex-1 min-w-0">
+                              {ticket.subject || 'No Subject'}
                             </span>
-                          </td>
-                          <td>
-                            {assignee ? (
-                              <span
-                                className="assignee-avatar"
-                                style={{ backgroundColor: assignee.color }}
-                                title={assignee.name}
-                              >
-                                {assignee.initial}
-                              </span>
-                            ) : (
-                              <span className="assignee-avatar assignee-avatar-empty" title="Unassigned" />
-                            )}
-                          </td>
-                          <td>
-                            <span className={`status-badge ${getStatusClass(ticket.status)}`}>
-                              <span className="badge-dot" />
-                              {formatStatusLabel(ticket.status)}
-                            </span>
-                          </td>
-                          <td>
-                            <span className="date-text">{formatListDate(ticket.startDate)}</span>
-                          </td>
-                          <td>
-                            <span className="date-text">{formatListDate(ticket.endDate || ticket.dueDate)}</span>
-                          </td>
-                          <td>
-                            <span className="duration-text">{formatDurationMs(getTimeEstimateMs(ticket))}</span>
-                          </td>
-                          <td>
-                            <span className="duration-text">{formatDurationMs(getTimeTrackedMs(ticket))}</span>
-                          </td>
-                          <td>
-                            <span className="date-text">{formatListDate(getClosedDate(ticket))}</span>
-                          </td>
-                          <td>
-                            <span className="priority-text">{priority > 0 ? `${priority}/10` : '-'}</span>
-                          </td>
-                          <td>
-                            <span className={`severity-badge ${getSeverityClass(ticket.severity)}`}>
-                              <span className="badge-dot" />
-                              {ticket.severity || 'N/A'}
-                            </span>
-                          </td>
-                          <td>
                             <button
-                              className="list-delete-btn"
+                              className="shrink-0 p-1 rounded opacity-50 hover:opacity-100 transition-opacity"
                               title="Delete ticket"
                               onClick={(e) => {
                                 e.stopPropagation();
                                 setDeleteConfirm({ open: true, ticketId, ticketNo: ticket.ticketNo || 'N/A' });
                               }}
                             >
-                              <img src={deleteIcon} alt="delete" style={{ width: '16px', height: '16px' }} />
+                              <img src={deleteIcon} alt="delete" className="w-3.5 h-3.5" />
                             </button>
-                          </td>
-                        </tr>
+                          </div>
+
+                          {/* Badges row */}
+                          <div className="flex flex-wrap gap-1.5 mb-2">
+                            <span
+                              className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-semibold"
+                              style={{ backgroundColor: statusStyle.bg, color: statusStyle.color }}
+                            >
+                              <span className="w-1.5 h-1.5 rounded-full shrink-0" style={{ backgroundColor: statusStyle.color }} />
+                              {formatStatusLabel(ticket.status)}
+                            </span>
+                            {ticket.severity && (
+                              <span
+                                className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-semibold"
+                                style={{ backgroundColor: severityStyle.bg, color: severityStyle.color }}
+                              >
+                                <span className="w-1.5 h-1.5 rounded-full shrink-0" style={{ backgroundColor: severityStyle.color }} />
+                                {ticket.severity}
+                              </span>
+                            )}
+                            {priority > 0 && (
+                              <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-semibold bg-slate-100 text-slate-600">
+                                P{priority}/10
+                              </span>
+                            )}
+                          </div>
+
+                          {/* Assignee + due date */}
+                          <div className="flex items-center justify-between gap-2">
+                            <div className="flex items-center gap-1.5 min-w-0">
+                              {assignee ? (
+                                <span
+                                  className="w-5 h-5 rounded-full text-white flex items-center justify-center text-[10px] font-semibold uppercase shrink-0"
+                                  style={{ backgroundColor: assignee.color }}
+                                  title={assignee.name}
+                                >
+                                  {assignee.initial}
+                                </span>
+                              ) : (
+                                <span className="w-5 h-5 rounded-full bg-[#F3F4F6] border border-dashed border-[#D1D5DB] shrink-0" />
+                              )}
+                              <span className="text-[11px] text-slate-500 truncate">
+                                {assignee?.name || 'Unassigned'}
+                              </span>
+                            </div>
+                            {dueDate && (
+                              <span className="text-[11px] text-slate-400 shrink-0">
+                                Due: {formatListDate(dueDate)}
+                              </span>
+                            )}
+                          </div>
+                        </div>
                       );
                     })}
-                  </tbody>
-                </table>
+                  </div>
+
+                  {/* Desktop table */}
+                  <table className="hidden sm:table w-full border-collapse bg-white">
+                    <thead className="border-b border-[#D8DEEA]">
+                      <tr className="h-10">
+                        <th className={`${thClass} w-[220px]`}>Subject</th>
+                        <th className={`${thClass} w-20 text-center`}>Assigned</th>
+                        <th className={`${thClass} w-[130px]`}>Status</th>
+                        <th className={`${thClass} w-[110px]`}>Start Date</th>
+                        <th className={`${thClass} w-[110px]`}>Due Date</th>
+                        <th className={`${thClass} w-[110px]`}>Time Estimated</th>
+                        <th className={`${thClass} w-[110px]`}>Time Tracked</th>
+                        <th className={`${thClass} w-[110px]`}>Date Closed</th>
+                        <th className={`${thClass} w-20 text-center`}>Priority</th>
+                        <th className={`${thClass} w-[110px]`}>Severity</th>
+                        <th className={`${thClass} w-[60px] text-center`}>Action</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {group.tickets.map((ticket) => {
+                        const ticketId = ticket._id || ticket.id;
+                        const assignee = getAssigneeDisplay(ticket.assignTo);
+                        const priority = Number(ticket.priority) || 0;
+                        const statusStyle = getStatusBadgeStyle(ticket.status);
+                        const severityStyle = getSeverityBadgeStyle(ticket.severity);
+                        return (
+                          <tr
+                            key={ticketId}
+                            className="border-b border-[#F2F2F2] last:border-b-0 cursor-pointer hover:bg-[#FAFBFC] transition-colors duration-150"
+                            onClick={() => onTicketClick(ticket)}
+                          >
+                            <td className={tdClass}>
+                              <span className="text-[#1A1A1A] text-[13px] font-semibold block whitespace-nowrap overflow-hidden text-ellipsis" title={ticket.subject || ''}>
+                                {ticket.subject?.split(' ').slice(0, 4).join(' ')}{ticket.subject?.split(' ').length > 6 ? '...' : ''}
+                              </span>
+                            </td>
+                            <td className={tdClass}>
+                              {assignee ? (
+                                <span
+                                  className="inline-flex items-center justify-center w-7 h-7 rounded-full text-white text-[12px] font-semibold tracking-[0.2px] uppercase shadow-[0_0_0_2px_#FFFFFF]"
+                                  style={{ backgroundColor: assignee.color }}
+                                  title={assignee.name}
+                                >
+                                  {assignee.initial}
+                                </span>
+                              ) : (
+                                <span className="inline-flex items-center justify-center w-7 h-7 rounded-full bg-[#F3F4F6] border border-dashed border-[#D1D5DB]" title="Unassigned" />
+                              )}
+                            </td>
+                            <td className={tdClass}>
+                              <span
+                                className="inline-flex items-center gap-[6px] px-3 py-1 rounded-full text-[12px] font-semibold tracking-[0.2px]"
+                                style={{ backgroundColor: statusStyle.bg, color: statusStyle.color }}
+                              >
+                                <span className="w-1.5 h-1.5 rounded-full shrink-0" style={{ backgroundColor: statusStyle.color }} />
+                                {formatStatusLabel(ticket.status)}
+                              </span>
+                            </td>
+                            <td className={tdClass}>
+                              <span className="text-[#3D3D3D] text-[13px]">{formatListDate(ticket.startDate)}</span>
+                            </td>
+                            <td className={tdClass}>
+                              <span className="text-[#3D3D3D] text-[13px]">{formatListDate(ticket.endDate || ticket.dueDate)}</span>
+                            </td>
+                            <td className={tdClass}>
+                              <span className="text-[#3D3D3D] text-[13px] tabular-nums">{formatDurationMs(getTimeEstimateMs(ticket))}</span>
+                            </td>
+                            <td className={tdClass}>
+                              <span className="text-[#3D3D3D] text-[13px] tabular-nums">{formatDurationMs(getTimeTrackedMs(ticket))}</span>
+                            </td>
+                            <td className={tdClass}>
+                              <span className="text-[#3D3D3D] text-[13px]">{formatListDate(getClosedDate(ticket))}</span>
+                            </td>
+                            <td className={tdClass}>
+                              <span className="text-[#6B6B6B] text-[12px] font-semibold text-center block">{priority > 0 ? `${priority}/10` : '-'}</span>
+                            </td>
+                            <td className={tdClass}>
+                              <span
+                                className="inline-flex items-center gap-[6px] px-3 py-1 rounded-full text-[12px] font-semibold tracking-[0.2px]"
+                                style={{ backgroundColor: severityStyle.bg, color: severityStyle.color }}
+                              >
+                                <span className="w-1.5 h-1.5 rounded-full shrink-0" style={{ backgroundColor: severityStyle.color }} />
+                                {ticket.severity || 'N/A'}
+                              </span>
+                            </td>
+                            <td className={tdClass}>
+                              <button
+                                className="bg-transparent border-none cursor-pointer p-1 rounded flex items-center justify-center mx-auto opacity-50 hover:opacity-100 transition-opacity duration-150"
+                                title="Delete ticket"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  setDeleteConfirm({ open: true, ticketId, ticketNo: ticket.ticketNo || 'N/A' });
+                                }}
+                              >
+                                <img src={deleteIcon} alt="delete" style={{ width: '16px', height: '16px' }} />
+                              </button>
+                            </td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
+                </>
               )}
             </div>
           );
         })
       )}
 
-      <div className="list-view-footer">
+      <div className="py-2 px-4 text-center text-[12px] text-[#9CA3AF] mt-2">
         {tickets.length} ticket{tickets.length !== 1 ? 's' : ''} total
       </div>
 

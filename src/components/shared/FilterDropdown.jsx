@@ -1,7 +1,6 @@
 import { useState, useRef, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { useSelector } from 'react-redux';
-import '../../assets/Styles/Dropdown.css';
 import { getAvatarColor, getInitials } from '../../utils/avatar';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { getProjectMembersAPI } from '../../services/projectApi';
@@ -271,7 +270,7 @@ const FilterDropdown = ({ filters, onFilterChange, onClearFilters, categories, p
       }));
 
   return (
-    <div className="dropdown-wrapper" ref={wrapperRef}>
+    <div className="relative inline-flex" ref={wrapperRef}>
       <button
         type="button"
         onClick={() => setIsOpen(!isOpen)}
@@ -290,18 +289,21 @@ const FilterDropdown = ({ filters, onFilterChange, onClearFilters, categories, p
 
       {isOpen && (
         <>
-          <div className="dropdown-overlay" onClick={() => setIsOpen(false)} />
-          <div className="dropdown-panel">
-            <div className="filter-dropdown-header">
-              <span>Filters</span>
-              <button className={`filter-dropdown-clear ${clearClicked ? 'clicked' : ''}`} onClick={handleClear}>
+          <div className="fixed inset-0 z-[999]" onClick={() => setIsOpen(false)} />
+          <div className="absolute top-[calc(100%+4px)] right-0 bg-white border border-[#DFE1E6] rounded-md shadow-[0_4px_16px_rgba(0,0,0,0.12)] z-[1000] min-w-[280px] max-h-[calc(100vh-120px)] overflow-y-auto">
+            <div className="flex justify-between items-center px-3.5 py-2.5 border-b border-[#EBECF0]">
+              <span className="text-[12px] font-semibold text-[#5E6C84] uppercase tracking-[0.5px]">Filters</span>
+              <button
+                className={`text-[12px] text-[#0052CC] bg-transparent border-none cursor-pointer px-2.5 py-1 rounded font-medium hover:bg-[#DEEBFF] hover:text-[#0747A6] active:bg-[#B3D4FF] active:scale-[0.96] outline-none transition-all ${clearClicked ? 'bg-[#B3D4FF] scale-[0.95]' : ''}`}
+                onClick={handleClear}
+              >
                 Clear all
               </button>
             </div>
-            <div className="filter-dropdown-rows">
+            <div className="py-1.5">
 
-              <div className="filter-row">
-                <span className="filter-row-label">Status</span>
+              <div className="flex items-center px-3.5 py-1.5 gap-2">
+                <span className="text-[13px] text-[#5E6C84] font-medium min-w-[80px] shrink-0">Status</span>
                 <PortalMultiSelect
                   options={statusOptions}
                   value={Array.isArray(filters.status) ? filters.status : []}
@@ -311,8 +313,8 @@ const FilterDropdown = ({ filters, onFilterChange, onClearFilters, categories, p
                 <ClearFieldButton field="status" />
               </div>
 
-              <div className="filter-row">
-                <span className="filter-row-label">Priority</span>
+              <div className="flex items-center px-3.5 py-1.5 gap-2">
+                <span className="text-[13px] text-[#5E6C84] font-medium min-w-[80px] shrink-0">Priority</span>
                 <PortalMultiSelect
                   options={[1,2,3,4,5,6,7,8,9,10].map(n => ({ value: String(n), label: String(n) }))}
                   value={Array.isArray(filters.priority) ? filters.priority.map(String) : []}
@@ -322,8 +324,8 @@ const FilterDropdown = ({ filters, onFilterChange, onClearFilters, categories, p
                 <ClearFieldButton field="priority" />
               </div>
 
-              <div className="filter-row">
-                <span className="filter-row-label">Category</span>
+              <div className="flex items-center px-3.5 py-1.5 gap-2">
+                <span className="text-[13px] text-[#5E6C84] font-medium min-w-[80px] shrink-0">Category</span>
                 <PortalMultiSelect
                   options={categoryOptions}
                   value={Array.isArray(filters.category) ? filters.category : []}
@@ -333,8 +335,8 @@ const FilterDropdown = ({ filters, onFilterChange, onClearFilters, categories, p
                 <ClearFieldButton field="category" />
               </div>
 
-              <div className="filter-row">
-                <span className="filter-row-label">Project</span>
+              <div className="flex items-center px-3.5 py-1.5 gap-2">
+                <span className="text-[13px] text-[#5E6C84] font-medium min-w-[80px] shrink-0">Project</span>
                 <PortalMultiSelect
                   options={projectOptions}
                   value={Array.isArray(filters.project) ? filters.project : []}
@@ -344,8 +346,8 @@ const FilterDropdown = ({ filters, onFilterChange, onClearFilters, categories, p
                 <ClearFieldButton field="project" />
               </div>
 
-              <div className="filter-row">
-                <span className="filter-row-label">Assigned To</span>
+              <div className="flex items-center px-3.5 py-1.5 gap-2">
+                <span className="text-[13px] text-[#5E6C84] font-medium min-w-[80px] shrink-0">Assigned To</span>
                 <PortalMultiSelect
                   options={(usersLoading || membersLoading) ? [] : userOptions}
                   value={Array.isArray(filters.assignTo) ? filters.assignTo : []}
@@ -356,21 +358,37 @@ const FilterDropdown = ({ filters, onFilterChange, onClearFilters, categories, p
                 <ClearFieldButton field="assignTo" />
               </div>
 
-              <div className="filter-row">
-                <span className="filter-row-label">From Date</span>
-                <input type="date" value={filters.fromDate || ''} onChange={(e) => handleChange('fromDate', e.target.value)} />
+              <div className="flex items-center px-3.5 py-1.5 gap-2">
+                <span className="text-[13px] text-[#5E6C84] font-medium min-w-[80px] shrink-0">From Date</span>
+                <input
+                  type="date"
+                  value={filters.fromDate || ''}
+                  onChange={(e) => handleChange('fromDate', e.target.value)}
+                  className="flex-1 py-1.5 px-2 border border-[#DFE1E6] rounded text-[13px] text-[#172B4D] bg-[#FAFBFC] outline-none"
+                />
                 <ClearFieldButton field="fromDate" />
               </div>
 
-              <div className="filter-row">
-                <span className="filter-row-label">To Date</span>
-                <input type="date" value={filters.toDate || ''} onChange={(e) => handleChange('toDate', e.target.value)} />
+              <div className="flex items-center px-3.5 py-1.5 gap-2">
+                <span className="text-[13px] text-[#5E6C84] font-medium min-w-[80px] shrink-0">To Date</span>
+                <input
+                  type="date"
+                  value={filters.toDate || ''}
+                  onChange={(e) => handleChange('toDate', e.target.value)}
+                  className="flex-1 py-1.5 px-2 border border-[#DFE1E6] rounded text-[13px] text-[#172B4D] bg-[#FAFBFC] outline-none"
+                />
                 <ClearFieldButton field="toDate" />
               </div>
 
-              <div className="filter-row">
-                <span className="filter-row-label">Ticket ID</span>
-                <input type="text" value={filters.orderId || ''} onChange={(e) => handleChange('orderId', e.target.value)} placeholder="Enter Task ID" />
+              <div className="flex items-center px-3.5 py-1.5 gap-2">
+                <span className="text-[13px] text-[#5E6C84] font-medium min-w-[80px] shrink-0">Ticket ID</span>
+                <input
+                  type="text"
+                  value={filters.orderId || ''}
+                  onChange={(e) => handleChange('orderId', e.target.value)}
+                  placeholder="Enter Task ID"
+                  className="flex-1 py-1.5 px-2 border border-[#DFE1E6] rounded text-[13px] text-[#172B4D] bg-[#FAFBFC] outline-none"
+                />
                 <ClearFieldButton field="orderId" />
               </div>
 
