@@ -86,10 +86,16 @@ const itemActiveCls = '!bg-white/15 !text-white font-semibold ring-1 ring-inset 
 const itemDisabledCls = 'opacity-40 cursor-not-allowed text-white/60';
 
 const Sidebar = ({ onLogout }) => {
-  const { toggleSidebar, state } = useSidebar();
+  const { toggleSidebar, state, isMobile, setOpenMobile } = useSidebar();
   const isCollapsed = state === 'collapsed';
   const location = useLocation();
   const navigate = useNavigate();
+
+  const handleNav = (path) => {
+    navigate(path);
+    if (isMobile) setOpenMobile(false);
+  };
+
   return (
     <ShadSidebar
       collapsible="icon"
@@ -132,7 +138,7 @@ const Sidebar = ({ onLogout }) => {
                       tooltip={item.name}
                       isActive={isActive}
                       disabled={item.disabled}
-                      onClick={() => !item.disabled && item.path && navigate(item.path)}
+                      onClick={() => !item.disabled && item.path && handleNav(item.path)}
                       className={`${itemBaseCls} ${
                         isActive ? itemActiveCls : item.disabled ? itemDisabledCls : itemIdleCls
                       }`}
@@ -169,7 +175,7 @@ const Sidebar = ({ onLogout }) => {
           <SidebarMenuItem>
             <SidebarMenuButton
               tooltip="Logout"
-              onClick={onLogout}
+              onClick={() => { if (isMobile) setOpenMobile(false); onLogout(); }}
               className={`${itemBaseCls} text-white/75 hover:bg-red-500/20 hover:text-red-200 cursor-pointer`}
             >
               <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">

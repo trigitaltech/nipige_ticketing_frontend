@@ -5,7 +5,6 @@ import { fetchTickets, createTicket, updateTicket, deleteTicket, updateTicketSta
 import { fetchCategories } from '../redux/categorySlice';
 import { fetchProjects } from '../redux/projectSlice';
 import { fetchUsers } from '../redux/userSlice';
-import '../assets/Styles/ListView.css';
 import Sidebar from '../components/layout/Sidebar';
 import { SidebarInset, SidebarProvider } from '@/components/ui/sidebar';
 import Header from '../components/layout/Header';

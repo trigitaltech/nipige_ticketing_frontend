@@ -6,7 +6,6 @@ import { fetchProjects } from '../../redux/projectSlice';
 import { getProjectMembersAPI } from '../../services/projectApi';
 import { uploadImage } from '../../services/api';
 import { fileToBase64 } from '../../function/function';
-import '../../assets/Styles/Modal.css';
 import { Button } from '@/components/ui/button';
 import { Spinner } from '@/components/ui/spinner';
 import { Input } from '@/components/ui/input';
@@ -306,13 +305,41 @@ const CreateTicketModal = ({ onClose, onCreate, initialData }) => {
   };
 
   return (
-    <div className="modal-overlay" onClick={onClose}>
-      <div className="modal-content modal-content-create" onClick={(e) => e.stopPropagation()}>
-        <div className="modal-header">
-          <h2>Create New Task</h2>
-          <button className="close-btn" onClick={onClose}>×</button>
+    <div className="fixed inset-0 z-[1000] bg-white sm:bg-[rgba(9,30,66,0.54)] flex flex-col sm:justify-center sm:items-center" onClick={onClose}>
+      <div className="flex flex-col w-full h-full sm:h-auto sm:rounded-[18px] sm:w-[90%] sm:max-w-[960px] sm:max-h-[90vh] sm:overflow-x-hidden bg-white sm:shadow-[0_8px_16px_rgba(9,30,66,0.25)]" onClick={(e) => e.stopPropagation()}>
+
+        {/* Mobile header: back + title + create button */}
+        <div className="flex sm:hidden items-center gap-3 px-4 py-3 border-b border-[#DFE1E6] shrink-0">
+          <button
+            type="button"
+            onClick={onClose}
+            className="w-8 h-8 flex items-center justify-center rounded-lg text-slate-500 hover:bg-slate-100 transition-colors shrink-0"
+          >
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M19 12H5M12 5l-7 7 7 7"/>
+            </svg>
+          </button>
+          <h2 className="flex-1 text-[16px] text-[#172B4D] font-semibold truncate">Create New Task</h2>
+          <Button
+            type="submit"
+            form="create-task-form"
+            disabled={isUploading || isSubmitting}
+            size="sm"
+            className="!bg-[#5449D6] text-white border-transparent hover:!bg-[#5449D6] hover:brightness-110 h-8 px-3 text-[13px] shrink-0"
+          >
+            {(isUploading || isSubmitting) && <Spinner className="size-3.5" />}
+            {isSubmitting ? 'Creating…' : 'Create'}
+          </Button>
         </div>
-        <form onSubmit={handleSubmit} className="px-6 pt-5 pb-6">
+
+        {/* Desktop header: title + close */}
+        <div className="hidden sm:flex px-6 py-4 border-b border-[#DFE1E6] justify-between items-center shrink-0">
+          <h2 className="text-[20px] text-[#172B4D] m-0 font-medium">Create New Task</h2>
+          <button className="bg-transparent border-none text-[24px] text-[#6B778C] cursor-pointer p-0 w-7 h-7 leading-none hover:text-[#172B4D] transition-colors" onClick={onClose}>×</button>
+        </div>
+
+        <div className="flex-1 overflow-y-auto">
+        <form id="create-task-form" onSubmit={handleSubmit} className="px-4 sm:px-6 pt-4 sm:pt-5 pb-4 sm:pb-6">
           {/* Title */}
           <Input
             type="text"
@@ -323,7 +350,7 @@ const CreateTicketModal = ({ onClose, onCreate, initialData }) => {
             autoFocus
             className="!h-auto !border-0 !bg-transparent !px-2 -mx-2 py-1 !text-[20px] font-medium text-slate-900 !rounded-lg hover:!bg-slate-50 focus-visible:!bg-slate-50 focus-visible:!ring-0 mb-4"
           />
-          {errors.subject && <span className="error -mt-3 mb-2">{errors.subject}</span>}
+          {errors.subject && <span className="block text-[#DE350B] text-[12px] -mt-3 mb-2">{errors.subject}</span>}
 
           {/* Properties grid */}
           <div className="grid grid-cols-2 gap-x-8 gap-y-0 mb-5 max-[720px]:grid-cols-1 max-[720px]:gap-x-0 border-t border-slate-100">
@@ -536,7 +563,7 @@ const CreateTicketModal = ({ onClose, onCreate, initialData }) => {
               placeholder="Add a description..."
               className="min-h-[100px]"
             />
-            {errors.description && <span className="error mt-1">{errors.description}</span>}
+            {errors.description && <span className="block text-[#DE350B] text-[12px] mt-1">{errors.description}</span>}
           </div>
 
           {/* Attachments */}
@@ -557,25 +584,25 @@ const CreateTicketModal = ({ onClose, onCreate, initialData }) => {
               className="file:mr-3 file:rounded-md file:bg-slate-100 file:px-3 file:text-slate-700 file:font-medium"
             />
             {isUploading && (
-              <span className="upload-progress">Uploading... {uploadProgress || 0}%</span>
+              <span className="block mt-1.5 text-[12px] text-[#0052CC]">Uploading... {uploadProgress || 0}%</span>
             )}
-            {errors.attachments && <span className="error">{errors.attachments}</span>}
+            {errors.attachments && <span className="block text-[#DE350B] text-[12px] mt-1">{errors.attachments}</span>}
 
             {uploadedFiles.length > 0 && (
-              <div className="attachment-list">
+              <div className="mt-2.5 flex flex-col gap-2">
                 {uploadedFiles.map((url, index) => (
-                  <div key={`${url}-${index}`} className="attachment-item">
+                  <div key={`${url}-${index}`} className="flex items-center justify-between gap-2.5 px-2.5 py-2 border border-[#DFE1E6] rounded-md bg-white">
                     <a
                       href={url}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="attachment-link"
+                      className="text-[#0052CC] no-underline text-[13px] font-medium overflow-hidden text-ellipsis whitespace-nowrap hover:underline"
                     >
                       {url.split('/').pop() || `Attachment ${index + 1}`}
                     </a>
                     <button
                       type="button"
-                      className="attachment-remove-btn"
+                      className="border border-[#DFE1E6] bg-[#FAFBFC] text-[#42526E] text-[12px] px-2 py-1 rounded cursor-pointer shrink-0 hover:bg-[#EBECF0] transition-colors"
                       onClick={() => handleRemoveAttachment(index)}
                     >
                       Remove
@@ -586,7 +613,7 @@ const CreateTicketModal = ({ onClose, onCreate, initialData }) => {
             )}
           </div>
 
-          <div className="modal-footer">
+          <div className="hidden sm:flex justify-end gap-2 pt-4">
             <Button type="button" variant="outline" onClick={onClose}>
               Cancel
             </Button>
@@ -600,6 +627,7 @@ const CreateTicketModal = ({ onClose, onCreate, initialData }) => {
             </Button>
           </div>
         </form>
+        </div>
       </div>
     </div>
   );

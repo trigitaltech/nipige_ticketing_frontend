@@ -83,7 +83,7 @@ const getDueDateInfo = (endDate) => {
 };
 
 const PropertyRow = ({ icon, label, children }) => (
-  <div className="flex items-start gap-3 py-2 min-h-[40px] border-b border-dashed border-slate-100 last:border-b-0">
+  <div className="flex items-start gap-2 sm:gap-3 py-2 min-h-[40px] border-b border-dashed border-slate-100 last:border-b-0">
     <div className="flex items-center gap-2 w-[130px] shrink-0 text-slate-500 pt-1.5 max-[640px]:w-[110px]">
       {icon}
       <span className="text-[12px] font-semibold">{label}</span>
@@ -779,22 +779,24 @@ const TicketDetailsPage = ({ ticket, onBack, onUpdate }) => {
               </PropertyRow>
 
               <PropertyRow icon={iconUser} label="Assignee">
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-2 min-w-0">
                   <Avatar name={formData.assignTo?.name} email={formData.assignTo?.email} size="sm" />
-                  <Select
-                    value={formData.assignTo?.id || undefined}
-                    onValueChange={(value) => handleUserChange({ target: { value } }, 'assignTo')}
-                    disabled={projectMembersLoading}
-                  >
-                    <SelectTrigger size="sm" className={chipTriggerClass}>
-                      <SelectValue placeholder="Empty" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {projectMembers.map(m => (
-                        <SelectItem key={m.id} value={m.id}>{m.name}</SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+                  <div className="flex-1 min-w-0">
+                    <Select
+                      value={formData.assignTo?.id || undefined}
+                      onValueChange={(value) => handleUserChange({ target: { value } }, 'assignTo')}
+                      disabled={projectMembersLoading}
+                    >
+                      <SelectTrigger size="sm" className={chipTriggerClass}>
+                        <SelectValue placeholder="Empty" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {projectMembers.map(m => (
+                          <SelectItem key={m.id} value={m.id}>{m.name}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
                 </div>
               </PropertyRow>
 
@@ -817,22 +819,24 @@ const TicketDetailsPage = ({ ticket, onBack, onUpdate }) => {
               </PropertyRow>
 
               <PropertyRow icon={iconUser} label="Reported To">
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-2 min-w-0">
                   <Avatar name={formData.reportedTo?.name} email={formData.reportedTo?.email} size="sm" />
-                  <Select
-                    value={formData.reportedTo?.id || undefined}
-                    onValueChange={(value) => handleUserChange({ target: { value } }, 'reportedTo')}
-                    disabled={projectMembersLoading}
-                  >
-                    <SelectTrigger size="sm" className={chipTriggerClass}>
-                      <SelectValue placeholder="Empty" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {projectMembers.map(m => (
-                        <SelectItem key={m.id} value={m.id}>{m.name}</SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+                  <div className="flex-1 min-w-0">
+                    <Select
+                      value={formData.reportedTo?.id || undefined}
+                      onValueChange={(value) => handleUserChange({ target: { value } }, 'reportedTo')}
+                      disabled={projectMembersLoading}
+                    >
+                      <SelectTrigger size="sm" className={chipTriggerClass}>
+                        <SelectValue placeholder="Empty" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {projectMembers.map(m => (
+                          <SelectItem key={m.id} value={m.id}>{m.name}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
                 </div>
               </PropertyRow>
 
@@ -996,7 +1000,7 @@ const TicketDetailsPage = ({ ticket, onBack, onUpdate }) => {
                 <button
                   type="button"
                   onClick={() => setDescModalOpen(true)}
-                  className="ml-auto w-6 h-6 rounded flex items-center justify-center text-slate-400 hover:text-slate-600 hover:bg-slate-100 cursor-pointer transition-colors opacity-0 group-hover/descsection:opacity-100"
+                  className="ml-auto w-6 h-6 rounded flex items-center justify-center text-slate-400 hover:text-slate-600 hover:bg-slate-100 cursor-pointer transition-colors opacity-0 group-hover/descsection:opacity-100 max-[640px]:opacity-100"
                   title="Full screen"
                 >
                   <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -1074,7 +1078,7 @@ const TicketDetailsPage = ({ ticket, onBack, onUpdate }) => {
                   </button>
                 </div>
                 <div className="flex-1 overflow-y-auto">
-                  <div className="max-w-3xl mx-auto px-0 py-8">
+                  <div className="max-w-3xl mx-auto px-5 sm:px-6 py-8">
                     <h2 className="text-[22px] font-bold text-slate-900 mb-6">{formData.subject || ticket.subject || ''}</h2>
                     <p className="text-[14px] text-slate-700 whitespace-pre-wrap leading-7">
                       {formData.description || <span className="text-slate-400 italic">No description provided.</span>}

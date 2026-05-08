@@ -1,10 +1,8 @@
-import '../../assets/Styles/SearchBar.css';
-
 const SearchBar = ({ value, onChange, placeholder = 'Search' }) => {
   return (
-    <div className="search-bar-wrapper bg-white border border-slate-200 rounded-3xl px-3 flex items-center gap-2 w-full focus-within:border-blue-400 focus-within:ring-2 focus-within:ring-blue-100 transition-colors">
+    <div className="relative flex items-center flex-1 bg-white border border-slate-200 rounded-3xl px-3 focus-within:border-blue-400 focus-within:ring-2 focus-within:ring-blue-100 transition-colors">
       <svg
-        className="search-bar-icon"
+        className="absolute left-3 text-gray-400 pointer-events-none shrink-0"
         width="15"
         height="15"
         viewBox="0 0 16 16"
@@ -14,7 +12,7 @@ const SearchBar = ({ value, onChange, placeholder = 'Search' }) => {
       </svg>
       <input
         type="text"
-        className="search-bar-input"
+        className="w-[60%] py-1 pl-7 pr-3 border-none bg-transparent outline-none text-[13px] text-[#172B4D] placeholder-gray-400"
         placeholder={placeholder}
         value={value}
         onChange={(e) => onChange(e.target.value)}

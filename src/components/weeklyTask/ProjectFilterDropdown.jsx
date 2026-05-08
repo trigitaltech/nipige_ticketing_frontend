@@ -3,16 +3,33 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 const ProjectFilterDropdown = ({ projects, selected, onChange }) => {
   const [open, setOpen] = useState(false);
   const [search, setSearch] = useState('');
-  const ref = useRef(null);
+  const [panelPos, setPanelPos] = useState({ top: 0, left: 0 });
+  const btnRef = useRef(null);
+  const panelRef = useRef(null);
 
   useEffect(() => {
     if (!open) return;
     const handler = (e) => {
-      if (ref.current && !ref.current.contains(e.target)) setOpen(false);
+      if (
+        btnRef.current && !btnRef.current.contains(e.target) &&
+        panelRef.current && !panelRef.current.contains(e.target)
+      ) setOpen(false);
     };
     document.addEventListener('mousedown', handler);
-    return () => document.removeEventListener('mousedown', handler);
+    document.addEventListener('touchstart', handler);
+    return () => {
+      document.removeEventListener('mousedown', handler);
+      document.removeEventListener('touchstart', handler);
+    };
   }, [open]);
+
+  const handleToggle = () => {
+    if (!open && btnRef.current) {
+      const rect = btnRef.current.getBoundingClientRect();
+      setPanelPos({ top: rect.bottom + 4, left: rect.left });
+    }
+    setOpen(v => !v);
+  };
 
   const items = useMemo(
     () => (Array.isArray(projects) ? projects : []).map(p => ({
@@ -39,14 +56,13 @@ const ProjectFilterDropdown = ({ projects, selected, onChange }) => {
     else onChange([...selected, id]);
   };
 
-  const clearAll = () => onChange([]);
-
   return (
-    <div ref={ref} className="relative">
+    <div>
       <button
+        ref={btnRef}
         type="button"
-        onClick={() => setOpen(v => !v)}
-        className={`!h-[22px] inline-flex items-center gap-1 px-3 rounded-md border text-[12px] font-medium transition-colors min-w-[110px] max-w-[170px] cursor-pointer ${allSelected ? 'border-slate-200 bg-white text-slate-700 hover:bg-slate-50' : 'border-[#3B2FB1]/30 bg-[#3B2FB1]/10 text-[#3B2FB1]'}`}
+        onClick={handleToggle}
+        className={`!h-[22px] inline-flex items-center gap-1 px-3 rounded-md border text-[12px] font-medium transition-colors min-w-[110px] max-w-[170px] shrink-0 cursor-pointer ${allSelected ? 'border-slate-200 bg-white text-slate-700 hover:bg-slate-50' : 'border-[#3B2FB1]/30 bg-[#3B2FB1]/10 text-[#3B2FB1]'}`}
       >
         <span className="flex-1 text-left truncate">{label}</span>
         <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
@@ -55,7 +71,11 @@ const ProjectFilterDropdown = ({ projects, selected, onChange }) => {
       </button>
 
       {open && (
-        <div className="absolute right-0 top-[26px] z-[200] bg-white rounded-lg shadow-[0_4px_20px_rgba(0,0,0,0.15)] border border-slate-200 py-1 w-[220px]">
+        <div
+          ref={panelRef}
+          className="fixed z-[200] bg-white rounded-lg shadow-[0_4px_20px_rgba(0,0,0,0.15)] border border-slate-200 py-1 w-[220px]"
+          style={{ top: panelPos.top, left: panelPos.left }}
+        >
           <div className="px-2 pt-1 pb-2 border-b border-slate-100">
             <div className="flex items-center gap-2 px-2 py-1 bg-slate-50 border border-slate-200 rounded-md">
               <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#94a3b8" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
@@ -74,7 +94,7 @@ const ProjectFilterDropdown = ({ projects, selected, onChange }) => {
           <button
             type="button"
             className="w-full text-left px-3 py-[6px] text-[11px] font-semibold text-[#3B2FB1] hover:bg-slate-50 cursor-pointer border-b border-slate-100"
-            onClick={clearAll}
+            onClick={() => onChange([])}
           >
             All Projects
           </button>

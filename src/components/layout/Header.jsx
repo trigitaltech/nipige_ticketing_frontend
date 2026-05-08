@@ -1,6 +1,8 @@
 import ProfileDropdown from '../profile/ProfileDropdown';
 import SearchBar from '../shared/SearchBar';
 import { Button } from '@/components/ui/button';
+import { useSidebar } from '@/components/ui/sidebar';
+import { Menu } from 'lucide-react';
 
 const Header = ({
   avatarLabel,
@@ -12,24 +14,38 @@ const Header = ({
   showCreateButton = true,
 }) => {
   const showSearch = typeof setSearchQuery === 'function';
+  const { toggleSidebar } = useSidebar();
 
   return (
-    <header className="bg-gray-50 px-6 py-2 grid grid-cols-3 items-center gap-4">
-      <div className="flex items-center gap-3 min-w-0">
-        <h1 className="text-[18px] font-bold text-slate-900 truncate">
+    <header className="bg-gray-50 px-4 md:px-6 py-2 flex items-center gap-3">
+      {/* Hamburger — mobile only */}
+      <button
+        type="button"
+        onClick={toggleSidebar}
+        className="md:hidden flex-shrink-0 w-9 h-9 flex flex-col items-center justify-center gap-[5px] rounded-lg text-slate-600 hover:bg-slate-100 active:bg-slate-200 transition-colors cursor-pointer"
+        aria-label="Open navigation"
+      >
+        <Menu className="w-5 h-5" />
+      </button>
+
+      {/* Title */}
+      <div className="flex-1 min-w-0 md:flex-none">
+        <h1 className="text-[13px] md:text-[18px] font-bold text-slate-900 truncate">
           TRIGITAL Task Management
         </h1>
       </div>
 
-      <div className="flex justify-center">
-        {showSearch && (
+      {/* Search — centered on desktop */}
+      {showSearch && (
+        <div className="hidden md:flex flex-1 justify-center">
           <div className="w-full max-w-md">
             <SearchBar value={searchQuery || ''} onChange={setSearchQuery} />
           </div>
-        )}
-      </div>
+        </div>
+      )}
 
-      <div className="flex items-center gap-2 justify-end">
+      {/* Right actions */}
+      <div className="flex items-center gap-2 ml-auto">
         {showCreateButton && (
           <Button
             onClick={onCreateTicket}
@@ -39,7 +55,8 @@ const Header = ({
             <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
             </svg>
-            Create Task
+            <span className="hidden sm:inline">Create Task</span>
+            <span className="sm:hidden">New</span>
           </Button>
         )}
         <button className="relative w-8 h-8 rounded-lg flex items-center justify-center text-slate-500 hover:bg-slate-100 transition-colors cursor-pointer">
