@@ -71,7 +71,7 @@ const SortDropdown = ({ sortConfig, onSortChange, onClearSort }) => {
       {isOpen && (
         <>
           <div className="fixed inset-0 z-[999]" onClick={() => setIsOpen(false)} />
-          <div className="absolute top-[calc(100%+4px)] right-0 bg-white border border-[#DFE1E6] rounded-md shadow-[0_4px_16px_rgba(0,0,0,0.12)] z-[1000] min-w-[280px] max-h-[calc(100vh-120px)] overflow-y-auto">
+          <div className="absolute top-[calc(100%+4px)] right-0 bg-white border border-[#DFE1E6] rounded-md shadow-[0_4px_16px_rgba(0,0,0,0.12)] z-[1000] min-w-[180px] sm:min-w-[280px] max-h-[calc(100vh-120px)] overflow-y-auto">
             <div className="flex justify-between items-center px-3.5 py-2.5 border-b border-[#EBECF0]">
               <span className="text-[12px] font-semibold text-[#5E6C84] uppercase tracking-[0.5px]">Sort</span>
               <button
