@@ -5,7 +5,6 @@ import {
   SelectContent,
   SelectItem,
   SelectTrigger,
-  SelectValue,
 } from '@/components/ui/select';
 import {
   Tooltip,
@@ -82,10 +81,10 @@ const SearchFilterBar = ({
       </div>
 
       {/* Row 2: Action bar */}
-      <div className="flex items-center gap-2 sm:gap-3 py-1.5 px-3 sm:px-5 overflow-x-auto scrollbar-none">
+      <div className="flex items-center justify-between gap-2 py-1.5 px-3 sm:px-5">
         {/* Left */}
-        <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
-          <div className="flex items-center gap-0.5 bg-slate-100 rounded-lg p-0.5">
+        <div className="flex items-center gap-1.5 sm:gap-2 min-w-0 overflow-x-auto scrollbar-none">
+          <div className="flex items-center gap-0.5 bg-slate-100 rounded-lg p-0.5 shrink-0">
             <button
               type="button"
               onClick={() => setActiveFilter('all')}
@@ -109,7 +108,7 @@ const SearchFilterBar = ({
           <Select value={groupBy} onValueChange={setGroupBy}>
             <SelectTrigger
               size="sm"
-              className="h-8 px-3 rounded-lg border border-slate-200 bg-white text-[13px] font-medium text-slate-700 hover:bg-slate-50 focus-visible:ring-0 shadow-none gap-1.5"
+              className="h-8 px-3 rounded-lg border border-slate-200 bg-white text-[13px] font-medium text-slate-700 hover:bg-slate-50 focus-visible:ring-0 shadow-none gap-1.5 shrink-0"
             >
               <span className="text-slate-400">Group:</span>
               <span className="font-semibold text-slate-800">{groupLabels[groupBy] || 'Status'}</span>
@@ -121,8 +120,6 @@ const SearchFilterBar = ({
             </SelectContent>
           </Select>
         </div>
-
-        <div className="flex-1" />
 
         {/* Right */}
         <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
