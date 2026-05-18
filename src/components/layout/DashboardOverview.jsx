@@ -6,6 +6,7 @@ import TaskCard from '../dashboard/TaskCard';
 import ProjectCard from '../dashboard/ProjectCard';
 import WorkloadCard from '../dashboard/WorkloadCard';
 import { getAnalyticReportAPI } from '../../services/api';
+import { getProjectMembersAPI } from '../../services/projectApi';
 import MultiSelectDropdown from '../shared/MultiSelectDropdown';
 
 const STATUS_CONFIG = {
@@ -192,7 +193,7 @@ function FilterBar({ filters, setFilters, projectOptions, memberOptions }) {
     />
   );
   return (
-    <div className="bg-white border border-slate-200 rounded-xl px-4 py-3">
+    <div>
       {/* Mobile: date range at the top with a label */}
       <div className="flex items-center justify-between mb-3 sm:hidden">
         <span className="text-[11px] font-semibold text-slate-500 uppercase tracking-wider">Date range</span>
@@ -212,7 +213,7 @@ function FilterBar({ filters, setFilters, projectOptions, memberOptions }) {
 }
 
 const OverviewSkeleton = () => (
-  <div className="px-3 sm:px-5 pt-4 pb-2 space-y-4">
+  <div className="pt-4 pb-2 space-y-4">
     <div className="grid grid-cols-2 sm:grid-cols-3 xl:grid-cols-5 gap-3">
       {[0,1,2,3,4].map(i => (
         <div key={i} className="bg-white border border-slate-200 rounded-xl p-4 space-y-3">
@@ -256,6 +257,47 @@ const DashboardOverview = ({ tickets = [], loading = false }) => {
   const [apiCompletionTrend, setApiCompletionTrend] = useState(null);
   const [apiProjectReport, setApiProjectReport] = useState(null);
   const [apiMemberReport, setApiMemberReport] = useState(null);
+  const [projectMembers, setProjectMembers] = useState([]);
+
+  // Fetch members for selected projects
+  useEffect(() => {
+    if (filters.projectIds.length === 0) {
+      setProjectMembers([]);
+      return;
+    }
+    let cancelled = false;
+    Promise.all(filters.projectIds.map(id =>
+      getProjectMembersAPI(id).then(res => res?.data).catch(() => null)
+    )).then((results) => {
+      if (cancelled) return;
+      const seen = new Set();
+      const merged = [];
+      results.forEach((data) => {
+        if (!data) return;
+        const { owner, members = [] } = data;
+        const all = [];
+        if (owner) all.push(owner);
+        members.forEach(m => all.push(m));
+        all.forEach(m => {
+          if (!m?.id || seen.has(m.id)) return;
+          seen.add(m.id);
+          merged.push({ _id: m.id, authentication: { userName: m.name, email: m.email } });
+        });
+      });
+      setProjectMembers(merged);
+    });
+    return () => { cancelled = true; };
+  }, [filters.projectIds]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Clear member selection when it no longer matches available project members
+  useEffect(() => {
+    if (filters.projectIds.length === 0 || projectMembers.length === 0) return;
+    const validIds = new Set(projectMembers.map(m => m._id || m.id));
+    setFilters(f => ({
+      ...f,
+      memberIds: f.memberIds.filter(id => validIds.has(id)),
+    }));
+  }, [projectMembers]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Build dropdown options from ticket data
   const { projectOptions, memberOptions } = useMemo(() => {
@@ -281,19 +323,28 @@ const DashboardOverview = ({ tickets = [], loading = false }) => {
         if (id) projMap[id] = p.name || projMap[id] || id;
       });
     }
+
+    // When projects are selected, show only their members; otherwise show all users
+    const resolvedMemberOptions = (filters.projectIds.length > 0 && projectMembers.length > 0)
+      ? projectMembers.map(u => ({
+          id: u._id || u.id,
+          label: u.authentication?.userName || u.authentication?.email || 'Unknown',
+        }))
+      : (Array.isArray(users) && users.length > 0
+          ? users.map(u => ({
+              id: u._id || u.id,
+              label: `${u.name?.first || ''} ${u.name?.last || ''}`.trim() || u.authentication?.userName || 'Unknown',
+            }))
+          : Object.entries(memMap).map(([id, name]) => ({ id, label: name }))
+        );
+
     return {
       projectOptions: Object.entries(projMap).map(([id, name], i) => ({
         id, label: name || id, dot: projectColor(name, i),
       })),
-      memberOptions: (Array.isArray(users) && users.length > 0
-        ? users.map(u => ({
-            id: u._id || u.id,
-            label: `${u.name?.first || ''} ${u.name?.last || ''}`.trim() || u.authentication?.userName || 'Unknown',
-          }))
-        : Object.entries(memMap).map(([id, name]) => ({ id, label: name }))
-      ).sort((a, b) => a.label.localeCompare(b.label)),
+      memberOptions: resolvedMemberOptions.sort((a, b) => a.label.localeCompare(b.label)),
     };
-  }, [tickets, projects, users]);
+  }, [tickets, projects, users, filters.projectIds, projectMembers]);
 
   // Fetch KPI tiles from API whenever any filter changes
   useEffect(() => {
@@ -524,8 +575,8 @@ const DashboardOverview = ({ tickets = [], loading = false }) => {
   if (loading && tickets.length === 0) return <OverviewSkeleton />;
 
   return (
-    <ScrollArea className="flex-1 min-h-0 mx-2 mb-2">
-    <div className="px-3 sm:px-5 pb-4 space-y-4">
+    <ScrollArea className="flex-1 min-h-0 mx-2 mb-2 border border-slate-200 rounded-xl overflow-hidden">
+    <div className="p-3 sm:p-4 space-y-4">
 
       {/* Filter bar */}
       <FilterBar

@@ -1,4 +1,4 @@
-import { useState, useCallback, useEffect, useRef } from 'react';
+import { useState, useCallback, useEffect, useRef, useMemo } from 'react';
 import { useSelector, useDispatch } from 'react-redux';
 import { useNavigate } from 'react-router-dom';
 import { fetchWeeklyTasks, fetchWeeklyTickets, updateWeeklyTicketStatusOptimistic } from '../redux/weeklyTaskSlice';
@@ -13,7 +13,7 @@ import {
 } from '@/components/ui/tooltip';
 import usePersistentState from '../hooks/usePersistentState';
 
-import { HOUR_HEIGHT, HOURS, FULL_DAY_NAMES, MONTHS, FULL_MONTHS, STATUS_CHIP } from '../components/weeklyTask/constants';
+import { HOUR_HEIGHT, HOURS, FULL_DAY_NAMES, MONTHS, FULL_MONTHS, STATUS_CHIP, TICKET_STATUS_OPTIONS } from '../components/weeklyTask/constants';
 import {
   isSameDay, getWeekDates, formatWeekRange, toDateTimeLocalValue,
   formatHourLabel, yToMins, minsToLabel, isAllDayTicket, createEmptyWeekData, isOffDay,
@@ -24,9 +24,7 @@ import ViewSwitcherDropdown from '../components/weeklyTask/ViewSwitcherDropdown'
 import MonthView from '../components/weeklyTask/MonthView';
 import MonthTicketChip from '../components/weeklyTask/MonthTicketChip';
 import TicketEventCard from '../components/weeklyTask/TicketEventCard';
-import StatusFilterDropdown from '../components/weeklyTask/StatusFilterDropdown';
-import ProjectFilterDropdown from '../components/weeklyTask/ProjectFilterDropdown';
-import CategoryFilterDropdown from '../components/weeklyTask/CategoryFilterDropdown';
+import MultiSelectDropdown from '../components/shared/MultiSelectDropdown';
 
 const DEFAULT_STATUS_FILTER = ['OPEN', 'IN_PROGRESS', 'BACKLOG'];
 
@@ -70,6 +68,31 @@ const WeeklyTasks = ({ onOpenCreateModal }) => {
     : viewMode === 'month'
       ? `${FULL_MONTHS[currentDate.getMonth()]} ${currentDate.getFullYear()}`
       : formatWeekRange(weekDates);
+
+  const projectOptions = useMemo(
+    () => (Array.isArray(projects) ? projects : []).map(p => ({
+      id: String(p._id || p.id),
+      label: p.name || p.projectName || 'Untitled',
+    })),
+    [projects]
+  );
+
+  const categoryOptions = useMemo(
+    () => (Array.isArray(categories) ? categories : []).map(c => ({
+      id: String(c._id || c.id),
+      label: c.name || c.categoryName || 'Untitled',
+    })),
+    [categories]
+  );
+
+  const statusOptions = useMemo(
+    () => TICKET_STATUS_OPTIONS.map(s => ({
+      id: s.value,
+      label: s.label,
+      dot: s.dotColor,
+    })),
+    []
+  );
 
   useEffect(() => {
     if (gridRef.current) gridRef.current.scrollTop = 9 * HOUR_HEIGHT;
@@ -300,7 +323,7 @@ const WeeklyTasks = ({ onOpenCreateModal }) => {
     isOffDay(date) ? [] :
     (Array.isArray(weeklyTickets) ? weeklyTickets : []).filter(t => {
       if (!t.startDate || isAllDayTicket(t)) return false;
-      if (!statusFilter.includes(t.status || 'OPEN')) return false;
+      if (statusFilter.length > 0 && !statusFilter.includes(t.status || 'OPEN')) return false;
       if (!matchesProject(t)) return false;
       if (!matchesAssignee(t)) return false;
       if (!matchesCategory(t)) return false;
@@ -321,7 +344,7 @@ const WeeklyTasks = ({ onOpenCreateModal }) => {
     isOffDay(date) ? [] :
     (Array.isArray(weeklyTickets) ? weeklyTickets : []).filter(t => {
       if (!t.startDate || !isAllDayTicket(t)) return false;
-      if (!statusFilter.includes(t.status || 'OPEN')) return false;
+      if (statusFilter.length > 0 && !statusFilter.includes(t.status || 'OPEN')) return false;
       if (!matchesProject(t)) return false;
       if (!matchesAssignee(t)) return false;
       if (!matchesCategory(t)) return false;
@@ -395,9 +418,9 @@ const WeeklyTasks = ({ onOpenCreateModal }) => {
           </div>
           {/* Filters — second row on mobile, inline on desktop */}
           <div className="flex items-center gap-[5px] mt-1.5 sm:mt-0 overflow-x-auto scrollbar-none sm:overflow-visible">
-            <ProjectFilterDropdown projects={projects} selected={selectedProjectIds} onChange={setSelectedProjectIds} />
-            <CategoryFilterDropdown categories={categories} selected={selectedCategoryIds} onChange={setSelectedCategoryIds} />
-            <StatusFilterDropdown selected={statusFilter} onChange={setStatusFilter} />
+            <MultiSelectDropdown label="Project" icon="folder" options={projectOptions} selected={selectedProjectIds} onChange={ids => { setSelectedProjectIds(ids); setSelectedUserIds([]); }} searchable />
+            <MultiSelectDropdown label="Category" icon="tag" options={categoryOptions} selected={selectedCategoryIds} onChange={setSelectedCategoryIds} searchable />
+            <MultiSelectDropdown label="Status" icon="filter" options={statusOptions} selected={statusFilter} onChange={setStatusFilter} />
             <UserCombobox users={selectedProjectIds.length > 0 ? projectMembers : users} selectedUserIds={selectedUserIds} onChange={setSelectedUserIds} />
           </div>
           {/* Add button — desktop only (after filters) */}

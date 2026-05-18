@@ -19,6 +19,7 @@ import {
 } from '@/components/ui/select';
 import EstimateTimePicker from '../shared/EstimateTimePicker';
 import { getAvatarColor, getInitials } from '../../utils/avatar';
+import PortalSingleSelect from '../shared/PortalSingleSelect';
 
 const severityConfig = {
   Low:      { label: 'Low',      bg: 'bg-sky-50',    text: 'text-sky-700',    ring: 'ring-sky-200',    flag: 'text-sky-500' },
@@ -405,27 +406,18 @@ const CreateTicketModal = ({ onClose, onCreate, initialData }) => {
             <PropertyRow icon={iconUser} label={<span>Assignee <span className="text-red-500">*</span></span>}>
               <div className="flex items-center gap-2">
                 <Avatar name={formData.assignTo?.name} email={formData.assignTo?.email} />
-                <Select
-                  value={formData.assignTo?.id || undefined}
-                  onValueChange={(value) => handleUserChange({ target: { value } }, 'assignTo')}
+                <PortalSingleSelect
+                  options={formData.project
+                    ? projectMembers.map(m => ({ value: m.id, label: m.name || 'Unknown' }))
+                    : (Array.isArray(users) ? users.map(u => ({ value: u._id, label: `${u.name?.first || ''} ${u.name?.last || ''}`.trim() || u.authentication?.userName || 'Unknown' })) : [])
+                  }
+                  value={formData.assignTo?.id || ''}
+                  onChange={(id) => handleUserChange({ target: { value: id } }, 'assignTo')}
+                  placeholder={!formData.project ? 'Select a project first' : 'Select assignee'}
+                  showAvatar
                   disabled={projectMembersLoading || (!formData.project && usersLoading)}
-                >
-                  <SelectTrigger size="sm" className={`${chipTriggerClass} flex-1 min-w-0`}>
-                    <SelectValue placeholder={!formData.project ? 'Select a project first' : 'Select assignee'} />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {formData.project
-                      ? projectMembers.map((m) => (
-                          <SelectItem key={m.id} value={m.id}>{m.name}</SelectItem>
-                        ))
-                      : Array.isArray(users) && users.map((user) => (
-                          <SelectItem key={user._id} value={user._id}>
-                            {`${user.name?.first || ''} ${user.name?.last || ''}`.trim() || user.authentication?.userName}
-                          </SelectItem>
-                        ))
-                    }
-                  </SelectContent>
-                </Select>
+                  triggerClassName={`${chipTriggerClass} border rounded-md flex-1 min-w-0 h-8 flex items-center justify-between px-2`}
+                />
               </div>
               {errors.assignTo && <span className="block text-red-500 text-xs mt-1 px-2">{errors.assignTo}</span>}
             </PropertyRow>
@@ -451,27 +443,18 @@ const CreateTicketModal = ({ onClose, onCreate, initialData }) => {
             <PropertyRow icon={iconUser} label={<span>Reported To <span className="text-red-500">*</span></span>}>
               <div className="flex items-center gap-2">
                 <Avatar name={formData.reportedTo?.name} email={formData.reportedTo?.email} />
-                <Select
-                  value={formData.reportedTo?.id || undefined}
-                  onValueChange={(value) => handleUserChange({ target: { value } }, 'reportedTo')}
+                <PortalSingleSelect
+                  options={formData.project
+                    ? projectMembers.map(m => ({ value: m.id, label: m.name || 'Unknown' }))
+                    : (Array.isArray(users) ? users.map(u => ({ value: u._id, label: `${u.name?.first || ''} ${u.name?.last || ''}`.trim() || u.authentication?.userName || 'Unknown' })) : [])
+                  }
+                  value={formData.reportedTo?.id || ''}
+                  onChange={(id) => handleUserChange({ target: { value: id } }, 'reportedTo')}
+                  placeholder={!formData.project ? 'Select a project first' : 'Select reporter'}
+                  showAvatar
                   disabled={projectMembersLoading || (!formData.project && usersLoading)}
-                >
-                  <SelectTrigger size="sm" className={`${chipTriggerClass} flex-1 min-w-0`}>
-                    <SelectValue placeholder={!formData.project ? 'Select a project first' : 'Select reporter'} />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {formData.project
-                      ? projectMembers.map((m) => (
-                          <SelectItem key={m.id} value={m.id}>{m.name}</SelectItem>
-                        ))
-                      : Array.isArray(users) && users.map((user) => (
-                          <SelectItem key={user._id} value={user._id}>
-                            {`${user.name?.first || ''} ${user.name?.last || ''}`.trim() || user.authentication?.userName}
-                          </SelectItem>
-                        ))
-                    }
-                  </SelectContent>
-                </Select>
+                  triggerClassName={`${chipTriggerClass} border rounded-md flex-1 min-w-0 h-8 flex items-center justify-between px-2`}
+                />
               </div>
               {errors.reportedTo && <span className="block text-red-500 text-xs mt-1 px-2">{errors.reportedTo}</span>}
             </PropertyRow>

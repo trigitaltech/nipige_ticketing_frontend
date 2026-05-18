@@ -27,6 +27,7 @@ import {
 } from '@/components/ui/dropdown-menu';
 import EstimateTimePicker from '../components/shared/EstimateTimePicker';
 import { getAvatarColor, getInitials } from '../utils/avatar';
+import PortalSingleSelect from '../components/shared/PortalSingleSelect';
 
 const statusConfig = {
   OPEN:        { label: 'Open',        bg: 'bg-[#EEF5FF]',   text: 'text-[#0880EA]',   dot: 'bg-[#0880EA]',   solid: 'bg-[#0880EA] text-white' },
@@ -782,20 +783,15 @@ const TicketDetailsPage = ({ ticket, onBack, onUpdate }) => {
                 <div className="flex items-center gap-2 min-w-0">
                   <Avatar name={formData.assignTo?.name} email={formData.assignTo?.email} size="sm" />
                   <div className="flex-1 min-w-0">
-                    <Select
-                      value={formData.assignTo?.id || undefined}
-                      onValueChange={(value) => handleUserChange({ target: { value } }, 'assignTo')}
+                    <PortalSingleSelect
+                      options={projectMembers.map(m => ({ value: m.id, label: m.name || 'Unknown' }))}
+                      value={formData.assignTo?.id || ''}
+                      onChange={(id) => handleUserChange({ target: { value: id } }, 'assignTo')}
+                      placeholder="Empty"
+                      showAvatar
                       disabled={projectMembersLoading}
-                    >
-                      <SelectTrigger size="sm" className={chipTriggerClass}>
-                        <SelectValue placeholder="Empty" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {projectMembers.map(m => (
-                          <SelectItem key={m.id} value={m.id}>{m.name}</SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
+                      triggerClassName={`${chipTriggerClass} border rounded-md w-full h-8 flex items-center justify-between px-2`}
+                    />
                   </div>
                 </div>
               </PropertyRow>
@@ -822,20 +818,15 @@ const TicketDetailsPage = ({ ticket, onBack, onUpdate }) => {
                 <div className="flex items-center gap-2 min-w-0">
                   <Avatar name={formData.reportedTo?.name} email={formData.reportedTo?.email} size="sm" />
                   <div className="flex-1 min-w-0">
-                    <Select
-                      value={formData.reportedTo?.id || undefined}
-                      onValueChange={(value) => handleUserChange({ target: { value } }, 'reportedTo')}
+                    <PortalSingleSelect
+                      options={projectMembers.map(m => ({ value: m.id, label: m.name || 'Unknown' }))}
+                      value={formData.reportedTo?.id || ''}
+                      onChange={(id) => handleUserChange({ target: { value: id } }, 'reportedTo')}
+                      placeholder="Empty"
+                      showAvatar
                       disabled={projectMembersLoading}
-                    >
-                      <SelectTrigger size="sm" className={chipTriggerClass}>
-                        <SelectValue placeholder="Empty" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {projectMembers.map(m => (
-                          <SelectItem key={m.id} value={m.id}>{m.name}</SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
+                      triggerClassName={`${chipTriggerClass} border rounded-md w-full h-8 flex items-center justify-between px-2`}
+                    />
                   </div>
                 </div>
               </PropertyRow>
