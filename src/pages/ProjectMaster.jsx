@@ -531,9 +531,10 @@ const ProjectMaster = () => {
   if (editingProject) return <UpdateProjectView project={editingProject} onBack={() => setEditingProject(null)} />;
 
   return (
-    <div className="flex flex-col h-full">
-      {/* Page Header */}
-      <div className="flex items-center justify-between px-4 sm:px-8 pt-5 sm:pt-6 pb-3 sm:pb-4 gap-3">
+    <div className="mx-2 mb-2 border border-slate-200 rounded-xl flex-1 min-h-0 flex flex-col overflow-hidden">
+      <div className="flex flex-col h-full">
+        {/* Page Header */}
+        <div className="flex items-center justify-between px-4 sm:px-6 pt-5 sm:pt-6 pb-3 sm:pb-4 gap-3">
         <div className="min-w-0">
           <h1 className="text-[15px] sm:text-xl font-bold text-gray-900 truncate">Project Master</h1>
           <p className="text-xs sm:text-sm text-gray-500 mt-0.5 hidden sm:block">Manage all internal and client-facing projects</p>
@@ -550,7 +551,7 @@ const ProjectMaster = () => {
       </div>
 
       {/* Table Card */}
-      <div className="mx-3 sm:mx-8 mb-4 sm:mb-8 bg-white rounded-2xl border border-gray-200 flex-1 flex flex-col overflow-hidden">
+      <div className="mx-2 mb-2 bg-white rounded-xl border border-slate-200 flex-1 flex flex-col overflow-hidden">
         {/* Search & Actions Bar */}
         <div className="flex flex-col sm:flex-row sm:items-center justify-between px-4 sm:px-6 py-3 sm:py-4 border-b border-gray-100 gap-3">
           <div className="relative w-full sm:w-72">
@@ -741,6 +742,7 @@ const ProjectMaster = () => {
         onConfirm={() => { dispatch(deleteProject(deleteConfirm.projectId)); setDeleteConfirm({ open: false, projectId: null, projectName: '' }); }}
       />
     </div>
+  </div>
   );
 };
 
